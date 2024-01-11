@@ -1,0 +1,333 @@
+import numpy as np
+from tqdm import tqdm
+import matplotlib.pyplot as plt
+import sklearn.cluster as clust
+from scipy.linalg import inv, sqrtm, eigh
+from collections import Counter
+from sklearn.manifold import TSNE
+from warnings import warn
+from copy import deepcopy
+from matplotlib.lines import Line2D
+
+def combine_graphs(graph_list):
+    """
+    Combines the information contained in several graphs to produce a single laplacian
+    matrix that can be used in spectral clustering.
+
+    Parameters
+    ----------
+    graph_list : TYPE
+        a list containing numpy array representing each single graph that should be 
+        combined.
+
+    Returns
+    -------
+    L: numpy array
+        the combined laplacian representing all graphs.
+
+    """
+    pass
+
+class graphClusterer:
+    """A class to perform clustering on single or multiple graphs.
+
+    Parameters:
+        input_graphs (list): List containing the matrices of the graphs to cluster.
+
+    Attributes:
+        D (ndarray): The matrix of pairwise distance between input series.
+            This is computed with DTW (see [1]).
+
+        S (ndarray): The matrix of pairwise similarities between input series.
+            This is computed using a gaussian kernel using a local sigma (see [4]).
+
+        idx (list): List of indexes storing the result of the clustering. 
+            Each index corresponds to a series in the input, and indicates which cluster it belongs to.
+
+        V (ndarray): The lowest eigenvectors of the laplacian matrix. This is useful for dimensionality reduction and
+            visualization of the different input signals.
+
+    References:
+        [2]: Von Luxburg, U. (2007). A tutorial on spectral clustering. Statistics and computing, 17, 395-416.
+        [3]: Tran, L. (2012). Application of three graph Laplacian based semi-supervised learning methods to protein function prediction problem. arXiv preprint arXiv:1211.4289.
+        [4]: Zelnik-Manor, L., & Perona, P. (2004). Self-tuning spectral clustering. Advances in neural information processing systems, 17.
+    """
+
+    def __init__(self, input_graphs):
+        self.graphs = input_graphs
+        if len(self.graphs) == 1:
+            self.D = input_graphs[0]
+            self.L_sym = np.zeros_like(self.D) #initializing S to zeros, fill during actual clustering.
+        else:
+            self.L_sym = combine_graphs(self.graphs)
+        self.S = np.zeros_like(self.D) #initializing S to zeros, fill during actual clustering.
+        self.idx = [] # initializing as empty, fill after clustering
+        self.V = [] # for storing eigenvectors of the laplacian
+        warn("The graphs are assumed to represent affinity. If some input graphs represent distances, they should be processed beforehand.")
+
+    def compute_S(self, nn = None):
+        """Computes the affinity matrix S from the distance matrix D.
+       
+        The conversion from element [i, j] of distance matrix to affinity is done using a gaussian kernel, whose sigma is obtained
+        via a the product of distances from the 'nn' nearest neighbours of i and j respectively (see ref [4]).
+        
+        Parameter:
+            nn (int): number of nearest neighbours to use in the kernel. 
+       
+        Returns:
+            S (ndarray): The similarity matrix representing similarities among the input series.
+        """
+        if nn is None:
+            nn = int(np.ceil(0.1*self.D.shape[1])) #value inspired by litterature. See ref [4].
+        D = self.D
+        S = np.zeros_like(self.D) #Affinity matrix
+        pbar = tqdm(desc = "Transforming to affinity matrix", total = self.D.shape[1]*self.D.shape[1]) #progress bar
+        neighbors_i = np.sort(D, 1) #computing the nearest neighbors for local sigma estimation
+        neighbors_j = np.sort(D, 0)
+        for i in range(self.D.shape[1]):
+            for j in range(i, self.D.shape[1]):
+                d = neighbors_i[i, nn]*neighbors_j[nn, j] #local nearest distance estimation
+                S[i, j] = np.exp(-(D[i, j]**2)/d)
+                S[j, i] = np.exp(-(D[j, i]**2)/d)
+                pbar.update()
+        assert not np.isnan(S).any(), "NaN in affinity matrix, consider setting 'nn' a bit higher."
+        return S
+
+    def clustering(self, cluster_num, isAffinity = True, nn = None):
+        """Performs spectral clustering on input series to classify them into meaningfull clusters.
+
+        Parameters:
+            cluster_num (int): Number of clusters to look for.
+            
+            isAffinity (bool): whether or not the values in the graph are representing affinities. If False,
+                the function 'compute_S' is called before clustering.
+            
+            nn (int): Number of nearest neighbours to estimate a local sigma for the gaussian kernel (see ref [4]).
+                if not provided, defaults to the 10-percentile of the distances, meaning the number of neighbour in the lowest 10% 
+                of sorted distances in the D matrix.
+
+        Returns:
+            clustered_series (list(list)): Stores the series of each detected cluster, grouped by cluster index. Each list of 'clustered_series' 
+                correspond to a cluster and contains all series that are detected to belong to this cluster.
+
+            S (ndarray): the distance matrix.
+
+            idx (list): the cluster indexes outputed by the spectral clustering.
+
+            V (ndarray): the lowest eigenvectors of the Laplacian matrix after diagonalization. This can be used to provide
+                a lower dimensionality representation of the input timeseries.
+
+            lambdas (array_like): the eigenvalues of the Laplacian matrix. Plotting them can inform about the number of cluster to
+                look for, if similarities among different clusters are fairly low.
+        """
+        if not isAffinity:
+            S = self.compute_S(nn)
+            deg = np.diag(np.sum(S, 0)) #computing the degree matrix. 
+            L = deg - self.D #computing laplacian
+            self.L_sym = inv(sqrtm(deg)) @ L @ inv(sqrtm(deg))
+        else:
+            S = self.D
+
+        for i in range(100): #Due to the random nature initialization, the diagonalization might fail in some unfortunate cases.
+            if i == 100:
+                warn("Did not converge.")
+            try:       
+                lambdas, V = eigh(self.L_sym)
+                idx = clust.spectral_clustering(S, n_clusters = cluster_num)
+                break
+            except:
+                continue
+
+        self.idx = idx
+        self.V = V
+
+        return S, idx, V, lambdas
+
+    def merge_clusters(self, clusters_to_merge):
+        """Merges two clusters together by putting all their elements under the same index in the 'idx' property.
+        This operation is done in place.
+
+        Parameters:
+            clusters_to_merge (array_like): an array containing the indexes of the clusters to merge together.
+        """
+        new_clusters = deepcopy(self.clustered_series)
+        merged_cluster = new_clusters[clusters_to_merge[0]]
+        for i in range(1, len(clusters_to_merge)):
+            tmp = new_clusters[clusters_to_merge[i]]
+            for elt in tmp:
+                merged_cluster.append(elt)
+
+            new_clusters[i] = []; #removing corresponding cluster
+            idx_filter = self.idx == clusters_to_merge[i]
+            self.idx[idx_filter] = clusters_to_merge[0]; #replacing entries of 'idx' equal to idx2 by idx1.
+        
+        new_clusters = list(filter(lambda c : len(c) != 0, new_clusters))
+        new_clusters[clusters_to_merge[0]] = merged_cluster; #replacing first cluster from 'clusters_to_merge' by merged cluster.
+        self.clustered_series = new_clusters
+        new_idx = np.unique(self.idx)
+        for i in range(len(new_idx)): #re-ordering the idx in memory so that there are no gaps
+            idx_filter = self.idx == new_idx[i]
+            self.idx[idx_filter] = i
+
+        print("Merged clusters. To recover previous clusters, run 'clustering' function anew")
+
+    def split_clusters(self, clust_idx, split_num):
+        """
+        This function splits a cluster into several subclusters. This is done in place.
+        Parameters:
+            clust_idx (int): the index of the cluster to split. Cluster indexing starts from 0.
+
+            split_num (int): how many parts should the cluster be splitted into.
+        """
+        assert type(clust_idx) == int, "'clust_idx' expected to be integer."
+        S_split = np.transpose(self.S[self.idx == clust_idx])[self.idx == clust_idx]
+        new_idx = clust.spectral_clustering(S_split, n_clusters = split_num)
+        new_clusters = [self.clustered_series[i] for i in range(clust_idx)] # initializing with all element that have idx < clust_idx
+        old_cluster = self.clustered_series[clust_idx]
+        for i in range(split_num): # appending splitted elements
+            filter_k = new_idx == i
+            new_clusters.append([old_cluster[k] for k in range(len(filter_k)) if filter_k[k]])
+        for i in range(clust_idx+1, len(self.clustered_series)): # appending remaining elements from clusters with idx > clust_idx
+            new_clusters.append(self.clustered_series[i])
+
+        self.idx[self.idx > clust_idx] += split_num - 1
+        self.idx[self.idx == clust_idx] += new_idx + clust_idx - 1#replacing indexes of cluster to split by new indexes.
+        self.clustered_series = new_clusters
+        
+        print("Splitted cluster %d in %d parts. To recover old clusters, run 'clustering' function anew" %(clust_idx, split_num))
+
+    def k_elbow_curve(self, ax, iterations = 20, nn= None):
+        """Plots the elbow curve to determine what number of clusters to look for. 
+
+        This curve corresponds to the average intra-cluster distance, which will decrease as a function of the number of cluster.
+        However, past the optimal number of cluster there will be no improvement. Therefore the number of clusters to look for
+        should be at the elbow point. This can take a while, since it iterates through the data for each possible value of k.
+
+        Parameters:
+            iterations (int): up to which value of cluster_num should the algorithm iterate to. defaults to 20.
+
+            nn (int): Number of nearest neighbours to use for the local sigma in the gaussian kernel used to compute the similarity matrix.
+        """
+    
+        if iterations >= self.D.shape[1]:
+            iterations = self.D.shape[1]
+            warn("Too few elements in input timeseries. \n Restricting range to avoid errors.")
+        
+        mean_intracluster_dist = np.zeros(iterations)
+        for k in tqdm(range(1, iterations)):
+            _, idx, _ ,_  = self.clustering(k, nn) #No minimal outlier filtering to do not alter data.
+            mean_intra = 0
+            for i in range(k):
+                for j in range(len(idx)):
+                    for l in range(j+1, len(idx)):
+                        if idx[j] == i and idx[l] == i:
+                            d = self.D[j, l]
+                            mean_intra += d/np.sum(idx == i)
+        k_curve = ax.plot(np.arange(iterations), mean_intracluster_dist)
+        ax.set_xlabel('Number of clusters')
+        ax.set_ylabel('Mean intracluster distance')
+        return k_curve
+                
+    def sigma_grid_search(self, ax, num_pts = 15, clust_num = 10):
+        """Does a grid search, looking for an optimal value of the number of nearest neighbours
+        for the local sigma to be used in the clustering (see ref [4]). 
+        
+        Similar to the k-elbow curve,
+        the optimal value of 'nn' should be the one which minimizes the intracluster distance. In practice,
+        htis curve can fluctuate a lot, and taking the default value for nn is usually sufficient.
+        The search goes between 5 and the 15%-tile of the distances of each element in the distance matrix.
+
+        Parameters:
+            num_pts (int): How many points to use for the grid search.
+
+            clust_num (int): How many cluster should be looked for. defaults to 10.
+        """
+        if clust_num >= self.D.shape[1]:
+            clust_num = self.D.shape[1]
+            warn("Too few elements in input timeseries. \n Restricting range to avoid errors.")
+            
+        mean_intracluster_dist = np.zeros(num_pts)
+        nn_range = np.ceil(np.linspace(2, 3*np.ceil(0.05*self.D.shape[1]), num_pts)).astype(int)
+        for p, nn in enumerate(tqdm(nn_range)):
+            _, idx, _, _ = self.clustering(clust_num, nn) #no percentile filter as low sigma values break distance matrix.
+            mean = 0
+            for i in range(clust_num):
+                for j in range(len(idx)):
+                    for l in range(j+1, len(idx)):
+                        if idx[j] == i and idx[l] != i:
+                            d = self.D[j, l]
+                            mean += d
+            mean_intracluster_dist[p] = mean/clust_num
+
+        k_curve = ax.plot(np.arange(num_pts), mean_intracluster_dist)
+        ax.set_xlabel('Number of clusters')
+        ax.set_ylabel('Mean intracluster distance')
+        return 
+
+    def plot_eigenvalues(self, eigvalue_num, percentile_filter = 5, min_elts = 2, nn = None):
+        """Helper function to visualize the shape of the detected clusters. 
+        
+        In theory, the number of eigenvalues close to 0 should indicate the number 
+        of clustes to use, and so the point at which a large gap to the next eigenvalue indicates the number of clusters to look for.
+        This explanation is however based on perturbation theory (see ref [2]) and will only work well in cases where 
+        the clusters are "well behaved" i.e. when there are not too many outliers, the densities are uniform and the clusters well separated.
+
+        Parameters:
+            eigvalue_num (int): how many eigenvalues to display. 
+
+            percentile_filter (int): whether or not to remove outlier elements that have a distance much larger than other elements. 
+                'outlier_filter' specifies a percentile of the highest distances to exclude. 
+                For instance, if 'outlier_filter' is 2, the highest 2% of distances will be remove from analysis.
+
+            min_elts (int): the minimum number of elements allowed in a cluster. If a cluster contains less elements than 'min_elts', 
+                these elements are removed from the input, and the analysis starts again.
+
+            nn (int): the number of nearest neighbours to use in the kernel for computing the affinity matrix.
+        """
+        _,_,_,lambdas = self.clustering(eigvalue_num, nn)
+        ev_plot = plt.plot(lambdas, lw = 1, c = 'black', marker = "^", markersize = 10)
+        plt.title("Spectral gaps graph")
+        plt.xlabel("Eigenvalue index")
+        plt.ylabel("Eigenvalue")
+        plt.show()
+        return ev_plot
+
+    def visualize_3D(self, cluster_num, nn = None, perplexity = 30):
+            """Plots a 3D representation of the input series using the distance matrix projected onto the eigenvectors.
+
+            If k clusters are used, the reduction is done using the projection of the series onto the k eigenvectors corresponding
+            to the k lowest eigenvalues of the laplacien. Points are there further reduced in dimensionality via t-sne.
+            This is fast fast, and exact, as it directly uses the distance matrix without further processing (padding or truncating).
+            
+            Parameters:
+                cluster_num (int): how many clusters should the data be reduced to.
+
+                percentile_filter (int): whether or not to remove outlier elements that have a distance much larger than other elements. 
+                    'outlier_filter' specifies a percentile of the highest distances to exclude. 
+                    For instance, if 'outlier_filter' is 2, the highest 2% of distances will be remove from analysis.
+
+                min_elts (int): the minimum number of elements allowed in a cluster. If a cluster contains less elements than 'min_elts', 
+                    these elements are removed from the input, and the analysis starts again.
+
+                nn (int): the number of nearest neighbours to use in the kernel for computing the affinity matrix.
+
+                perplexity (int): the value of the tsne perplexity. Controls how "spread" the final visualization is.
+            """
+            perplexity = min(3*perplexity, len(self.series))
+
+            _, _, idx, V, _ = self.clustering(cluster_num, nn)
+
+            #projecting onto eigenvectors of S matrix
+            warped_ts = V[:, :cluster_num]
+            cluster_idx = idx
+            titlestring = "Dimensionality reduction \n after projection onto EV"
+          
+            reduced_dim_data = TSNE(n_components = 3, learning_rate='auto', init='random', perplexity= perplexity).fit_transform(warped_ts) 
+
+            fig = plt.figure()
+            ax = fig.add_subplot(projection='3d')  
+            ax.scatter(reduced_dim_data[:, 0], reduced_dim_data[:, 1], reduced_dim_data[:, 2], s = 20, c = [plt.cm.Dark2(i) for i in cluster_idx])
+            plt.show()
+
+
+

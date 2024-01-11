@@ -34,6 +34,7 @@ class App:
         self.path_to_file = None
         self.layout_style = "fr"
         self.node_metric = "none"
+        self.idx = []
     
         # navigation frame
         menu_frame = tk.Frame(root, bg = "gray", height= 100)
@@ -106,7 +107,7 @@ class App:
         f = Figure(figsize=(800*px,400*px), dpi = 100)
         a = f.add_subplot(111)
         # a.plot([1,2,3,4,5,6,7,8,9], [2,3,4,5,6,7,8,9,10])
-        display_graph(self.path_to_file, a, layout = layout_style, node_metric = node_metric)
+        display_graph(self.path_to_file, a, layout = layout_style, node_metric = node_metric, idx = self.idx)
         
         canvas = FigureCanvasTkAgg(f, master=self.content_frame)
         NavigationToolbar2Tk(canvas, self.content_frame)
@@ -115,7 +116,7 @@ class App:
         self.label.config(text="")
 
     def cluster_button_command(self):
-        NewWindow(root, self.dirpath)
+        NewWindow(root, self, self.dirpath)
 
 if __name__ == "__main__":
     root = tk.Tk()

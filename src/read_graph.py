@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import igraph as ig
 from copy import deepcopy
-from matplotlib.cm import ScalarMappable
+from matplotlib.cm import ScalarMappable, get_cmap
 from matplotlib import cm
 from matplotlib.colors import LinearSegmentedColormap, Normalize
 import random
@@ -30,6 +30,11 @@ def inverse(arr):
     inv_arr[inv_arr == 0] = 10e-10#np.Inf
     inv_arr = 1/inv_arr
     return inv_arr
+
+def read_graph(path_to_file):
+    arr = np.loadtxt(path_to_file, delimiter=",", dtype=str)
+    data = arr[1:, 1:].astype(float)
+    return data
     
 
 def display_graph(path_to_file, ax, **kwargs):
@@ -61,11 +66,21 @@ def display_graph(path_to_file, ax, **kwargs):
         layout_style = kwargs["layout"]
     else:
         layout_style = "fr"
+        
+    if "idx" in kwargs:
+        if len(kwargs["idx"]) == 0:
+            marker_frame_color = "black"
+        else:
+            cmap = get_cmap('Spectral')
+            print("colors")
+            marker_frame_color = (0.6365244136870435, 0.022683583237216455, 0.26282199154171476, 1.0)#cmap(kwargs["idx"])
+
     
-    arr = np.loadtxt(path_to_file, delimiter=",", dtype=str)
-    data = arr[1:, 1:].astype(float)
-    rounded_data = data.round(2)
-    inv_data = inverse(data)
+    # arr = np.loadtxt(path_to_file, delimiter=",", dtype=str)
+    # data = arr[1:, 1:].astype(float)
+    data = read_graph(path_to_file)
+    # rounded_data = data.round(2)
+    # inv_data = inverse(data)
     
     if isSymmetric(data):
         g = ig.Graph.Weighted_Adjacency(data, mode='undirected')
@@ -126,7 +141,7 @@ def display_graph(path_to_file, ax, **kwargs):
     visual_style["edge_arrow_width"] = 5
     visual_style["edge_width"] = rescale(np.array([w['weight'] for w in g.es]))
     visual_style["layout"] = layout
-    visual_style["vertex_frame_color"] = "black"
+    visual_style["vertex_frame_color"] = marker_frame_color
     visual_style["edge_curved"] = 0
     # g.vs["label"] = [v.index for v in g.vs()]
     # visual_style["vertex_label_size"] = 20
@@ -134,8 +149,6 @@ def display_graph(path_to_file, ax, **kwargs):
 
 
     # visual_style["vertex_font"] = "Times"
-
-    
     ig.plot(g, target=ax, **visual_style)
     
 
