@@ -48,33 +48,35 @@ class NewWindow(tk.Toplevel):
         
         ## clustering buttons frame
         # selecting the graph for clustering
-        self.graph_selector=ttk.Combobox(selection_btn_frame , state = "readonly")
+        tk.Label(selection_btn_frame, text="Graph(s) selection").pack(side = "left")
+        self.graph_selector=ttk.Combobox(selection_btn_frame, state = "readonly")
         self.graph_selector.pack(side="left", fill="x", padx = 5)
         self.graph_selector.set("Graph file")
         self.graph_selector.bind('<<ComboboxSelected>>', self.graph_selected)
         self.graph_selector["values"] = os.listdir(self.dirpath)
         
         # selecting the graph for clustering
-        self.laplacian_selector=ttk.Combobox(selection_btn_frame , state = "readonly")
-        self.laplacian_selector.pack(side="left", fill="x", padx = 5)
-        self.laplacian_selector.set("Laplacian combination")
+        tk.Label(clustering_btn_frame, text="Laplacian combination").pack(side = "left")
+        self.laplacian_selector=ttk.Combobox(clustering_btn_frame, state = "readonly")
+        self.laplacian_selector.pack(side="left", fill="x")
+        self.laplacian_selector.set("least-square based")
         self.laplacian_selector["values"] = ["least-square based", "eigevalue based"]
         
         # selecting the number of clusters
-        tk.Label(selection_btn_frame, text="Number of clusters").pack(side = "left")
-        self.cluster_number_field = tk.Entry(selection_btn_frame, width = 5)
+        tk.Label(clustering_btn_frame, text="Number of clusters").pack(side = "left")
+        self.cluster_number_field = tk.Entry(clustering_btn_frame, width = 5)
         self.cluster_number_field["justify"] = "center"
         self.cluster_number_field.pack(side = "left")
         self.cluster_number_field.insert(-1, 2)
         
         # selecting the number of nn
-        tk.Label(selection_btn_frame, text="Nearest neighbours").pack(side = "left", padx = 5)
-        self.nn_field = tk.Entry(selection_btn_frame, width = 5)
+        tk.Label(clustering_btn_frame, text="Nearest neighbours").pack(side = "left", padx = 5)
+        self.nn_field = tk.Entry(clustering_btn_frame, width = 5)
         self.nn_field["justify"] = "center"
         self.nn_field.pack(side = "left", padx = 0)
         self.nn_field.insert(-1, 7)
         
-        cluster_button=tk.Button(selection_btn_frame)
+        cluster_button=tk.Button(clustering_btn_frame)
         cluster_button["justify"] = "center"
         cluster_button["text"] = "Cluster!"
         cluster_button.pack(side="left", fill="x", padx = 5)
@@ -102,6 +104,7 @@ class NewWindow(tk.Toplevel):
         cluster_num = int(self.cluster_number_field.get())
         nn = int(self.nn_field.get())
         _, self.app.idx, _, _ = self.clusterer.clustering(cluster_num, isAffinity = False, nn = nn)
+        self.app.cluster_num = cluster_num
         
     def plot_clusNum_stats(self):
         for fm in self.content_frame.winfo_children():

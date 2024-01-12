@@ -5,7 +5,9 @@ from copy import deepcopy
 from matplotlib.cm import ScalarMappable, get_cmap
 from matplotlib import cm
 from matplotlib.colors import LinearSegmentedColormap, Normalize
+from igraph.drawing.colors import ClusterColoringPalette
 import random
+from warnings import warn
 
 
 path = "..\\data\\"
@@ -66,19 +68,15 @@ def display_graph(path_to_file, ax, **kwargs):
         layout_style = kwargs["layout"]
     else:
         layout_style = "fr"
-        
-    if "idx" in kwargs:
-        if len(kwargs["idx"]) == 0:
-            marker_frame_color = "black"
-        else:
-            cmap = get_cmap('Spectral')
-            print("colors")
-            marker_frame_color = (0.6365244136870435, 0.022683583237216455, 0.26282199154171476, 1.0)#cmap(kwargs["idx"])
+            
+    if len(path_to_file) > 1:
+        warn("More than one input graph path has been provided. \n Multilayer plotting is not yet supported. Only first one will be displayed.")
+        data = read_graph(path_to_file[0])
+    else:
+        data = read_graph(path_to_file[0])
 
-    
     # arr = np.loadtxt(path_to_file, delimiter=",", dtype=str)
     # data = arr[1:, 1:].astype(float)
-    data = read_graph(path_to_file)
     # rounded_data = data.round(2)
     # inv_data = inverse(data)
     
@@ -133,6 +131,14 @@ def display_graph(path_to_file, ax, **kwargs):
     else:
         node_color = "red"
         node_size = 15
+        
+    if "idx" in kwargs:
+        if len(kwargs["idx"]) == 0:
+            marker_frame_color = node_color
+        else:
+            cmap = get_cmap('Spectral')
+            palette = ClusterColoringPalette(kwargs["cluster_num"])
+            marker_frame_color = [palette[i] for i in kwargs["idx"]]#cmap(kwargs["idx"])
 
     layout = g.layout(layout_style)
     visual_style = {}
@@ -143,6 +149,7 @@ def display_graph(path_to_file, ax, **kwargs):
     visual_style["layout"] = layout
     visual_style["vertex_frame_color"] = marker_frame_color
     visual_style["edge_curved"] = 0
+    visual_style["vertex_frame_width"] = 3
     # g.vs["label"] = [v.index for v in g.vs()]
     # visual_style["vertex_label_size"] = 20
     # visual_style["vertex_label_dist"] = 0.5
