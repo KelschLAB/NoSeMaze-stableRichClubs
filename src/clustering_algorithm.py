@@ -8,6 +8,9 @@ from sklearn.manifold import TSNE
 from warnings import warn
 from copy import deepcopy
 from matplotlib.lines import Line2D
+import torch
+from multilayer_sc import *
+
 
 def combine_graphs(graph_list):
     """
@@ -54,13 +57,13 @@ class graphClusterer:
     """
 
     def __init__(self, input_graphs):
-        self.graphs = input_graphs
-        if len(self.graphs) == 1:
-            self.D = input_graphs[0]
-            self.L_sym = np.zeros_like(self.D) #initializing S to zeros, fill during actual clustering.
-        else:
-            self.L_sym = combine_graphs(self.graphs)
-        self.S = np.zeros_like(self.D) #initializing S to zeros, fill during actual clustering.
+        self.D = input_graphs
+        # if len(self.graphs) == 1:
+        #     self.D = input_graphs[0]
+        #     self.L_sym = np.zeros_like(self.D) #initializing S to zeros, fill during actual clustering.
+        # else:
+        #     self.L_sym = combine_graphs(self.graphs)
+            
         self.idx = [] # initializing as empty, fill after clustering
         self.V = [] # for storing eigenvectors of the laplacian
         warn("The graphs are assumed to represent affinity. If some input graphs represent distances, they should be processed beforehand.")
@@ -79,18 +82,23 @@ class graphClusterer:
         """
         if nn is None:
             nn = int(np.ceil(0.1*self.D.shape[1])) #value inspired by litterature. See ref [4].
+            
         D = self.D
-        S = np.zeros_like(self.D) #Affinity matrix
-        pbar = tqdm(desc = "Transforming to affinity matrix", total = self.D.shape[1]*self.D.shape[1]) #progress bar
-        neighbors_i = np.sort(D, 1) #computing the nearest neighbors for local sigma estimation
-        neighbors_j = np.sort(D, 0)
-        for i in range(self.D.shape[1]):
-            for j in range(i, self.D.shape[1]):
-                d = neighbors_i[i, nn]*neighbors_j[nn, j] #local nearest distance estimation
-                S[i, j] = np.exp(-(D[i, j]**2)/d)
-                S[j, i] = np.exp(-(D[j, i]**2)/d)
-                pbar.update()
-        assert not np.isnan(S).any(), "NaN in affinity matrix, consider setting 'nn' a bit higher."
+        
+        S = []
+        for graph in range(len(D)):
+            curr_S = np.zeros_like(self.D[graph]) #Affinity matrix
+            # pbar = tqdm(desc = "Transforming to affinity matrix", total = self.D.shape[1]*self.D.shape[1]) #progress bar
+            neighbors_i = np.sort(D[graph], 1) #computing the nearest neighbors for local sigma estimation
+            neighbors_j = np.sort(D[graph], 0)
+            for i in range(self.D[graph].shape[1]):
+                for j in range(i, self.D[graph].shape[1]):
+                    d = neighbors_i[i, nn]*neighbors_j[nn, j] #local nearest distance estimation
+                    curr_S[i, j] = np.exp(-(D[graph][i, j]**2)/d)
+                    curr_S[j, i] = np.exp(-(D[graph][j, i]**2)/d)
+                    # pbar.update()
+            assert not np.isnan(S).any(), "NaN in affinity matrix, consider setting 'nn' a bit higher."
+            S.append(curr_S)
         return S
 
     def clustering(self, cluster_num, isAffinity = True, nn = None):
@@ -122,21 +130,23 @@ class graphClusterer:
         """
         if not isAffinity:
             S = self.compute_S(nn)
-            deg = np.diag(np.sum(S, 0)) #computing the degree matrix. 
-            L = deg - self.D #computing laplacian
-            self.L_sym = inv(sqrtm(deg)) @ L @ inv(sqrtm(deg))
+            # deg = np.diag(np.sum(S, 0)) #computing the degree matrix. 
+            # L = deg - self.D #computing laplacian
+            # self.L_sym = inv(sqrtm(deg)) @ L @ inv(sqrtm(deg))
         else:
             S = self.D
 
-        for i in range(100): #Due to the random nature initialization, the diagonalization might fail in some unfortunate cases.
-            if i == 100:
-                warn("Did not converge.")
-            try:       
-                lambdas, V = eigh(self.L_sym)
-                idx = clust.spectral_clustering(S, n_clusters = cluster_num)
-                break
-            except:
-                continue
+        # for i in range(100): #Due to the random nature initialization, the diagonalization might fail in some unfortunate cases.
+        #     if i == 100:
+        #         warn("Did not converge.")
+        #     try:       
+        #         lambdas, V = eigh(self.L_sym)
+        #         idx = clust.spectral_clustering(S, n_clusters = cluster_num)
+        #         break
+        #     except:
+        #         continue
+    
+        lambdas, V, idx = scml(S, cluster_num, torch.device("cpu"))
 
         self.idx = idx
         self.V = V

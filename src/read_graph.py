@@ -8,6 +8,7 @@ from matplotlib.colors import LinearSegmentedColormap, Normalize
 from igraph.drawing.colors import ClusterColoringPalette
 import random
 from warnings import warn
+from clustering_algorithm import *
 
 
 path = "..\\data\\"
@@ -34,11 +35,17 @@ def inverse(arr):
     return inv_arr
 
 def read_graph(path_to_file):
-    arr = np.loadtxt(path_to_file, delimiter=",", dtype=str)
-    data = arr[1:, 1:].astype(float)
-    return data
+    if type(path_to_file) == str:
+        arr = np.loadtxt(path_to_file, delimiter=",", dtype=str)
+        data = arr[1:, 1:].astype(float)
+        return data
+    if type(path_to_file) == list:
+        data = []
+        for i in range(len(path_to_file)):
+            arr = np.loadtxt(path_to_file[i], delimiter=",", dtype=str)
+            data.append(arr[1:, 1:].astype(float))
+        return data
     
-
 def display_graph(path_to_file, ax, **kwargs):
     """
     This function displays the graph to analyze and colors the vertices/edges according
@@ -69,7 +76,7 @@ def display_graph(path_to_file, ax, **kwargs):
     else:
         layout_style = "fr"
             
-    if len(path_to_file) > 1:
+    if type(path_to_file) == list:
         warn("More than one input graph path has been provided. \n Multilayer plotting is not yet supported. Only first one will be displayed.")
         data = read_graph(path_to_file[0])
     else:
@@ -161,3 +168,8 @@ def display_graph(path_to_file, ax, **kwargs):
 
 # f, a = plt.subplots(1,1)
 # display_graph(path+file, a, node_metric = "betweenness")
+# D = read_graph([path+"G2\\interactions_resD7_1.csv", path+"G2\\approach_prop_resD7_1.csv"])
+# clusterer = graphClusterer(D)
+# cluster_num = 2
+# nn = 4
+# _, idx, _, _ = clusterer.clustering(cluster_num, isAffinity = False, nn = nn)

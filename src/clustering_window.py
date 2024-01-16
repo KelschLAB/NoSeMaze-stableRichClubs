@@ -48,14 +48,27 @@ class NewWindow(tk.Toplevel):
         
         ## clustering buttons frame
         # selecting the graph for clustering
-        tk.Label(selection_btn_frame, text="Graph(s) selection").pack(side = "left")
-        self.graph_selector=ttk.Combobox(selection_btn_frame, state = "readonly")
+        self.graph_selector=tk.Menubutton(selection_btn_frame, text = "Select graph file(s)")
+        # filling the values of the graph selection menu for clustering
+        menu = tk.Menu(self.graph_selector, tearoff=False)
+        self.active_path_list = [] # storing selected paths here
+        self.path_variable_list = []
+        self.path_label_list = []
+        path_list = os.listdir(self.dirpath)
+        for i in range(0, len(path_list)):
+            globals()['var'+str(i)] = tk.StringVar() # Creating variables to store paths dynamically
+        for i in range(0, len(path_list)): # Adding values to the actual Menubutton
+            self.path_variable_list.append(globals()['var'+str(i)])
+            self.path_label_list.append(path_list[i])
+            menu.add_checkbutton(label = self.path_label_list[i], variable = self.path_variable_list[i], command=self.get_checked)
+            
+        self.graph_selector.configure(menu=menu)
         self.graph_selector.pack(side="left", fill="x", padx = 5)
-        self.graph_selector.set("Graph file")
-        self.graph_selector.bind('<<ComboboxSelected>>', self.graph_selected)
-        self.graph_selector["values"] = os.listdir(self.dirpath)
+  
+        # self.graph_selector.set("Graph file")
+        # self.graph_selector.bind('<<ComboboxSelected>>', self.get_checked)
         
-        # selecting the graph for clustering
+        # selecting the graph combination for clustering
         tk.Label(clustering_btn_frame, text="Laplacian combination").pack(side = "left")
         self.laplacian_selector=ttk.Combobox(clustering_btn_frame, state = "readonly")
         self.laplacian_selector.pack(side="left", fill="x")
@@ -82,7 +95,6 @@ class NewWindow(tk.Toplevel):
         cluster_button.pack(side="left", fill="x", padx = 5)
         cluster_button["command"] = self.cluster_graphs
 
-        
         ## hyperparameters frame
         tk.Label(hyperparam_btn_frame, text="Hyperparameter exploration").pack(side = "left")
 
@@ -98,8 +110,16 @@ class NewWindow(tk.Toplevel):
         sigma_button.pack(side="left", fill="x", padx = 5)
         sigma_button["command"] = self.plot_sigma_curve
         
+    def get_checked(self):
+        lst = []
+        for i, item in enumerate(self.path_variable_list):
+            if item.get() == "1":
+                lst.append(self.path_label_list[i])
+        self.active_path_list = lst
+        self.path_to_file = [self.dirpath + "/" + self.active_path_list[i] for i in range(len(self.active_path_list))]
+
     def cluster_graphs(self):
-        D = [read_graph(self.path_to_file)]
+        D = read_graph(self.path_to_file)
         self.clusterer = graphClusterer(D)
         cluster_num = int(self.cluster_number_field.get())
         nn = int(self.nn_field.get())
@@ -134,9 +154,9 @@ class NewWindow(tk.Toplevel):
         canvas.draw()
         canvas.get_tk_widget().pack()#fill=tk.BOTH, expand=True, side="top") 
          
-    def graph_selected(self, event):
-        self.path_to_file = self.dirpath + "/" +  self.graph_selector.get()
-        self.clusterer = graphClusterer([read_graph(self.path_to_file)])
+    # def graph_selected(self, event):
+    #     self.path_to_file = self.dirpath + "/" +  self.graph_selector.get()
+    #     self.clusterer = graphClusterer([read_graph(self.path_to_file)])
         # self.plot_hyperparams()
     
     # def plot_hyperparams(self):
