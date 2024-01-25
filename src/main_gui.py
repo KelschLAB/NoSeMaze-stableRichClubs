@@ -14,10 +14,13 @@ import os
 from read_graph import *
 from clustering_window import *
 
+#To-do: - include statement that graph display is from average when several subgraphs are selected.
+#       - remove the file selection from supervised clustering window
+#       - check that inverse edge values **2 is correctly working
+#       - plot multilayer graph with py3graph when no metric is selected.
+
 class App:
     def __init__(self, root):
-        #setting title
-        root.title("undefined")
         #setting window size
         width=1000
         height=600
@@ -36,6 +39,7 @@ class App:
         self.node_metric = "none"
         self.idx = []
         self.cluster_num = 0
+        self.display_type = "plot"
     
         # Frames
         menu_frame = tk.Frame(root, bg = "gray", height= 100)
@@ -96,8 +100,18 @@ class App:
         tk.Label(result_display_frame, text="Display").pack(side = "left")
         plot_btn = tk.Button(result_display_frame, text='plot')
         plot_btn.pack(side = "left", padx = 5)
+        plot_btn["command"] = self.plot_clicked
         stats_btn = tk.Button(result_display_frame, text='statistics')
         stats_btn.pack(side = "left")
+        stats_btn["command"] = self.stats_clicked
+        
+    def plot_clicked(self):
+        self.display_type = "plot"
+        self.plot_in_frame(node_metric=self.node_metric)
+        
+    def stats_clicked(self):
+        self.display_type = "stats"
+        self.stats_in_frame(node_metric=self.node_metric)
         
     def get_checked(self):
         lst = []
@@ -105,7 +119,6 @@ class App:
             if item.get() == "1":
                 lst.append(self.path_label_list[i])
         self.active_path_list = lst
-        
         self.path_to_file = [self.dirpath + "/" + self.active_path_list[i] for i in range(len(self.active_path_list))]
         self.plot_in_frame(layout_style = self.layout_style, node_metric = self.node_metric)
 
@@ -129,23 +142,26 @@ class App:
             menu.add_checkbutton(label = self.path_label_list[i], variable = self.path_variable_list[i], command=self.get_checked)
         self.graph_selector.configure(menu=menu)
 
-        
     def plot_changed(self, event):
         self.layout_style = self.plot_selector.get()
-        self.plot_in_frame(layout_style = self.layout_style, node_metric = self.node_metric)
+        if self.display_type == "plot":
+            self.plot_in_frame(layout_style = self.layout_style, node_metric = self.node_metric)
         
     def node_changed(self, event):
         self.node_metric = self.node_metric_selector.get()
-        self.plot_in_frame(layout_style = self.layout_style, node_metric = self.node_metric)
+        if self.display_type == "plot":
+            self.plot_in_frame(layout_style = self.layout_style, node_metric = self.node_metric)
+        else:
+            self.stats_in_frame(node_metric = self.node_metric)
         
     def plot_in_frame(self, layout_style = "fr", node_metric = "none"):
         for fm in self.content_frame.winfo_children():
             fm.destroy()
             root.update()
         px = 1/plt.rcParams['figure.dpi']  # pixel in inches
-        f = Figure(figsize=(800*px,400*px), dpi = 100)
+        # f = Figure(figsize=(800*px,400*px), dpi = 100)
+        f = Figure()
         a = f.add_subplot(111)
-        # a.plot([1,2,3,4,5,6,7,8,9], [2,3,4,5,6,7,8,9,10])
         display_graph(self.path_to_file, a, layout = layout_style, node_metric = node_metric, idx = self.idx, cluster_num = self.cluster_num)
         
         canvas = FigureCanvasTkAgg(f, master=self.content_frame)
@@ -153,9 +169,42 @@ class App:
         canvas.draw()
         canvas.get_tk_widget().pack()#fill=tk.BOTH, expand=True, side="top") 
         self.label.config(text="")
+        
+    def stats_in_frame(self, node_metric = "none"):
+        for fm in self.content_frame.winfo_children():
+            fm.destroy()
+            root.update()
+        px = 1/plt.rcParams['figure.dpi']  # pixel in inches
+        # f = Figure(figsize=(800*px,400*px), dpi = 100)
+        f = Figure()
+        a = f.add_subplot(111)
+        display_stats(self.path_to_file, a, node_metric = node_metric)
+    
+        canvas = FigureCanvasTkAgg(f, master=self.content_frame)
+        NavigationToolbar2Tk(canvas, self.content_frame)
+        canvas.draw()
+        canvas.get_tk_widget().pack()#fill=tk.BOTH, expand=True, side="top") 
+        self.label.config(text="")
 
     def cluster_button_command(self):
+        self.clustertype_wdw = tk.Toplevel(root)
+        self.clustertype_wdw.geometry("250x250")
+        self.clustertype_wdw.title("Clustering type")
+        unsupervised_button = tk.Button(self.clustertype_wdw, text="Unsupervised")
+        unsupervised_button.pack(side="left")
+        unsupervised_button["command"] = self.unsupervised_button
+        supervised_button = tk.Button(self.clustertype_wdw, text="Supervised")
+        supervised_button.pack(side="left")
+        supervised_button["command"] = self.supervised_button
+        
+    def supervised_button(self):
         NewWindow(root, self, self.dirpath)
+        self.clustertype_wdw.destroy()
+        
+    def unsupervised_button(self):
+        self.idx = community_clustering(self.path_to_file)
+        self.cluster_num = max(self.idx)+1
+        self.clustertype_wdw.destroy()
 
 if __name__ == "__main__":
     root = tk.Tk()

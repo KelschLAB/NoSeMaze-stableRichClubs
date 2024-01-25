@@ -11,26 +11,6 @@ from matplotlib.lines import Line2D
 import torch
 from multilayer_sc import *
 
-
-def combine_graphs(graph_list):
-    """
-    Combines the information contained in several graphs to produce a single laplacian
-    matrix that can be used in spectral clustering.
-
-    Parameters
-    ----------
-    graph_list : TYPE
-        a list containing numpy array representing each single graph that should be 
-        combined.
-
-    Returns
-    -------
-    L: numpy array
-        the combined laplacian representing all graphs.
-
-    """
-    pass
-
 class graphClusterer:
     """A class to perform clustering on single or multiple graphs.
 
@@ -42,7 +22,7 @@ class graphClusterer:
             This is computed with DTW (see [1]).
 
         S (ndarray): The matrix of pairwise similarities between input series.
-            This is computed using a gaussian kernel using a local sigma (see [4]).
+            This is computed using a gaussian kernel using a local nn (see [4]).
 
         idx (list): List of indexes storing the result of the clustering. 
             Each index corresponds to a series in the input, and indicates which cluster it belongs to.
@@ -56,22 +36,57 @@ class graphClusterer:
         [4]: Zelnik-Manor, L., & Perona, P. (2004). Self-tuning spectral clustering. Advances in neural information processing systems, 17.
     """
 
-    def __init__(self, input_graphs):
+    def __init__(self, input_graphs, isAffinity, connectivity_type):
         self.D = input_graphs
         # if len(self.graphs) == 1:
         #     self.D = input_graphs[0]
         #     self.L_sym = np.zeros_like(self.D) #initializing S to zeros, fill during actual clustering.
         # else:
         #     self.L_sym = combine_graphs(self.graphs)
-            
+        
+        self.connectivity_type = connectivity_type
         self.idx = [] # initializing as empty, fill after clustering
         self.V = [] # for storing eigenvectors of the laplacian
-        warn("The graphs are assumed to represent affinity. If some input graphs represent distances, they should be processed beforehand.")
+        self.isAffinity = isAffinity
+
+    def mutual_nn_affinity(self, S, nn = 2):
+        """
+        Makes a sparse affinity matrix by keeping only the nn nearest neighbours in the connections. 
+        Other connexions are set to 0.
+        """
+        mnn_S = []
+        for graph in range(len(S)):
+            curr_S = np.zeros_like(S[graph]) 
+            neighbors_i = np.argsort(S[graph], 1) #computing the nearest neighbors for local nn estimation
+            neighbors_j = np.argsort(S[graph], 0)
+            for i in range(S[graph].shape[1]):
+                for j in range(i, S[graph].shape[1]):
+                    if any(np.isin(neighbors_i[i, 1:nn], neighbors_j[1:nn, j])): #local nearest distance estimation
+                        curr_S[i, j] += S[graph][i, j]
+                        curr_S[j, i] += S[graph][j, i]
+            mnn_S.append(curr_S)
+        return mnn_S
+        
+    def epsilon_affinity(self, S, epsilon = 2):
+        """
+        Makes a sparse affinity matrix by keeping only the neighbours within epsilon of each other. 
+        Other connexions are set to 0.
+        """
+        mnn_S = []
+        for graph in range(len(S)):
+            curr_S = np.zeros_like(S[graph]) 
+            for i in range(S[graph].shape[1]):
+                for j in range(i, S[graph].shape[1]):
+                    if S[graph][i, j] >= epsilon: #local nearest distance estimation
+                        curr_S[i, j] = S[graph][i, j]
+                        curr_S[j, i] = S[graph][j, i]
+            mnn_S.append(curr_S)
+        return mnn_S
 
     def compute_S(self, nn = None):
         """Computes the affinity matrix S from the distance matrix D.
        
-        The conversion from element [i, j] of distance matrix to affinity is done using a gaussian kernel, whose sigma is obtained
+        The conversion from element [i, j] of distance matrix to affinity is done using a gaussian kernel, whose nn is obtained
         via a the product of distances from the 'nn' nearest neighbours of i and j respectively (see ref [4]).
         
         Parameter:
@@ -80,16 +95,20 @@ class graphClusterer:
         Returns:
             S (ndarray): The similarity matrix representing similarities among the input series.
         """
+        
+        if self.isAffinity:
+            return self.D
+        
         if nn is None:
             nn = int(np.ceil(0.1*self.D.shape[1])) #value inspired by litterature. See ref [4].
-            
+    
         D = self.D
         
         S = []
         for graph in range(len(D)):
             curr_S = np.zeros_like(self.D[graph]) #Affinity matrix
             # pbar = tqdm(desc = "Transforming to affinity matrix", total = self.D.shape[1]*self.D.shape[1]) #progress bar
-            neighbors_i = np.sort(D[graph], 1) #computing the nearest neighbors for local sigma estimation
+            neighbors_i = np.sort(D[graph], 1) #computing the nearest neighbors for local nn estimation
             neighbors_j = np.sort(D[graph], 0)
             for i in range(self.D[graph].shape[1]):
                 for j in range(i, self.D[graph].shape[1]):
@@ -101,7 +120,7 @@ class graphClusterer:
             S.append(curr_S)
         return S
 
-    def clustering(self, cluster_num, isAffinity = True, nn = None):
+    def clustering(self, cluster_num, isAffinity, nn, connectivity_param = None):
         """Performs spectral clustering on input series to classify them into meaningfull clusters.
 
         Parameters:
@@ -110,7 +129,7 @@ class graphClusterer:
             isAffinity (bool): whether or not the values in the graph are representing affinities. If False,
                 the function 'compute_S' is called before clustering.
             
-            nn (int): Number of nearest neighbours to estimate a local sigma for the gaussian kernel (see ref [4]).
+            nn (int): Number of nearest neighbours to estimate a local nn for the gaussian kernel (see ref [4]).
                 if not provided, defaults to the 10-percentile of the distances, meaning the number of neighbour in the lowest 10% 
                 of sorted distances in the D matrix.
 
@@ -128,24 +147,12 @@ class graphClusterer:
             lambdas (array_like): the eigenvalues of the Laplacian matrix. Plotting them can inform about the number of cluster to
                 look for, if similarities among different clusters are fairly low.
         """
-        if not isAffinity:
-            S = self.compute_S(nn)
-            # deg = np.diag(np.sum(S, 0)) #computing the degree matrix. 
-            # L = deg - self.D #computing laplacian
-            # self.L_sym = inv(sqrtm(deg)) @ L @ inv(sqrtm(deg))
-        else:
-            S = self.D
-
-        # for i in range(100): #Due to the random nature initialization, the diagonalization might fail in some unfortunate cases.
-        #     if i == 100:
-        #         warn("Did not converge.")
-        #     try:       
-        #         lambdas, V = eigh(self.L_sym)
-        #         idx = clust.spectral_clustering(S, n_clusters = cluster_num)
-        #         break
-        #     except:
-        #         continue
-    
+        S = self.compute_S(nn)
+        if self.connectivity_type == "nearest neighbours" and connectivity_param != None:
+            S = self.mutual_nn_affinity(S, connectivity_param)
+        elif self.connectivity_type == "epsilon neighbourhood" and connectivity_param != None:
+            S = self.epsilon_affinity(S, connectivity_param)
+        
         lambdas, V, idx = scml(S, cluster_num, torch.device("cpu"))
 
         self.idx = idx
@@ -206,7 +213,52 @@ class graphClusterer:
         
         print("Splitted cluster %d in %d parts. To recover old clusters, run 'clustering' function anew" %(clust_idx, split_num))
 
-    def k_elbow_curve(self, ax, iterations = 20, nn= None):
+    def dunn_index(self):
+        """
+            Computes the dunn index that characterizes the quality of a clustering. In the case where isAffinity is True, the lower the better. 
+            Otherwise, the higher value of the Dunn index, the better.
+        """
+        cluster_num = np.max(self.idx)+1
+        if self.isAffinity:
+            dunn_idx = 0
+            for layer in range(len(self.D)):
+                intra_cluster_a = np.zeros(cluster_num)
+                inter_cluster_a = np.zeros(cluster_num)
+                for i in range(cluster_num):
+                    num_elts = np.sum(self.idx == i)
+                    inside_values = self.D[layer][self.idx == i, :][:, self.idx == i].flatten()
+                    try: #in case where cluster contains only on element, this will return an error
+                        delta_intra = np.min(inside_values[inside_values != 0])
+                    except:
+                        delta_intra = np.min(inside_values)
+                    if i > 0:
+                        delta_inter = np.max(self.D[layer][self.idx == i, :][:, self.idx != i].flatten())
+                    else:
+                        delta_inter = 0
+                    intra_cluster_a[i] = delta_intra
+                    inter_cluster_a[i] = delta_inter
+                dunn_idx_layer = np.max(inter_cluster_a)/np.min(intra_cluster_a)
+                dunn_idx += dunn_idx_layer/len(self.D)
+            return dunn_idx
+        else:
+            dunn_idx = 0
+            for layer in range(len(self.D)):
+                intra_cluster_d = np.zeros(cluster_num)
+                inter_cluster_d = np.zeros(cluster_num)
+                for i in range(cluster_num):
+                    num_elts = np.sum(self.idx == i)
+                    delta_intra = np.max(self.D[layer][self.idx == i, :][:, self.idx == i].flatten())
+                    if i > 0:
+                        delta_inter = np.min(self.D[layer][self.idx == i, :][:, self.idx != i].flatten())
+                    else:
+                        delta_inter = np.inf
+                    intra_cluster_d[i] = delta_intra
+                    inter_cluster_d[i] = delta_inter
+                dunn_idx_layer = np.min(inter_cluster_d)/np.max(intra_cluster_d)
+                dunn_idx += dunn_idx_layer/len(self.D)
+            return dunn_idx
+    
+    def k_elbow_curve(self, ax, iterations = 20, nn= None, **kwargs):
         """Plots the elbow curve to determine what number of clusters to look for. 
 
         This curve corresponds to the average intra-cluster distance, which will decrease as a function of the number of cluster.
@@ -216,31 +268,50 @@ class graphClusterer:
         Parameters:
             iterations (int): up to which value of cluster_num should the algorithm iterate to. defaults to 20.
 
-            nn (int): Number of nearest neighbours to use for the local sigma in the gaussian kernel used to compute the similarity matrix.
+            nn (int): Number of nearest neighbours to use for the local nn in the gaussian kernel used to compute the similarity matrix.
+        
+        Optional:
+            prograss_bar: if provided, will update a progress bar after each iteration
         """
     
-        if iterations >= self.D.shape[1]:
-            iterations = self.D.shape[1]
+        if iterations >= self.D[0].shape[1]:
+            iterations = self.D[0].shape[1]-1
             warn("Too few elements in input timeseries. \n Restricting range to avoid errors.")
         
         mean_intracluster_dist = np.zeros(iterations)
+        dunn_indices = np.zeros(iterations)
         for k in tqdm(range(1, iterations)):
-            _, idx, _ ,_  = self.clustering(k, nn) #No minimal outlier filtering to do not alter data.
-            mean_intra = 0
-            for i in range(k):
-                for j in range(len(idx)):
-                    for l in range(j+1, len(idx)):
-                        if idx[j] == i and idx[l] == i:
-                            d = self.D[j, l]
-                            mean_intra += d/np.sum(idx == i)
-        k_curve = ax.plot(np.arange(iterations), mean_intracluster_dist)
+            _, idx, _ ,_  = self.clustering(k, False, 5) #No minimal outlier filtering to do not alter data.
+            dunn_indices[k] = self.dunn_index()
+            for graphs in range(len(self.D)):
+                mean_intra = 0
+                for i in range(k):
+                    for j in range(len(idx)):
+                        for l in range(j+1, len(idx)):
+                            if idx[j] == i and idx[l] == i:
+                                d = self.D[graphs][j, l]
+                                mean_intra += d/np.sum(idx == i)
+                mean_intracluster_dist[k] += mean_intra/len(self.D)
+                if "progress_bar" in kwargs:
+                    kwargs["progress_bar"].step((k/iterations)*99.9)
+        
+        mean_intracluster_dist = (mean_intracluster_dist - np.min(mean_intracluster_dist))/np.max(mean_intracluster_dist)
+        dunn_indices = dunn_indices[dunn_indices != np.inf]
+        dunn_indices = (dunn_indices - np.min(dunn_indices))/np.max(dunn_indices)
+        if self.isAffinity:
+            k_curve = ax.plot(np.arange(iterations)+1, mean_intracluster_dist, label = "Intracluster affinity (higher better)")
+            ax.plot(np.arange(len(dunn_indices))+1, dunn_indices, label = "Dunn index (lower better)")
+        else:
+            k_curve = ax.plot(np.arange(iterations)+1, mean_intracluster_dist, label = "Intracluster distance (lower better)")
+            ax.plot(np.arange(len(dunn_indices))+1, dunn_indices, label = "Dunn index (higher better)")
         ax.set_xlabel('Number of clusters')
-        ax.set_ylabel('Mean intracluster distance')
+        ax.set_ylabel("Normalized values")
+        ax.legend()
         return k_curve
                 
-    def sigma_grid_search(self, ax, num_pts = 15, clust_num = 10):
+    def nn_grid_search(self, ax, num_pts = 15, clust_num = 10, connectivity_param = None):
         """Does a grid search, looking for an optimal value of the number of nearest neighbours
-        for the local sigma to be used in the clustering (see ref [4]). 
+        for the local nn to be used in the clustering (see ref [4]). 
         
         Similar to the k-elbow curve,
         the optimal value of 'nn' should be the one which minimizes the intracluster distance. In practice,
@@ -252,26 +323,119 @@ class graphClusterer:
 
             clust_num (int): How many cluster should be looked for. defaults to 10.
         """
-        if clust_num >= self.D.shape[1]:
-            clust_num = self.D.shape[1]
-            warn("Too few elements in input timeseries. \n Restricting range to avoid errors.")
-            
-        mean_intracluster_dist = np.zeros(num_pts)
-        nn_range = np.ceil(np.linspace(2, 3*np.ceil(0.05*self.D.shape[1]), num_pts)).astype(int)
-        for p, nn in enumerate(tqdm(nn_range)):
-            _, idx, _, _ = self.clustering(clust_num, nn) #no percentile filter as low sigma values break distance matrix.
-            mean = 0
-            for i in range(clust_num):
-                for j in range(len(idx)):
-                    for l in range(j+1, len(idx)):
-                        if idx[j] == i and idx[l] != i:
-                            d = self.D[j, l]
-                            mean += d
-            mean_intracluster_dist[p] = mean/clust_num
 
-        k_curve = ax.plot(np.arange(num_pts), mean_intracluster_dist)
-        ax.set_xlabel('Number of clusters')
-        ax.set_ylabel('Mean intracluster distance')
+        if clust_num >= self.D[0].shape[1]:
+            clust_num = self.D[0].shape[1]
+            warn("Too few elements in input graph. \n Restricting range to avoid errors.")
+        
+        mean_intracluster_dist = np.zeros(num_pts)
+        nn_range = np.ceil(np.linspace(2, 3*np.ceil(0.05*self.D[0].shape[1]), num_pts)).astype(int)
+        for p, nn in enumerate(tqdm(nn_range)):
+            _, idx, _, _ = self.clustering(clust_num, self.isAffinity, nn, connectivity_param) #no percentile filter as low nn values break distance matrix.
+            for graphs in range(len(self.D)):
+                mean = 0
+                for i in range(clust_num):
+                    for j in range(len(idx)):
+                        for l in range(j+1, len(idx)):
+                            if idx[j] == i and idx[l] != i:
+                                d = self.D[graphs][j, l]
+                                mean += d
+                mean_intracluster_dist[p] += mean/(clust_num*len(self.D))
+
+        k_curve = ax.plot(nn_range, mean_intracluster_dist)
+        ax.set_xlabel('nn value')
+        if self.isAffinity:
+            ax.set_ylabel('Mean intercluster affinity')
+        else:
+            ax.set_ylabel('Mean intercluster distance')
+        ax.axvline(np.ceil(0.05*self.D[0].shape[1]), 0, 1, ls=":", label = "Default value")
+        return 
+    
+    def mnn_grid_search(self, ax, num_pts = 15, clust_num = 10, nn = 7):
+        """Does a grid search, looking for an optimal value of the number of nearest neighbours
+        for the local nn to be used in the clustering (see ref [4]). 
+        
+        Similar to the k-elbow curve,
+        the optimal value of 'nn' should be the one which minimizes the intracluster distance. In practice,
+        htis curve can fluctuate a lot, and taking the default value for nn is usually sufficient.
+        The search goes between 5 and the 15%-tile of the distances of each element in the distance matrix.
+
+        Parameters:
+            num_pts (int): How many points to use for the grid search.
+
+            clust_num (int): How many cluster should be looked for. defaults to 10.
+        """
+
+        if clust_num >= self.D[0].shape[1]:
+            clust_num = self.D[0].shape[1]
+            warn("Too few elements in input graph. \n Restricting range to avoid errors.")
+        
+        mean_intracluster_dist = np.zeros(num_pts)
+        mnn_range = np.ceil(np.linspace(2, 4*np.ceil(0.1*self.D[0].shape[1]), num_pts)).astype(int)
+        for p, mnn in enumerate(tqdm(mnn_range)):
+            _, idx, _, _ = self.clustering(clust_num, False, nn, mnn) #no percentile filter as low nn values break distance matrix.
+            for graphs in range(len(self.D)):
+                mean = 0
+                for i in range(clust_num):
+                    for j in range(len(idx)):
+                        for l in range(j+1, len(idx)):
+                            if idx[j] == i and idx[l] != i:
+                                d = self.D[graphs][j, l]
+                                mean += d
+                mean_intracluster_dist[p] += mean/(clust_num*len(self.D))
+
+        k_curve = ax.plot(mnn_range, mean_intracluster_dist)
+        ax.set_xlabel('Nearest neighbour number')
+        if self.isAffinity:
+            ax.set_ylabel('Mean intercluster affinity')
+        else:
+            ax.set_ylabel('Mean intercluster distance')
+        return 
+    
+    def epsilon_grid_search(self, ax, num_pts = 15, clust_num = 10, nn = 7):
+        """Does a grid search, looking for an optimal value of the number of nearest neighbours
+        for the local nn to be used in the clustering (see ref [4]). 
+        
+        Similar to the k-elbow curve,
+        the optimal value of 'nn' should be the one which minimizes the intracluster distance. In practice,
+        htis curve can fluctuate a lot, and taking the default value for nn is usually sufficient.
+        The search goes between 5 and the 15%-tile of the distances of each element in the distance matrix.
+
+        Parameters:
+            num_pts (int): How many points to use for the grid search.
+
+            clust_num (int): How many cluster should be looked for. defaults to 10.
+        """
+
+        if clust_num >= self.D[0].shape[1]:
+            clust_num = self.D[0].shape[1]
+            warn("Too few elements in input graph. \n Restricting range to avoid errors.")
+        
+        all_val = [] #find
+        for i in range(len(self.D)):
+            all_val.extend(self.D[i].flatten())
+        max_val = np.max(all_val)
+
+        mean_intracluster_dist = np.zeros(num_pts)
+        epsilon_range = np.linspace(0, max_val, num_pts)
+        for p, epsilon in enumerate(tqdm(epsilon_range)):
+            _, idx, _, _ = self.clustering(clust_num, self.isAffinity, nn, epsilon) #no percentile filter as low nn values break distance matrix.
+            for graphs in range(len(self.D)):
+                mean = 0
+                for i in range(clust_num):
+                    for j in range(len(idx)):
+                        for l in range(j+1, len(idx)):
+                            if idx[j] == i and idx[l] != i:
+                                d = self.D[graphs][j, l]
+                                mean += d
+                mean_intracluster_dist[p] += mean/(clust_num*len(self.D))
+
+        k_curve = ax.plot(epsilon_range, mean_intracluster_dist)
+        ax.set_xlabel('Epsilon value')
+        if self.isAffinity:
+            ax.set_ylabel('Mean intercluster affinity')
+        else:
+            ax.set_ylabel('Mean intercluster distance')
         return 
 
     def plot_eigenvalues(self, eigvalue_num, percentile_filter = 5, min_elts = 2, nn = None):

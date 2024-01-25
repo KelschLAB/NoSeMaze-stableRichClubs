@@ -10,9 +10,8 @@ import random
 from warnings import warn
 from clustering_algorithm import *
 
-
-path = "..\\data\\"
-file = "G2\\interactions_resD7_1.csv"
+path = "C:\\Users\\Corentin offline\\Documents\\Python Scripts\\micemaze\\data\\G2\\"
+file = "approach_prop_resD7_1.csv"
 
 def isSymmetric(mat):
     transmat = np.array(mat).transpose()
@@ -21,7 +20,7 @@ def isSymmetric(mat):
     return False
 
 def rescale(arr, max_val = 5):
-    normalized_arr = (arr - np.min(arr))/np.max(arr)
+    normalized_arr = (arr - np.min(arr))/(np.max(arr)-np.min(arr))
     return normalized_arr*max_val
 
 def inverse(arr):
@@ -30,7 +29,7 @@ def inverse(arr):
     only when x != 0 and represents the edge values (or distances between vertices).
     """
     inv_arr = deepcopy(arr)
-    inv_arr[inv_arr == 0] = 10e-10#np.Inf
+    inv_arr[inv_arr == 0] = 10e-10 #np.Inf
     inv_arr = 1/inv_arr
     return inv_arr
 
@@ -40,11 +39,54 @@ def read_graph(path_to_file):
         data = arr[1:, 1:].astype(float)
         return data
     if type(path_to_file) == list:
-        data = []
-        for i in range(len(path_to_file)):
+        # data = []
+        # for i in range(len(path_to_file)):
+        #     arr = np.loadtxt(path_to_file[i], delimiter=",", dtype=str)
+        #     data.append(arr[1:, 1:].astype(float)) #normalizing input data
+        #     # data.append(rescale(arr[1:, 1:].astype(float), 10)) #normalizing input data
+        # return data
+        
+        arr = np.loadtxt(path_to_file[0], delimiter=",", dtype=str)
+        data = rescale(arr[1:, 1:].astype(float), 1)/len(path_to_file) #normalizing input data # average graph
+        for i in range(1, len(path_to_file)):
             arr = np.loadtxt(path_to_file[i], delimiter=",", dtype=str)
-            data.append(arr[1:, 1:].astype(float))
-        return data
+            data += rescale(arr[1:, 1:].astype(float), 1)/len(path_to_file) #normalizing input data
+            # data.append(rescale(arr[1:, 1:].astype(float), 1)) #normalizing input data
+        return [data]
+    
+def community_clustering(path_to_file):
+    """
+    Clusters input grpah into communities, follow the optimal community algorithm
+
+    Parameters
+    ----------
+    path_to_file : list of path to graph files
+
+    Returns 
+    -------
+    idx: list of indexes for the nodes.
+    """
+    if type(path_to_file) == list:
+        warn("More than one input graph path has been provided. \n Multilayer plotting is not yet supported. Only first one will be displayed.")
+        data = read_graph(path_to_file[0])
+    else:
+        data = read_graph(path_to_file)
+    
+    if isSymmetric(data):
+        g = ig.Graph.Weighted_Adjacency(data, mode='undirected')
+        # inv_g = ig.Graph.Weighted_Adjacency(inv_data, mode='undirected')
+    else:
+        g = ig.Graph.Weighted_Adjacency(data, mode='directed')
+        # inv_g = ig.Graph.Weighted_Adjacency(data, mode='directed')
+    communities = g.community_optimal_modularity(weights = [1/(e['weight']**2) for e in g.es()])
+    total_length = data.shape[0]
+    idx = [0 for i in range(total_length)]
+    for i in range(len(communities)):
+        print(communities[i])
+        for j in communities[i]:
+            idx[j] = i
+    return idx
+    
     
 def display_graph(path_to_file, ax, **kwargs):
     """
@@ -80,7 +122,7 @@ def display_graph(path_to_file, ax, **kwargs):
         warn("More than one input graph path has been provided. \n Multilayer plotting is not yet supported. Only first one will be displayed.")
         data = read_graph(path_to_file[0])
     else:
-        data = read_graph(path_to_file[0])
+        data = read_graph(path_to_file)
 
     # arr = np.loadtxt(path_to_file, delimiter=",", dtype=str)
     # data = arr[1:, 1:].astype(float)
@@ -127,7 +169,7 @@ def display_graph(path_to_file, ax, **kwargs):
             node_color = [cmap1(b) for b in edge_authority]
         elif kwargs["node_metric"] == "eigenvector centrality":
             edge_evc = g.eigenvector_centrality(weights = [e['weight'] for e in g.es()])
-            edge_hub = ig.rescale(edge_evc)
+            edge_evc = ig.rescale(edge_evc)
             node_size = [(1+e)*15 for e in edge_evc]
             node_color = [cmap1(b) for b in edge_evc]
         elif kwargs["node_metric"] == "page rank":
@@ -146,6 +188,8 @@ def display_graph(path_to_file, ax, **kwargs):
             cmap = get_cmap('Spectral')
             palette = ClusterColoringPalette(kwargs["cluster_num"])
             marker_frame_color = [palette[i] for i in kwargs["idx"]]#cmap(kwargs["idx"])
+    else:
+        marker_frame_color = node_color
 
     layout = g.layout(layout_style)
     visual_style = {}
@@ -161,15 +205,86 @@ def display_graph(path_to_file, ax, **kwargs):
     # visual_style["vertex_label_size"] = 20
     # visual_style["vertex_label_dist"] = 0.5
 
-
     # visual_style["vertex_font"] = "Times"
     ig.plot(g, target=ax, **visual_style)
+    return g.community_optimal_modularity(weights= [1/(e['weight']**2) for e in g.es()])
+
+    
+def display_stats(path_to_file, ax, **kwargs):
+    """
+    This function displays a histogram representation of the metrics of the graph to analyze.
+
+    Parameters
+    ----------
+    path_to_file : string
+        path specifying where the file containing the matrix representing the graph 
+        is stored. Should be a .csv file.
+    ax : matplotlib.axis
+        the axis to plot the graph onto.
+    **kwargs : strings
+        node_metric : specifies which metric to use in order to color and size the vertices of the graph.
+            allowed values: ["strength", "betweenness", "closeness", "eigenvector centrality", "page rank", "hub score", "authority score"]
+
+    Returns
+    -------
+    None.
+
+    """    
+            
+    if type(path_to_file) == list:
+        warn("More than one input graph path has been provided. \n Multilayer plotting is not yet supported. Only first one will be displayed.")
+        data = read_graph(path_to_file[0])
+    else:
+        data = read_graph(path_to_file)
+
+    if isSymmetric(data):
+        g = ig.Graph.Weighted_Adjacency(data, mode='undirected')
+    else:
+        g = ig.Graph.Weighted_Adjacency(data, mode='directed')
+        
+    if "node_metric" in kwargs:
+        if kwargs["node_metric"] == "none":
+            ax.text(0.5, 0.5, 'Please select a metric', transform=ax.transAxes)
+        elif kwargs["node_metric"] == "betweenness":
+            edge_betweenness = g.betweenness(weights = [1/(e['weight']**2) for e in g.es()]) #taking the inverse of edge values as we want high score to represent low distances
+            edge_betweenness = ig.rescale(edge_betweenness)
+            ax.hist(edge_betweenness)
+        elif kwargs["node_metric"] == "strength":
+            edge_strength = g.strength(weights = [e['weight'] for e in g.es()])
+            edge_strength = ig.rescale(edge_strength)
+            ax.hist(edge_strength)
+        elif kwargs["node_metric"] == "closeness":
+            edge_closeness = g.closeness(weights = [1/(e['weight']**2) for e in g.es()]) #taking the inverse of edge values as we want high score to represent low distances
+            edge_closeness = ig.rescale(edge_closeness)
+            ax.hist(edge_closeness)
+        elif kwargs["node_metric"] == "hub score":
+            edge_hub = g.hub_score(weights = [e['weight'] for e in g.es()])
+            edge_hub = ig.rescale(edge_hub)
+            ax.hist(edge_hub)
+        elif kwargs["node_metric"] == "authority score":
+            edge_authority = g.authority_score(weights = [e['weight'] for e in g.es()])
+            edge_authority = ig.rescale(edge_authority)
+            ax.hist(edge_authority)
+        elif kwargs["node_metric"] == "eigenvector centrality":
+            edge_evc = g.eigenvector_centrality(weights = [e['weight'] for e in g.es()])
+            edge_evc = ig.rescale(edge_evc)
+            ax.hist(edge_evc)
+        elif kwargs["node_metric"] == "page rank":
+            edge_pagerank = g.personalized_pagerank(weights = [e['weight'] for e in g.es()])
+            edge_pagerank = ig.rescale(edge_pagerank)
+            ax.hist(edge_pagerank)
+
+
     
 
 # f, a = plt.subplots(1,1)
-# display_graph(path+file, a, node_metric = "betweenness")
-# D = read_graph([path+"G2\\interactions_resD7_1.csv", path+"G2\\approach_prop_resD7_1.csv"])
-# clusterer = graphClusterer(D)
+# c = display_graph(path+file, a, node_metric = "betweenness")
+# D = [read_graph(path+file)]
+
+# D = read_graph([path+"G2\\interactions_resD7_1.csv"])
+# clusterer = graphClusterer(D, True, "fully connected")
 # cluster_num = 2
+# clusterer.k_elbow_curve(a)
 # nn = 4
-# _, idx, _, _ = clusterer.clustering(cluster_num, isAffinity = False, nn = nn)
+# _, idx, _, _ = clusterer.clustering(cluster_num, isAffinity = True)
+# clusterer.sigma_grid_search(a, 30, 2)
