@@ -17,7 +17,10 @@ from clustering_window import *
 #To-do: - include statement that graph display is from average when several subgraphs are selected.
 #       - remove the file selection from supervised clustering window
 #       - check that inverse edge values **2 is correctly working
-#       - plot multilayer graph with py3graph when no metric is selected.
+#       - implement 3d view for connectivity in clustering page
+#       - implement average measures (average of graph != average of graph measures.)
+#       - make 3d view NOT RANDOM every time
+#       - implement rich club or mutual nearest neighbors representation.
 
 class App:
     def __init__(self, root):
@@ -159,9 +162,13 @@ class App:
             fm.destroy()
             root.update()
         px = 1/plt.rcParams['figure.dpi']  # pixel in inches
-        # f = Figure(figsize=(800*px,400*px), dpi = 100)
-        f = Figure()
-        a = f.add_subplot(111)
+        f = Figure(figsize=(800*px,400*px), dpi = 100, layout = "constrained")
+        # f = Figure(figsize=(800,400))
+        if len(self.path_to_file) > 1:
+            a = f.add_subplot(111, projection='3d')
+            a.set_box_aspect((2,2,1), zoom=1.4)
+        else:
+            a = f.add_subplot(111)
         display_graph(self.path_to_file, a, layout = layout_style, node_metric = node_metric, idx = self.idx, cluster_num = self.cluster_num)
         
         canvas = FigureCanvasTkAgg(f, master=self.content_frame)
@@ -198,13 +205,14 @@ class App:
         supervised_button["command"] = self.supervised_button
         
     def supervised_button(self):
-        NewWindow(root, self, self.dirpath)
+        NewWindow(root, self, self.path_to_file)
         self.clustertype_wdw.destroy()
         
     def unsupervised_button(self):
         self.idx = community_clustering(self.path_to_file)
         self.cluster_num = max(self.idx)+1
         self.clustertype_wdw.destroy()
+        self.plot_in_frame(layout_style = self.layout_style, node_metric = self.node_metric)
 
 if __name__ == "__main__":
     root = tk.Tk()

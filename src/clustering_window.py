@@ -20,7 +20,7 @@ def rescale(arr, max_val = 5):
     return normalized_arr*max_val
 
 class NewWindow(tk.Toplevel):
-    def __init__(self, root = None, app = None, dirpath = None):
+    def __init__(self, root = None, app = None, path_to_file = None):
 
         super().__init__(master = root)
         self.root = root
@@ -32,7 +32,8 @@ class NewWindow(tk.Toplevel):
         self.app = app
         
         #variables stored after interacting with the buttons
-        self.dirpath = dirpath
+        # self.dirpath = dirpath
+        self.path_to_file = path_to_file
         self.clusterer = None
         self.isAffinity = tk.BooleanVar()
         self.isAffinity.set(True)
@@ -58,21 +59,30 @@ class NewWindow(tk.Toplevel):
         
         ## buttons ##
         # selecting the graph for clustering
-        self.graph_selector=tk.Menubutton(selection_btn_frame, text = "Select graph file(s)")
-        # filling the values of the graph selection menu for clustering
-        menu = tk.Menu(self.graph_selector, tearoff=False)
-        self.active_path_list = [] # storing selected paths here
-        self.path_variable_list = []
-        self.path_label_list = []
-        path_list = os.listdir(self.dirpath)
-        for i in range(0, len(path_list)):
-            globals()['var'+str(i)] = tk.StringVar() # Creating variables to store paths dynamically
-        for i in range(0, len(path_list)): # Adding values to the actual Menubutton
-            self.path_variable_list.append(globals()['var'+str(i)])
-            self.path_label_list.append(path_list[i])
-            menu.add_checkbutton(label = self.path_label_list[i], variable = self.path_variable_list[i], command=self.get_checked)
-        self.graph_selector.configure(menu=menu)
-        self.graph_selector.pack(side="left", fill="x", padx = 5)
+        # self.graph_selector=tk.Menubutton(selection_btn_frame, text = "Select graph file(s)")
+        # # filling the values of the graph selection menu for clustering
+        # menu = tk.Menu(self.graph_selector, tearoff=False)
+        # self.active_path_list = [] # storing selected paths here
+        # self.path_variable_list = []
+        # self.path_label_list = []
+        # path_list = os.listdir(self.dirpath)
+        # for i in range(0, len(path_list)):
+        #     globals()['var'+str(i)] = tk.StringVar() # Creating variables to store paths dynamically
+        # for i in range(0, len(path_list)): # Adding values to the actual Menubutton
+        #     self.path_variable_list.append(globals()['var'+str(i)])
+        #     self.path_label_list.append(path_list[i])
+        #     menu.add_checkbutton(label = self.path_label_list[i], variable = self.path_variable_list[i], command=self.get_checked)
+        # self.graph_selector.configure(menu=menu)
+        # self.graph_selector.pack(side="left", fill="x", padx = 5)
+                
+        # ## static buttons functions ##  
+        # def get_checked(self):
+        #     lst = []
+        #     for i, item in enumerate(self.path_variable_list):
+        #         if item.get() == "1":
+        #             lst.append(self.path_label_list[i])
+        #     self.active_path_list = lst
+        #     self.path_to_file = [self.dirpath + "/" + self.active_path_list[i] for i in range(len(self.active_path_list))]
         
         # graph type
         tk.Label(selection_btn_frame, text="Type of graph").pack(side = "left")
@@ -93,6 +103,9 @@ class NewWindow(tk.Toplevel):
         self.clustering_buttons_fc() # setting up clustering buttons on start
         self.affinity_button["command"] = self.similarity_changed #commands need to be added after laplacian selector is created
         self.distance_button["command"] = self.similarity_changed
+        
+        D = read_graph(self.path_to_file)
+        self.clusterer = graphClusterer(D, self.isAffinity.get(), self.laplacian_selector.get())
          
     ## dynamic buttons displaying ##    
     def laplacian_changed(self, event): # if laplacian changed due to different graph connectivity, adapt buttons
@@ -119,7 +132,6 @@ class NewWindow(tk.Toplevel):
             self.hyperparams_buttons_epsilon()
             self.clustering_buttons_epsilon()
             self.clusterer.connectivity_type
-
     
     def clustering_buttons_fc(self):
         for fm in self.clustering_btn_frame.winfo_children():
@@ -285,17 +297,6 @@ class NewWindow(tk.Toplevel):
         epsilon_button.pack(side="left", fill="x", padx = 5)
         epsilon_button["command"] = self.plot_epsilon_curve
     
-    ## static buttons functions ##  
-    def get_checked(self):
-        lst = []
-        for i, item in enumerate(self.path_variable_list):
-            if item.get() == "1":
-                lst.append(self.path_label_list[i])
-        self.active_path_list = lst
-        self.path_to_file = [self.dirpath + "/" + self.active_path_list[i] for i in range(len(self.active_path_list))]
-        D = read_graph(self.path_to_file)
-        self.clusterer = graphClusterer(D, self.isAffinity.get(), self.laplacian_selector.get())
-
     def cluster_graphs(self):
         cluster_num = int(self.cluster_number_field.get())
         if not(self.isAffinity.get()):
