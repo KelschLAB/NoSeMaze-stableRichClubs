@@ -11,9 +11,6 @@ from warnings import warn
 from clustering_algorithm import *
 from multilayer_plot import *
 
-path = "C:\\Users\\Corentin offline\\Documents\\Python Scripts\\micemaze\\data\\G2\\"
-file = "approach_prop_resD7_1.csv"
-
 def isSymmetric(mat):
     transmat = np.array(mat).transpose()
     if np.array_equal(mat, transmat):
@@ -34,13 +31,69 @@ def inverse(arr):
     inv_arr = 1/inv_arr
     return inv_arr
 
-def read_graph(path_to_file, return_ig = False, avg_graph = False):
+def nn_cut(arr, nn = 2):
+    """
+    Cuts the edges of the graph in the input array by keeping only the edges that are mutual neighbors.
+    Nodes that are further away the 'nn' neighbours have their edges cut.
+
+        Parameter:
+                arr: array representing the graph
+                nn: number of nearest neighbors to keep
+        return:
+                array representing the graph with cut edges
+    """
+    nn_arr = np.zeros_like(arr) 
+    neighbors_i = np.argsort(-arr, 1) #computing the nearest neighbors for local nn estimation
+    neighbors_j = np.argsort(-arr, 0)
+    for i in range(nn_arr.shape[0]):
+        # nearest neighbours keep their value
+        nn_arr[i, neighbors_i[i, :nn]] = arr[i, neighbors_i[i, :nn]]
+        nn_arr[neighbors_j[:nn, i], i] = arr[neighbors_j[:nn, i], i] 
+        # other elements are put to 0 (0.01 for visualization).
+        nn_arr[i, neighbors_i[i, nn:]] = 0.01
+        nn_arr[neighbors_j[nn:, i], i] = 0.01  
+
+    return nn_arr
+
+
+def mnn_cut(arr, nn = 2):
+    """
+    Cuts the edges of the graph in the input array by keeping only the edges that are mutual neighbors.
+    Nodes that are further away the 'nn' neighbours have their edges cut.
+
+        Parameter:
+                arr: array representing the graph
+                nn: number of nearest neighbors to keep
+        return:
+                array representing the graph with cut edges
+    """
+    assert nn > 1, "nn should be bigger than 1."
+    nn -= 1
+    # arr[arr == 0] = -1*np.inf
+    # if not(isSymmetric(arr)):
+    #     warn("Input graph is directed, will compute nearest neighbours instead.")
+    #     mnn_arr = nn_cut(arr, nn)
+    #     return mnn_arr
+    mnn_arr = np.zeros_like(arr) + 0.01 #0.01 for visualization, to force igraph to keep layout
+    neighbors_i = np.argsort(-arr, 1) #computing the nearest neighbors for local nn estimation
+    neighbors_j = np.argsort(-arr, 0)
+    for i in range(arr.shape[1]):
+        for j in range(i, arr.shape[1]):
+            if any(np.isin(neighbors_i[i, 0:nn], j)) and any(np.isin(neighbors_j[0:nn, j], i)): #local nearest distance estimation
+                mnn_arr[i, j] += arr[i, j]
+                mnn_arr[j, i] += arr[j, i]
+    return mnn_arr
+
+def read_graph(path_to_file, percentage_threshold = 0.01, mnn = None, return_ig = False, avg_graph = False):
     """
     Reads a file containing the weights defning the adjacency matrix. 
 
     Parameters
     ----------
     path_to_file : TYPE string or list of string containing the path to the file(s)
+    percentage_threshold : parameter specifying the edge value threshold under which edges are not displayed.
+        should be given as a percentage of the maximum edge value. Default is 0.0
+    mnn : number of nearest neighbours for graph cut. Default is None
     return_ig : TYPE, optional
         Whether or not to return the read graphs as an ig.Graph. if false, numpy arrays are returned.
         The default is False.
@@ -50,10 +103,17 @@ def read_graph(path_to_file, return_ig = False, avg_graph = False):
     TYPE
         list of graphs as np array or ig.Graph
     """
+
+    random.seed(1) #making sure layout of plots stays the same when changing metrics
+
     if type(path_to_file) == str:
         arr = np.loadtxt(path_to_file, delimiter=",", dtype=str)
         data = arr[1:, 1:].astype(float)
-        return data
+        threshold = np.max(data) * (percentage_threshold / 100.0)
+        data = np.where(data < threshold, 0.01, data)
+        if mnn is not None:
+            data = mnn_cut(data, mnn)
+        return [data]
     
     if type(path_to_file) == list:
         if not avg_graph:
@@ -61,7 +121,12 @@ def read_graph(path_to_file, return_ig = False, avg_graph = False):
             data = []
             for i in range(len(path_to_file)):
                 arr = np.loadtxt(path_to_file[i], delimiter=",", dtype=str)
-                data.append(arr[1:, 1:].astype(float)) #normalizing input data
+                layer_data = arr[1:, 1:].astype(float)
+                threshold = np.max(layer_data) * (percentage_threshold / 100.0)
+                layer_data = np.where(layer_data < threshold, 0.01, layer_data)  #0.01 for visualization, to force igraph to keep layout
+                if mnn is not None:
+                    layer_data = mnn_cut(layer_data, mnn)
+                data.append(layer_data)
                 # data.append(rescale(arr[1:, 1:].astype(float), 10)) #normalizing input data
             if return_ig: # return ig specifies if the read graphs should be returned as an ig.Graph.
                 layers = [ig.Graph.Weighted_Adjacency(d, mode='directed') for d in data]
@@ -80,6 +145,31 @@ def read_graph(path_to_file, return_ig = False, avg_graph = False):
                 layers = ig.Graph.Weighted_Adjacency(data, mode='directed') 
                 return data
             return data
+        
+def k_core_weights(graph, k, min_val = 0.05):
+    """
+    Computes the k-core for input graph: each node that has a degree < k is not part of it.
+
+    Parameters
+    ----------
+    graph : the graph to compute onto
+    k: the degree for k-core computation
+    min_val: minimum weight value (defaults to 0.05)
+
+    Returns
+    -------
+    A list of nodes weights where each member of the k-core is 1 and others are 'min_val'
+    """
+
+    weights = []
+    for i in range(len(graph.vs())):
+        incident_edges = np.array([e["weight"] for e in graph.vs[i].incident()])
+        if np.sum(incident_edges > 0.01) >= k:
+            weights.append(1)
+        else:
+            weights.append(min_val)
+    return weights
+    
 
 def community_clustering(path_to_file):
     """
@@ -117,7 +207,7 @@ def community_clustering(path_to_file):
             idx[j] = i
     return idx
     
-def display_graph(path_to_file, ax, **kwargs):
+def display_graph(path_to_file, ax, percentage_threshold = 0.0, mnn = None, **kwargs):
     """
     This function displays the graph to analyze and colors the vertices/edges according
     to the given input parameters.
@@ -129,6 +219,8 @@ def display_graph(path_to_file, ax, **kwargs):
         is stored. Should be a .csv file.
     ax : matplotlib.axis
         the axis to plot the graph onto.
+    threshold : parameter specifying the edge value threshold under which edges are not displayed.
+    mnn : number of nearest neighbours for graph cut
     **kwargs : strings
         layout : specifies which layout to use for displaying the graph. see igraph documentation for 
             a detailed list of all layout. should be given as a string as stated in the igraph doc.
@@ -140,7 +232,8 @@ def display_graph(path_to_file, ax, **kwargs):
     None.
 
     """
-    random.seed(1) #to make sure all graphs are always displayed with same coordinates when changing metrics
+
+    random.seed(1) #making sure layout of plots stays the same when changing metrics
     
     if "layout" in kwargs:
         layout_style = kwargs["layout"]
@@ -150,32 +243,30 @@ def display_graph(path_to_file, ax, **kwargs):
     warn("Metric computation only supports affinity type graph at the moment. Correct that.")    
         
     if type(path_to_file) == list and len(path_to_file) > 1:
+        layer_labels = kwargs["layer_labels"] if "layer_labels" in kwargs else None
         warn("Multilayer integration for statistics still needs to be implemented.")
-        display_graph_3d(path_to_file, ax = ax, layout = layout_style, \
-                         node_metric = kwargs["node_metric"], idx = kwargs["idx"], cluster_num = kwargs["cluster_num"])
+        display_graph_3d(path_to_file, ax = ax, percentage_threshold = percentage_threshold, mnn = mnn, layout = layout_style, \
+                         node_metric = kwargs["node_metric"], idx = kwargs["idx"], cluster_num = kwargs["cluster_num"], layer_labels = layer_labels, deg = kwargs["deg"])
         return
     else:
-        data = read_graph(path_to_file)[0]
-    # arr = np.loadtxt(path_to_file, delimiter=",", dtype=str)
-    # data = arr[1:, 1:].astype(float)
-    # rounded_data = data.round(2)
-    # inv_data = inverse(data)
+        data = read_graph(path_to_file, percentage_threshold = percentage_threshold, mnn = mnn)[0]
     
     if isSymmetric(data):
         g = ig.Graph.Weighted_Adjacency(data, mode='undirected')
-        # inv_g = ig.Graph.Weighted_Adjacency(inv_data, mode='undirected')
     else:
         g = ig.Graph.Weighted_Adjacency(data, mode='directed')
-        # inv_g = ig.Graph.Weighted_Adjacency(data, mode='directed')
-        
-    # cmap1 = LinearSegmentedColormap.from_list("vertex_cmap", ["blue", "red"])
+
+    # default values
+    node_color = "blue"
+    node_size = 15
+
     cmap1 = cm.Reds
     if "node_metric" in kwargs:
         if kwargs["node_metric"] == "none":
             node_color = "blue"
             node_size = 15
         elif kwargs["node_metric"] == "betweenness":
-            edge_betweenness = g.betweenness(weights = [1/(e['weight']) for e in g.es()]) #taking the inverse of edge values as we want high score to represent low distances
+            edge_betweenness = g.betweenness(weights = [1/e['weight'] for e in g.es()]) #taking the inverse of edge values as we want high score to represent low distances
             edge_betweenness = ig.rescale(edge_betweenness)
             node_size = [(1+e)*15 for e in edge_betweenness]
             node_color = [cmap1(b) for b in edge_betweenness]
@@ -185,33 +276,36 @@ def display_graph(path_to_file, ax, **kwargs):
             node_size = [(1+e)*15 for e in edge_strength]
             node_color = [cmap1(b) for b in edge_strength]
         elif kwargs["node_metric"] == "closeness":
-            edge_closeness = g.closeness(weights = [1/(e['weight']) for e in g.es()]) #taking the inverse of edge values as we want high score to represent low distances
+            edge_closeness = g.closeness(weights = [1/e['weight'] for e in g.es()]) #taking the inverse of edge values as we want high score to represent low distances
             edge_closeness = ig.rescale(edge_closeness)
             node_size = [(1+e)*15 for e in edge_closeness]
             node_color = [cmap1(b) for b in edge_closeness]
         elif kwargs["node_metric"] == "hub score":
-            edge_hub = g.hub_score(weights = [1/(e['weight']) for e in g.es()])
+            edge_hub = g.hub_score(weights = [e['weight'] for e in g.es()])
             edge_hub = ig.rescale(edge_hub)
             node_size = [(1+e)*15 for e in edge_hub]
             node_color = [cmap1(b) for b in edge_hub]
         elif kwargs["node_metric"] == "authority score":
-            edge_authority = g.authority_score(weights = [1/(e['weight']) for e in g.es()])
+            edge_authority = g.authority_score(weights = [e['weight'] for e in g.es()])
             edge_authority = ig.rescale(edge_authority)
             node_size = [(1+e)*15 for e in edge_authority]
             node_color = [cmap1(b) for b in edge_authority]
         elif kwargs["node_metric"] == "eigenvector centrality":
-            edge_evc = g.eigenvector_centrality(weights = [1/(e['weight']) for e in g.es()])
+            random.seed(1)
+            edge_evc = g.eigenvector_centrality(weights = [e['weight'] for e in g.es()])
             edge_evc = ig.rescale(edge_evc)
             node_size = [(1+e)*15 for e in edge_evc]
             node_color = [cmap1(b) for b in edge_evc]
         elif kwargs["node_metric"] == "page rank":
-            edge_pagerank = g.personalized_pagerank(weights = [1/(e['weight']) for e in g.es()])
+            edge_pagerank = g.personalized_pagerank(weights = [e['weight'] for e in g.es()])
             edge_pagerank = ig.rescale(edge_pagerank)
             node_size = [(1+e)*15 for e in edge_pagerank]
             node_color = [cmap1(b) for b in edge_pagerank]
-    else:
-        node_color = "red"
-        node_size = 15
+        elif kwargs["node_metric"] == "k-core":
+            k_degree = kwargs["deg"]
+            node_size = k_core_weights(g, k_degree, 0.2)
+            node_color = [cmap1(0.99) if b == 1 else cmap1(0.2) for b in node_size]
+            node_size = [n*20 for n in node_size]
         
     if "idx" in kwargs:
         if len(kwargs["idx"]) == 0:
@@ -222,7 +316,7 @@ def display_graph(path_to_file, ax, **kwargs):
             marker_frame_color = [palette[i] for i in kwargs["idx"]]#cmap(kwargs["idx"])
     else:
         marker_frame_color = node_color
-
+        
     layout = g.layout(layout_style)
     visual_style = {}
     visual_style["vertex_size"] = node_size
@@ -240,7 +334,7 @@ def display_graph(path_to_file, ax, **kwargs):
     # visual_style["vertex_font"] = "Times"
     ig.plot(g, target=ax, **visual_style)
     
-def display_graph_3d(path_to_file, ax, **kwargs):
+def display_graph_3d(path_to_file, ax, percentage_threshold = 0.0, mnn = None, **kwargs):
     """
     This function displays the graph to analyze and colors the vertices/edges according
     to the given input parameters.
@@ -263,9 +357,10 @@ def display_graph_3d(path_to_file, ax, **kwargs):
     None.
 
     """
-    random.seed(1) #to make sure all graphs are always displayed with same coordinates when changing metrics
-    layers = read_graph(path_to_file, True)
+    layers_layout = read_graph(path_to_file, return_ig=True) #here to make sure layout stays consistent upon graph cut
+    layers = read_graph(path_to_file, percentage_threshold = percentage_threshold, mnn = mnn, return_ig=True)
 
+    node_size = 15 #default value
     if "node_metric" in kwargs:
         if kwargs["node_metric"] == "none":
             # node_color = "blue"
@@ -274,52 +369,58 @@ def display_graph_3d(path_to_file, ax, **kwargs):
         elif kwargs["node_metric"] == "betweenness":
             node_size = []
             for g in layers:
-                edge_betweenness = g.betweenness(weights = [1/(e['weight']**2) for e in g.es()]) #taking the inverse of edge values as we want high score to represent low distances
+                edge_betweenness = g.betweenness(weights = [1/(e['weight']) for e in g.es()]) #taking the inverse of edge values as we want high score to represent low distances
                 edge_betweenness = ig.rescale(edge_betweenness)
-                node_size.append(np.array(edge_betweenness))
+                node_size.append(np.array(edge_betweenness)+0.07)
             # node_color = [cmap1(b) for b in edge_betweenness]
         elif kwargs["node_metric"] == "strength":
             node_size = []
             for g in layers:
                 edge_strength = g.strength(weights = [e['weight'] for e in g.es()])
                 edge_strength = ig.rescale(edge_strength)
-                node_size.append(np.array(edge_strength))
+                node_size.append(np.array(edge_strength)+0.07)
             # node_color = [cmap1(b) for b in edge_strength]
         elif kwargs["node_metric"] == "closeness":
             node_size = []
             for g in layers:
-                edge_closeness = g.closeness(weights = [1/(e['weight']**2) for e in g.es()]) #taking the inverse of edge values as we want high score to represent low distances
+                edge_closeness = g.closeness(weights = [1/(e['weight']) for e in g.es()]) #taking the inverse of edge values as we want high score to represent low distances
                 edge_closeness = ig.rescale(edge_closeness)
-                node_size.append(np.array(edge_closeness))
+                node_size.append(np.array(edge_closeness)+0.07)
             # node_color = [cmap1(b) for b in edge_closeness]
         elif kwargs["node_metric"] == "hub score":
             node_size = []
             for g in layers:
                 edge_hub = g.hub_score(weights = [e['weight'] for e in g.es()])
                 edge_hub = ig.rescale(edge_hub)
-                node_size.append(np.array(edge_hub))
+                node_size.append(np.array(edge_hub)+0.07)
             # node_color = [cmap1(b) for b in edge_hub]
         elif kwargs["node_metric"] == "authority score":
             node_size = []
             for g in layers:
                 edge_authority = g.authority_score(weights = [e['weight'] for e in g.es()])
                 edge_authority = ig.rescale(edge_authority)
-                node_size.append(np.array(edge_authority))
+                node_size.append(np.array(edge_authority)+0.07)
             # node_color = [cmap1(b) for b in edge_authority]
         elif kwargs["node_metric"] == "eigenvector centrality":
             node_size = []
             for g in layers:
                 edge_evc = g.eigenvector_centrality(weights = [e['weight'] for e in g.es()])
                 edge_evc = ig.rescale(edge_evc)
-                node_size.append(np.array(edge_evc))
+                node_size.append(np.array(edge_evc)+0.07)
             # node_color = [cmap1(b) for b in edge_evc]
         elif kwargs["node_metric"] == "page rank":
             node_size = []
             for g in layers:
                 edge_pagerank = g.personalized_pagerank(weights = [e['weight'] for e in g.es()])
                 edge_pagerank = ig.rescale(edge_pagerank)
-                node_size.append(np.array(edge_pagerank))
+                node_size.append(np.array(edge_pagerank)+0.07)
             # node_color = [cmap1(b) for b in edge_pagerank]
+        elif kwargs["node_metric"] == "k-core":
+            node_size = []
+            for g in layers:
+                k_degree = kwargs["deg"]
+                size = k_core_weights(g, k_degree, 0.01)
+                node_size.append(np.array([n*1 for n in size]))
     else:
         node_color = "red"
         node_size = 15
@@ -351,8 +452,13 @@ def display_graph_3d(path_to_file, ax, **kwargs):
             layout=nx.spring_layout
     else:
         layout=nx.spring_layout
-
-    LayeredNetworkGraph(layers, ax=ax, layout=layout, nodes_width=node_size, node_edge_colors=marker_frame_color)
+        
+    if "layer_labels" in kwargs:
+        layer_labels = kwargs["layer_labels"]
+    else:
+        layer_labels = None
+            
+    LayeredNetworkGraph(layers_layout, layers, ax=ax, layout=layout, nodes_width=node_size, node_edge_colors=marker_frame_color, layer_labels=layer_labels)
     ax.set_axis_off()
 
     
@@ -422,12 +528,15 @@ def display_stats(path_to_file, ax, **kwargs):
 
         
 if __name__ == '__main__':
-    c = community_clustering(path+file)
 
-    # f = plt.Figure()
-    # a = f.add_subplot(111, projection='3d')
-    # c = display_graph(path+file, a, node_metric = "betweenness")
-# D = [read_graph(path+file)]
+    path = "C:\\Users\\Corentin offline\\Documents\\Python Scripts\\micemaze\\data\\G2\\"
+    file = "approach_prop_resD7_1.csv"
+    # c = community_clustering(path+file)
+
+    f = plt.Figure()
+    a = f.add_subplot(111, projection='3d')
+    c = display_graph(path+file, ax = a, node_metric = "k-core", deg = 2)
+    # g = read_graph(path+file, return_ig=True)
 
     # display_graph([path+"\\interactions_resD7_1.csv", path+"\\interactions_resD7_1.csv"], a, node_metric = "closeness", cluster_num = 2, idx = [1, 1, 1, 0,0,1,1,1,1,1])
     

@@ -14,6 +14,7 @@ from matplotlib.figure import Figure
 import os
 from read_graph import *
 from clustering_algorithm import * 
+from multilayer_plot import *
 
 def rescale(arr, max_val = 5):
     normalized_arr = (arr - np.min(arr))/(np.max(arr)-np.min(arr))
@@ -51,10 +52,10 @@ class NewWindow(tk.Toplevel):
         self.hyperparam_btn_frame = tk.Frame(menu_frame, bg = "blue", height=50)
         self.hyperparam_btn_frame.pack(side="top", fill="x")
         # content frame
-        self.content_frame = tk.Frame(self, bg = "green")
+        self.content_frame = tk.Frame(self, bg = "white") #green
         self.content_frame.pack(side="top")
         # clustering  buttons frames
-        self.clustering_btn_frame = tk.Frame(self, bg = "red", height=50)
+        self.clustering_btn_frame = tk.Frame(self, bg = "gray", height=50)
         self.clustering_btn_frame.pack(side="bottom", fill="both")
         
         ## buttons ##
@@ -378,7 +379,7 @@ class NewWindow(tk.Toplevel):
             self.master.update()
         px = 1/plt.rcParams['figure.dpi']  # pixel in inches
         f = Figure(figsize=(800*px,300*px), dpi = 100)
-        a = f.add_subplot(111)
+        
         cluster_num = int(self.cluster_number_field.get())
         if not(self.isAffinity.get()):
             nn = int(self.nn_field.get())
@@ -392,15 +393,24 @@ class NewWindow(tk.Toplevel):
             connectivity_param = int(self.epsilon_field.get())
         S, _, _, _ = self.clusterer.clustering(cluster_num, self.isAffinity.get(), nn, connectivity_param)
         
-        if isSymmetric(S[0]):
-            g = ig.Graph.Weighted_Adjacency(S[0], mode='undirected')
-        else:
-            g = ig.Graph.Weighted_Adjacency(S[0], mode='directed')
-        print("Displaying first graph from stack")
-        # layout = g.layout(layout_style)
-        visual_style = {}
-        visual_style["edge_width"] = rescale(np.array([w['weight'] for w in g.es]))
-        ig.plot(g, target=a, **visual_style)
+        if len(S) > 1: #3d plot
+            a = f.add_subplot(111, projection='3d')
+            layers = [ig.Graph.Weighted_Adjacency(data, mode='directed') for data in S]
+            LayeredNetworkGraph(layers, ax=a, layout = nx.spring_layout)
+            a.set_axis_off()
+        else: #2d plot
+            a = f.add_subplot(111)
+            if isSymmetric(S[0]):
+                g = ig.Graph.Weighted_Adjacency(S[0], mode='undirected')
+            else:
+                g = ig.Graph.Weighted_Adjacency(S[0], mode='directed')
+        
+            # layout = g.layout(layout_style)
+            visual_style = {}
+            visual_style["edge_width"] = rescale(np.array([w['weight'] for w in g.es]))
+            ig.plot(g, target=a, **visual_style)
+        
+        
         canvas = FigureCanvasTkAgg(f, master=self.content_frame)
         NavigationToolbar2Tk(canvas, self.content_frame)
         canvas.draw()

@@ -15,12 +15,14 @@ from read_graph import *
 from clustering_window import *
 
 #To-do: - include statement that graph display is from average when several subgraphs are selected.
-#       - remove the file selection from supervised clustering window
-#       - check that inverse edge values **2 is correctly working
-#       - implement 3d view for connectivity in clustering page
 #       - implement average measures (average of graph != average of graph measures.)
-#       - make 3d view NOT RANDOM every time
-#       - implement rich club or mutual nearest neighbors representation.
+#       - fix display bug (approaches1 and approaches 2)
+#       - make code work for affinity/distance graph. right now, mnn only works for affinity, as well as all display metrics.
+#           that inckude making the metric dependant on it, and the mnn as well as threshold function.
+#       - fix k-core with new visualization (0.01 instead of 0)
+#       - arrow heads in graph cut should also disapear
+#       - mnn in clustering should be fixed (the code was not right)
+#       - include a reset button?
 
 class App:
     def __init__(self, root):
@@ -40,6 +42,9 @@ class App:
         self.path_to_file = None
         self.layout_style = "fr"
         self.node_metric = "none"
+        self.percentage_threshold = 0.0
+        self.mnn_number = None
+        self.degree = 0
         self.idx = []
         self.cluster_num = 0
         self.display_type = "plot"
@@ -78,16 +83,18 @@ class App:
         self.plot_selector.bind('<<ComboboxSelected>>', self.plot_changed)
 
         # metric selection for nodes
-        metric_values = ["none", "strength", "betweenness", "closeness", "eigenvector centrality", "page rank", "hub score", "authority score"]
+        metric_values = ["none", "strength", "betweenness", "closeness", "eigenvector centrality", "page rank", "hub score", "authority score", "k-core"]
         self.node_metric_selector=ttk.Combobox(btn_frame, values = metric_values, state = "readonly")
         self.node_metric_selector.pack(side="left", fill="x", padx = 5)
         self.node_metric_selector.set("Node metric")
         self.node_metric_selector.bind('<<ComboboxSelected>>', self.node_changed)
 
-        # metric selection for edges
-        edge_metric_selector=ttk.Combobox(btn_frame, state = "readonly")
-        edge_metric_selector.pack(side="left", fill="x", padx = 5)
-        edge_metric_selector.set("Edge metric")
+        # Graph-cut type selection
+        graphcut_values = ["none", "threshold", "mutual nearest neighbors"]
+        self.graphcut_selector=ttk.Combobox(btn_frame, values = graphcut_values, state = "readonly")
+        self.graphcut_selector.pack(side="left", fill="x", padx = 5)
+        self.graphcut_selector.set("Graph-cut type")
+        self.graphcut_selector.bind('<<ComboboxSelected>>', self.graphcut_param_window)
         
         # button to open clustering window
         cluster_button=tk.Button(btn_frame)
@@ -107,10 +114,44 @@ class App:
         stats_btn = tk.Button(result_display_frame, text='statistics')
         stats_btn.pack(side = "left")
         stats_btn["command"] = self.stats_clicked
+
+    def graphcut_param_window(self, event):
+        if self.graphcut_selector.get() == "none":
+            self.percentage_threshold = 0.0
+            self.mnn_number = None
+            if self.display_type == "plot":
+                self.plot_in_frame(layout_style = self.layout_style, node_metric = self.node_metric, percentage_threshold=self.percentage_threshold, mnn = self.mnn_number)
+            else:
+                self.stats_in_frame(node_metric = self.node_metric)
+            return
+        self.new_window = tk.Toplevel(root)
+        self.new_window.title("Enter Parameter Value")
+        tk.Label(self.new_window, text="Enter " + self.graphcut_selector.get()).grid(row=0,column=0)
+        self.graphcut_entry = tk.Entry(self.new_window)
+        self.graphcut_entry.grid(row=1,column=0)
+        if self.graphcut_selector.get() == "threshold":
+            tk.Label(self.new_window, text="%").grid(row=1,column=1)
+        elif self.graphcut_selector.get() == "Mutual nearest neighbors":
+            tk.Label(self.new_window, text="Neighbours").pack()
+        tk.Button(self.new_window, text="Cut!", command=self.graph_cut_changed).grid(row=2,column=0)
+
+    def graph_cut_changed(self):
+        if self.graphcut_selector.get() == "threshold":
+            self.mnn_number = None
+            self.percentage_threshold = float(self.graphcut_entry.get())
+        elif self.graphcut_selector.get() == "mutual nearest neighbors":
+            self.percentage_threshold = 0.0
+            self.mnn_number = int(self.graphcut_entry.get())
+        self.node_metric = self.node_metric_selector.get()
+        self.new_window.destroy()
+        if self.display_type == "plot":
+            self.plot_in_frame(layout_style = self.layout_style, node_metric = self.node_metric, percentage_threshold=self.percentage_threshold, mnn = self.mnn_number)
+        else:
+            self.stats_in_frame(node_metric = self.node_metric)
         
     def plot_clicked(self):
         self.display_type = "plot"
-        self.plot_in_frame(node_metric=self.node_metric)
+        self.plot_in_frame(layout_style = self.layout_style, node_metric = self.node_metric, percentage_threshold=self.percentage_threshold, mnn = self.mnn_number)
         
     def stats_clicked(self):
         self.display_type = "stats"
@@ -123,7 +164,8 @@ class App:
                 lst.append(self.path_label_list[i])
         self.active_path_list = lst
         self.path_to_file = [self.dirpath + "/" + self.active_path_list[i] for i in range(len(self.active_path_list))]
-        self.plot_in_frame(layout_style = self.layout_style, node_metric = self.node_metric)
+        self.plot_in_frame(layout_style = self.layout_style, node_metric = self.node_metric,\
+                               percentage_threshold=self.percentage_threshold, mnn = self.mnn_number, deg = self.degree)
 
     def path_button_command(self):
         self.dirpath = filedialog.askdirectory()
@@ -148,29 +190,53 @@ class App:
     def plot_changed(self, event):
         self.layout_style = self.plot_selector.get()
         if self.display_type == "plot":
-            self.plot_in_frame(layout_style = self.layout_style, node_metric = self.node_metric)
+            self.plot_in_frame(layout_style = self.layout_style, node_metric = self.node_metric, percentage_threshold=self.percentage_threshold, mnn = self.mnn_number, deg = self.degree)
+
+    def k_core_window(self):
+        self.new_window = tk.Toplevel(root)
+        self.new_window.title("Degree value for k-core")
+        tk.Label(self.new_window, text="Enter degree").grid(row=0,column=0)
+        self.k_core_entry = tk.Entry(self.new_window)
+        self.k_core_entry.grid(row=1,column=0)
+        tk.Button(self.new_window, text="Compute k-core!", command=self.k_core_changed).grid(row=2,column=0)
         
-    def node_changed(self, event):
-        self.node_metric = self.node_metric_selector.get()
+    def k_core_changed(self):
+        self.degree = int(self.k_core_entry.get())
+        self.new_window.destroy()
         if self.display_type == "plot":
-            self.plot_in_frame(layout_style = self.layout_style, node_metric = self.node_metric)
+            self.plot_in_frame(layout_style = self.layout_style, node_metric = self.node_metric, percentage_threshold=self.percentage_threshold, mnn = self.mnn_number, deg = self.degree)
         else:
             self.stats_in_frame(node_metric = self.node_metric)
         
-    def plot_in_frame(self, layout_style = "fr", node_metric = "none"):
+    def node_changed(self, event):
+        self.node_metric = self.node_metric_selector.get()
+        if self.node_metric == "k-core":
+            self.k_core_window()
+            
+        if self.display_type == "plot":
+            self.plot_in_frame(layout_style = self.layout_style, node_metric = self.node_metric,\
+                               percentage_threshold=self.percentage_threshold, mnn = self.mnn_number)
+        else:
+            self.stats_in_frame(node_metric = self.node_metric)
+        
+    def plot_in_frame(self, layout_style = "fr", node_metric = "none", percentage_threshold=0.0, mnn = None, deg = 0):
         for fm in self.content_frame.winfo_children():
             fm.destroy()
             root.update()
         px = 1/plt.rcParams['figure.dpi']  # pixel in inches
-        f = Figure(figsize=(800*px,400*px), dpi = 100, layout = "constrained")
-        # f = Figure(figsize=(800,400))
+        f = Figure(figsize=(950*px,500*px))
         if len(self.path_to_file) > 1:
             a = f.add_subplot(111, projection='3d')
-            a.set_box_aspect((2,2,1), zoom=1.4)
+            a.set_box_aspect((2,2,1), zoom=1.5)
         else:
             a = f.add_subplot(111)
-        display_graph(self.path_to_file, a, layout = layout_style, node_metric = node_metric, idx = self.idx, cluster_num = self.cluster_num)
-        
+        display_graph(self.path_to_file, a, percentage_threshold=percentage_threshold, mnn = mnn,\
+                      layout = layout_style, node_metric = node_metric, idx = self.idx, \
+                          cluster_num = self.cluster_num, layer_labels=self.path_to_file, deg = deg)
+        f.colorbar(ScalarMappable(norm=Normalize(vmin=0, vmax=1), cmap=cm.Reds), ax=a, label="Relative metric value", shrink = 0.3, location = 'left')
+        f.colorbar(ScalarMappable(norm=Normalize(vmin=0, vmax=1), cmap=cm.viridis), ax=a, label="Relative edge value", shrink = 0.3, location = 'right', pad = 0.1)
+        f.subplots_adjust(left=0, bottom=0, right=0.948, top=1, wspace=0, hspace=0)
+
         canvas = FigureCanvasTkAgg(f, master=self.content_frame)
         NavigationToolbar2Tk(canvas, self.content_frame)
         canvas.draw()

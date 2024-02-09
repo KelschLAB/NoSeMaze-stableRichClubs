@@ -6,16 +6,17 @@ import matplotlib.pyplot as plt
 import networkx as nx
 from matplotlib.cm import ScalarMappable, get_cmap
 from matplotlib import cm
-
+import os
 from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.mplot3d.art3d import Line3DCollection
+from mpl_toolkits.mplot3d.art3d import Text3D
 
 from read_graph import *
 
 
 class LayeredNetworkGraph(object):
 
-    def __init__(self, graphs, node_labels=None, layout=nx.spring_layout, nodes_width = None, ax=None, node_edge_colors = None):
+    def __init__(self, graphs_layout, graphs, node_labels=None, layout=nx.spring_layout, nodes_width = None, ax=None, node_edge_colors = None, layer_labels = None):
         """Given an ordered list of graphs [g1, g2, ..., gn] that represent
         different layers in a multi-layer network, plot the network in
         3D with the different layers separated along the z-axis.
@@ -41,16 +42,17 @@ class LayeredNetworkGraph(object):
 
         """
         
-        self.cmap_edges = cm.Greys
-        self.graphs = [g.to_networkx() for g in graphs]
+        self.cmap_edges = cm.viridis
+        self.graphs = [g.to_networkx() for g in graphs_layout]
         self.edge_width = []
         self.node_edge_colors = node_edge_colors
-        scale_factor = 3
+        self.layer_labels = layer_labels
+        scale_factor = 5
         for g in graphs:
             self.edge_width.extend(self.rescale(np.array([w['weight'] for w in g.es]), scale_factor))
         self.edge_colors = []
         for w in self.edge_width:
-            self.edge_colors.append(self.cmap_edges(w/scale_factor))
+            self.edge_colors.append(self.cmap_edges((w - 0.001)/scale_factor)) #subtracting 0.001 to ensure colormap is not called with 1 (which would be cycle back to 0).
         self.nodes_width = nodes_width
         self.total_layers = len(graphs)
 
@@ -69,7 +71,7 @@ class LayeredNetworkGraph(object):
         self.get_edges_between_layers()
 
         # compute layout and plot
-        self.get_node_positions(scale = 1)
+        self.get_node_positions()
         self.draw()
         
     def rescale(self, arr, max_val = 5):
@@ -112,7 +114,10 @@ class LayeredNetworkGraph(object):
         for h in self.graphs[1:]:
             composition = nx.compose(composition, h)
 
-        pos = self.layout(composition, *args, **kwargs)
+        try: #not all layouts are random, and therefore some dont accept 'seed' argument
+            pos = self.layout(composition, seed = 1, *args, **kwargs)
+        except:
+            pos = self.layout(composition, *args, **kwargs)
 
         self.node_positions = dict()
         for z, g in enumerate(self.graphs):
@@ -121,7 +126,6 @@ class LayeredNetworkGraph(object):
     def draw_nodes(self, nodes, *args, **kwargs):
         x, y, z = zip(*[self.node_positions[node] for node in nodes])
         self.ax.scatter(x, y, z, *args, **kwargs)
-
 
     def draw_edges(self, edges, *args, **kwargs):
         segments = [(self.node_positions[source], self.node_positions[target]) for source, target in edges]
@@ -137,13 +141,15 @@ class LayeredNetworkGraph(object):
         return (xmin - pad * dx, xmax + pad * dx), \
             (ymin - pad * dy, ymax + pad * dy)
 
-    def draw_plane(self, z, *args, **kwargs):
+    def draw_plane(self, z, *args, layer_label = None, **kwargs):
         (xmin, xmax), (ymin, ymax) = self.get_extent(pad=0.1)
         u = np.linspace(xmin, xmax, 10)
         v = np.linspace(ymin, ymax, 10)
         U, V = np.meshgrid(u ,v)
         W = z * np.ones_like(U)
         self.ax.plot_surface(U, V, W, *args, **kwargs)
+        if layer_label != None:
+            self.ax.text(-1, -1, z, os.path.basename(layer_label))
 
     def draw_node_labels(self, node_labels, *args, **kwargs):
         for node, z in self.nodes:
@@ -151,19 +157,21 @@ class LayeredNetworkGraph(object):
                 ax.text(*self.node_positions[(node, z)], node_labels[node], *args, **kwargs)
 
     def draw(self):
-        random.seed(1) #to make sure all graphs are always displayed with same coordinates when changing metrics
-        self.draw_edges(self.edges_within_layers,  colors=self.edge_colors, alpha=0.7, linestyle='-', zorder=2, linewidths=self.edge_width)
+        self.draw_edges(self.edges_within_layers,  facecolor=self.edge_colors,  colors=self.edge_colors, alpha=1, linestyle='-', zorder=2, linewidths=self.edge_width)
         self.draw_edges(self.edges_between_layers, color='k', alpha=0.2, linestyle='--', zorder=2, lw = 1)
         cmap_list = [cm.Reds, cm.Blues, cm.Greens, cm.Oranges, cm.Purples]*self.total_layers
         for z in range(self.total_layers):
-            # self.draw_plane(z, alpha=0.1, zorder=1)
+            if self.layer_labels != None:
+                self.draw_plane(z, layer_label = self.layer_labels[z], alpha=0.05, zorder=1)
+            else:
+                self.draw_plane(z, alpha=0.05, zorder=1)
             if self.nodes_width is not None and type(self.nodes_width) == list:
                 colors = [cmap_list[z](width) for width in self.nodes_width[z]]
                 self.draw_nodes([node for node in self.nodes if node[1]==z], \
-                                s=self.nodes_width[z]*500, zorder=3, alpha = 1, \
-                                edgecolors = self.node_edge_colors, linewidths=2, c = colors)
+                                s=self.nodes_width[z]*500, zorder=3, \
+                                edgecolors = self.node_edge_colors, linewidths=2, c = colors, depthshade=False)
             else:
-                self.draw_nodes([node for node in self.nodes if node[1]==z], s=300, zorder=3)
+                self.draw_nodes([node for node in self.nodes if node[1]==z], s=300, zorder=3, depthshade=False)
 
         if self.node_labels:
             self.draw_node_labels(self.node_labels,
@@ -176,7 +184,7 @@ if __name__ == '__main__':
     path = "C:\\Users\\Corentin offline\\Documents\\Python Scripts\\micemaze\\data\\G2\\"
     files = [path+"approach_prop_resD7_1.csv", path+"HWI_t_resD7_1.csv"]
     
-    layers = read_graph(files, True)
+    layers = read_graph(files, 0, None, True)
     # node_labels = {nn : str(nn) for nn in range(4*n)}
 
     # initialise figure and plot
@@ -185,4 +193,5 @@ if __name__ == '__main__':
     ax.set_box_aspect((2,2,1), zoom=1.4)
     LayeredNetworkGraph(layers, ax=ax, layout=nx.circular_layout)
     ax.set_axis_off()
+    plt.colorbar(ScalarMappable(norm=Normalize(vmin=0, vmax=1), cmap=cm.viridis), ax=ax, label="Edge weight")
     plt.show()

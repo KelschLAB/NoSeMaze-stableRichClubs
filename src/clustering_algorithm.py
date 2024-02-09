@@ -392,7 +392,7 @@ class graphClusterer:
             ax.set_ylabel('Mean intercluster distance')
         return 
     
-    def epsilon_grid_search(self, ax, num_pts = 15, clust_num = 10, nn = 7):
+    def epsilon_grid_search(self, ax, num_pts = 10, clust_num = 10, nn = 7):
         """Does a grid search, looking for an optimal value of the number of nearest neighbours
         for the local nn to be used in the clustering (see ref [4]). 
         
