@@ -113,6 +113,9 @@ def read_graph(path_to_file, percentage_threshold = 0.01, mnn = None, return_ig 
         data = np.where(data < threshold, 0.01, data)
         if mnn is not None:
             data = mnn_cut(data, mnn)
+        if return_ig: # return ig specifies if the read graphs should be returned as an ig.Graph.
+            graph = [ig.Graph.Weighted_Adjacency(data, mode='directed')]
+            return graph
         return [data]
     
     if type(path_to_file) == list:
@@ -146,6 +149,49 @@ def read_graph(path_to_file, percentage_threshold = 0.01, mnn = None, return_ig 
                 return data
             return data
         
+def randomize_graph(path_to_file, percentage_threshold = 0.01, mnn = None, return_ig = False):
+    """
+    Reads a file containing the weights defning the adjacency matrix, then randomizes the graph 
+    for bootstrap purposes.
+
+    see 'read_graph' for input params.
+    """
+
+    random.seed(1) #making sure layout of plots stays the same when changing metrics
+
+    if type(path_to_file) == str:
+        arr = np.loadtxt(path_to_file, delimiter=",", dtype=str)
+        data = arr[1:, 1:].astype(float)
+        np.random.shuffle(data) # randomizing graph while keeping weights constant.
+        threshold = np.max(data) * (percentage_threshold / 100.0)
+        data = np.where(data < threshold, 0.01, data)
+        if mnn is not None:
+            data = mnn_cut(data, mnn)
+        if return_ig: # return ig specifies if the read graphs should be returned as an ig.Graph.
+            graph = [ig.Graph.Weighted_Adjacency(data, mode='directed')]
+            return graph
+        return [data]
+    
+    if type(path_to_file) == list:
+        if not avg_graph:
+            ## separated layers
+            data = []
+            for i in range(len(path_to_file)):
+                arr = np.loadtxt(path_to_file[i], delimiter=",", dtype=str)
+                layer_data = arr[1:, 1:].astype(float)
+                np.random.shuffle(layer_data) # randomizing graph while keeping weights constant.
+                threshold = np.max(layer_data) * (percentage_threshold / 100.0)
+                layer_data = np.where(layer_data < threshold, 0.01, layer_data)  #0.01 for visualization, to force igraph to keep layout
+                if mnn is not None:
+                    layer_data = mnn_cut(layer_data, mnn)
+                data.append(layer_data)
+                # data.append(rescale(arr[1:, 1:].astype(float), 10)) #normalizing input data
+            if return_ig: # return ig specifies if the read graphs should be returned as an ig.Graph.
+                layers = [ig.Graph.Weighted_Adjacency(d, mode='directed') for d in data]
+                return layers
+            return data
+        
+        
 def k_core_weights(graph, k, min_val = 0.05):
     """
     Computes the k-core for input graph: each node that has a degree < k is not part of it.
@@ -169,7 +215,45 @@ def k_core_weights(graph, k, min_val = 0.05):
         else:
             weights.append(min_val)
     return weights
-    
+
+def k_core_size(graph, k, min_val = 0.05):
+    """
+    Returns the size of the k_core of input graph  for degree = k.
+    """
+    sizes = k_core_weights(graph, k)
+    core_size = 0
+    for s in sizes:
+        if s > 0.1:
+            core_size += 1
+    return core_size
+
+def k_core_p_value(path_to_file, k, percentage_threshold, mnn, bootstrap_iter = 250):
+    """
+    Computes an estimation of the k core size in the random case to give a p-value for
+    the computed k-core in the input graph. Does so by randomizing the network (keep weights same) 
+    this is done 'bootstrap_iter' times and allows to the distribution of the random k_core values.
+
+    Parameters
+    ----------
+    path_to_file 
+    k : Int. degree value for the k-core computation
+    bootstrap_iter : Int. number of iterations for the bootstrap estimation.
+
+    Returns
+    -------
+    p_value
+
+    """
+    input_layer = randomize_graph(path_to_file, percentage_threshold=percentage_threshold,\
+                                       mnn=mnn,return_ig= True)[0]
+    actual_observation = k_core_size(input_layer, k)
+    random_observations = np.zeros(bootstrap_iter)
+    for i in range(bootstrap_iter):
+        random_layer = randomize_graph(path_to_file, percentage_threshold=percentage_threshold,\
+                                       mnn=mnn,return_ig= True)[0]
+        random_observations[i] = k_core_size(random_layer, k)
+    p_value = np.sum(random_observations == actual_observation)/bootstrap_iter
+    return p_value
 
 def community_clustering(path_to_file):
     """
@@ -462,7 +546,7 @@ def display_graph_3d(path_to_file, ax, percentage_threshold = 0.0, mnn = None, *
     ax.set_axis_off()
 
     
-def display_stats(path_to_file, ax, **kwargs):
+def display_stats(path_to_file, ax, percentage_threshold = 0.0, mnn = None, **kwargs):
     """
     This function displays a histogram representation of the metrics of the graph to analyze.
 
@@ -485,9 +569,9 @@ def display_stats(path_to_file, ax, **kwargs):
             
     if type(path_to_file) == list:
         warn("More than one input graph path has been provided. \n Multilayer plotting is not yet supported. Only first one will be displayed.")
-        data = read_graph(path_to_file[0])
+        data = read_graph(path_to_file[0], percentage_threshold = percentage_threshold, mnn = mnn)[0]
     else:
-        data = read_graph(path_to_file)
+        data = read_graph(path_to_file, percentage_threshold = percentage_threshold, mnn = mnn)[0]
 
     if isSymmetric(data):
         g = ig.Graph.Weighted_Adjacency(data, mode='undirected')
@@ -496,7 +580,8 @@ def display_stats(path_to_file, ax, **kwargs):
         
     if "node_metric" in kwargs:
         if kwargs["node_metric"] == "none":
-            ax.text(0.5, 0.5, 'Please select a metric', transform=ax.transAxes)
+            ax.text(0.4, 0.5, 'Please select a metric', transform=ax.transAxes, fontsize=20)
+            ax.axis("off")
         elif kwargs["node_metric"] == "betweenness":
             edge_betweenness = g.betweenness(weights = [1/(e['weight']**2) for e in g.es()]) #taking the inverse of edge values as we want high score to represent low distances
             edge_betweenness = ig.rescale(edge_betweenness)
@@ -525,6 +610,15 @@ def display_stats(path_to_file, ax, **kwargs):
             edge_pagerank = g.personalized_pagerank(weights = [e['weight'] for e in g.es()])
             edge_pagerank = ig.rescale(edge_pagerank)
             ax.hist(edge_pagerank)
+        elif kwargs["node_metric"] == "k-core":
+            k_degree = kwargs["deg"]
+            for i in range(len(path_to_file)):
+                g = read_graph(path_to_file[i], percentage_threshold, mnn, return_ig=True)[0]
+                core_size = k_core_size(g, k_degree)
+                p_value = k_core_p_value(path_to_file[i], k_degree, percentage_threshold, mnn)
+                ax.text(0.1, 0.1+0.1*i, os.path.basename(path_to_file[i])+": k-core size = "+str(core_size)+" p_value = "+str(p_value),\
+                        transform=ax.transAxes, fontsize=15)
+            ax.axis("off")
 
         
 if __name__ == '__main__':
@@ -535,7 +629,7 @@ if __name__ == '__main__':
 
     f = plt.Figure()
     a = f.add_subplot(111, projection='3d')
-    c = display_graph(path+file, ax = a, node_metric = "k-core", deg = 2)
+    c = display_stats([path+file], ax = a, mnn = 3, node_metric = "k-core", deg = 2)
     # g = read_graph(path+file, return_ig=True)
 
     # display_graph([path+"\\interactions_resD7_1.csv", path+"\\interactions_resD7_1.csv"], a, node_metric = "closeness", cluster_num = 2, idx = [1, 1, 1, 0,0,1,1,1,1,1])

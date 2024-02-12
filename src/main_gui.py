@@ -122,7 +122,7 @@ class App:
             if self.display_type == "plot":
                 self.plot_in_frame(layout_style = self.layout_style, node_metric = self.node_metric, percentage_threshold=self.percentage_threshold, mnn = self.mnn_number)
             else:
-                self.stats_in_frame(node_metric = self.node_metric)
+                self.stats_in_frame()
             return
         self.new_window = tk.Toplevel(root)
         self.new_window.title("Enter Parameter Value")
@@ -155,7 +155,7 @@ class App:
         
     def stats_clicked(self):
         self.display_type = "stats"
-        self.stats_in_frame(node_metric=self.node_metric)
+        self.stats_in_frame()
         
     def get_checked(self):
         lst = []
@@ -206,7 +206,7 @@ class App:
         if self.display_type == "plot":
             self.plot_in_frame(layout_style = self.layout_style, node_metric = self.node_metric, percentage_threshold=self.percentage_threshold, mnn = self.mnn_number, deg = self.degree)
         else:
-            self.stats_in_frame(node_metric = self.node_metric)
+            self.stats_in_frame()
         
     def node_changed(self, event):
         self.node_metric = self.node_metric_selector.get()
@@ -217,7 +217,7 @@ class App:
             self.plot_in_frame(layout_style = self.layout_style, node_metric = self.node_metric,\
                                percentage_threshold=self.percentage_threshold, mnn = self.mnn_number)
         else:
-            self.stats_in_frame(node_metric = self.node_metric)
+            self.stats_in_frame()
         
     def plot_in_frame(self, layout_style = "fr", node_metric = "none", percentage_threshold=0.0, mnn = None, deg = 0):
         for fm in self.content_frame.winfo_children():
@@ -230,9 +230,9 @@ class App:
             a.set_box_aspect((2,2,1), zoom=1.5)
         else:
             a = f.add_subplot(111)
-        display_graph(self.path_to_file, a, percentage_threshold=percentage_threshold, mnn = mnn,\
-                      layout = layout_style, node_metric = node_metric, idx = self.idx, \
-                          cluster_num = self.cluster_num, layer_labels=self.path_to_file, deg = deg)
+        display_graph(self.path_to_file, a, percentage_threshold = self.percentage_threshold, mnn = self.mnn_number,\
+                      layout = layout_style, node_metric = self.node_metric, idx = self.idx, \
+                          cluster_num = self.cluster_num, layer_labels=self.path_to_file, deg = self.degree)
         f.colorbar(ScalarMappable(norm=Normalize(vmin=0, vmax=1), cmap=cm.Reds), ax=a, label="Relative metric value", shrink = 0.3, location = 'left')
         f.colorbar(ScalarMappable(norm=Normalize(vmin=0, vmax=1), cmap=cm.viridis), ax=a, label="Relative edge value", shrink = 0.3, location = 'right', pad = 0.1)
         f.subplots_adjust(left=0, bottom=0, right=0.948, top=1, wspace=0, hspace=0)
@@ -243,15 +243,15 @@ class App:
         canvas.get_tk_widget().pack()#fill=tk.BOTH, expand=True, side="top") 
         self.label.config(text="")
         
-    def stats_in_frame(self, node_metric = "none"):
+    def stats_in_frame(self):
         for fm in self.content_frame.winfo_children():
             fm.destroy()
             root.update()
         px = 1/plt.rcParams['figure.dpi']  # pixel in inches
-        # f = Figure(figsize=(800*px,400*px), dpi = 100)
-        f = Figure()
+        f = Figure(figsize=(800*px,400*px), dpi = 100)
+        # f = Figure()
         a = f.add_subplot(111)
-        display_stats(self.path_to_file, a, node_metric = node_metric)
+        display_stats(self.path_to_file, a, percentage_threshold=self.percentage_threshold, mnn = self.mnn_number, node_metric = self.node_metric, deg = self.degree)
     
         canvas = FigureCanvasTkAgg(f, master=self.content_frame)
         NavigationToolbar2Tk(canvas, self.content_frame)
