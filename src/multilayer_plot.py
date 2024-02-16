@@ -153,8 +153,8 @@ class LayeredNetworkGraph(object):
 
     def draw_node_labels(self, node_labels, *args, **kwargs):
         for node, z in self.nodes:
-            if node in node_labels:
-                ax.text(*self.node_positions[(node, z)], node_labels[node], *args, **kwargs)
+            if z == 0:
+                self.ax.text(*self.node_positions[(node, z)], node_labels[node], *args, **kwargs)
 
     def draw(self):
         self.draw_edges(self.edges_within_layers,  facecolor=self.edge_colors,  colors=self.edge_colors, alpha=1, linestyle='-', zorder=2, linewidths=self.edge_width)
@@ -173,7 +173,7 @@ class LayeredNetworkGraph(object):
             else:
                 self.draw_nodes([node for node in self.nodes if node[1]==z], s=300, zorder=3, depthshade=False)
 
-        if self.node_labels:
+        if self.node_labels != None:
             self.draw_node_labels(self.node_labels,
                                   horizontalalignment='center',
                                   verticalalignment='center',

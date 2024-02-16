@@ -10,6 +10,7 @@ import random
 from warnings import warn
 from clustering_algorithm import *
 from multilayer_plot import *
+import pandas as pd
 
 def isSymmetric(mat):
     transmat = np.array(mat).transpose()
@@ -84,6 +85,30 @@ def mnn_cut(arr, nn = 2):
                 mnn_arr[j, i] += arr[j, i]
     return mnn_arr
 
+def read_labels(path_to_file):
+    """
+    Reads a list of labels for the nodes to plot in the graph
+
+    Parameters
+    ----------
+    path_to_file : TYPE string or list of string containing the path to the file(s)
+
+    Returns
+    -------
+    TYPE
+        list of nodes labels
+    """
+
+    if type(path_to_file) == str:
+        arr = pd.read_csv(path_to_file)
+        labels = arr.iloc[:, 0]
+        return [l for l in labels]
+    
+    if type(path_to_file) == list:
+        arr = pd.read_csv(path_to_file[0])
+        labels = arr.iloc[:, 0]
+        return [l for l in labels]
+        
 def read_graph(path_to_file, percentage_threshold = 0.01, mnn = None, return_ig = False, avg_graph = False):
     """
     Reads a file containing the weights defning the adjacency matrix. 
@@ -325,12 +350,14 @@ def display_graph(path_to_file, ax, percentage_threshold = 0.0, mnn = None, **kw
         layout_style = "fr"
         
     warn("Metric computation only supports affinity type graph at the moment. Correct that.")    
+    node_labels = read_labels(path_to_file)
         
     if type(path_to_file) == list and len(path_to_file) > 1:
         layer_labels = kwargs["layer_labels"] if "layer_labels" in kwargs else None
         warn("Multilayer integration for statistics still needs to be implemented.")
         display_graph_3d(path_to_file, ax = ax, percentage_threshold = percentage_threshold, mnn = mnn, layout = layout_style, \
-                         node_metric = kwargs["node_metric"], idx = kwargs["idx"], cluster_num = kwargs["cluster_num"], layer_labels = layer_labels, deg = kwargs["deg"])
+                         node_metric = kwargs["node_metric"], idx = kwargs["idx"], cluster_num = kwargs["cluster_num"], layer_labels = layer_labels, \
+                             node_labels = node_labels, deg = kwargs["deg"])
         return
     else:
         data = read_graph(path_to_file, percentage_threshold = percentage_threshold, mnn = mnn)[0]
@@ -411,7 +438,9 @@ def display_graph(path_to_file, ax, percentage_threshold = 0.0, mnn = None, **kw
     visual_style["vertex_frame_color"] = marker_frame_color
     visual_style["edge_curved"] = 0
     visual_style["vertex_frame_width"] = 3
-    # g.vs["label"] = [v.index for v in g.vs()]
+    visual_style["vertex_label"] = node_labels
+    # g.vs["label"] =  node_labels#[v.index for v in g.vs()]
+    g.vs["name"] = node_labels
     # visual_style["vertex_label_size"] = 20
     # visual_style["vertex_label_dist"] = 0.5
 
@@ -537,12 +566,17 @@ def display_graph_3d(path_to_file, ax, percentage_threshold = 0.0, mnn = None, *
     else:
         layout=nx.spring_layout
         
+    if "node_labels" in kwargs:
+        node_labels = kwargs["node_labels"]
+    else:
+        node_labels = None
+        
     if "layer_labels" in kwargs:
         layer_labels = kwargs["layer_labels"]
     else:
         layer_labels = None
             
-    LayeredNetworkGraph(layers_layout, layers, ax=ax, layout=layout, nodes_width=node_size, node_edge_colors=marker_frame_color, layer_labels=layer_labels)
+    LayeredNetworkGraph(layers_layout, layers, ax=ax, layout=layout, node_labels = node_labels, nodes_width=node_size, node_edge_colors=marker_frame_color, layer_labels=layer_labels)
     ax.set_axis_off()
 
     
@@ -623,13 +657,14 @@ def display_stats(path_to_file, ax, percentage_threshold = 0.0, mnn = None, **kw
         
 if __name__ == '__main__':
 
-    path = "C:\\Users\\Corentin offline\\Documents\\Python Scripts\\micemaze\\data\\G2\\"
-    file = "approach_prop_resD7_1.csv"
+    path = "C:\\Users\\Corentin offline\\Documents\\GitHub\\clusterGUI\\data\\"
+    file = "test_shuffled_approach.csv"
     # c = community_clustering(path+file)
-
+    print(read_labels(path+file))
     f = plt.Figure()
-    a = f.add_subplot(111, projection='3d')
-    c = display_stats([path+file], ax = a, mnn = 3, node_metric = "k-core", deg = 2)
+    a = f.add_subplot(111)#, projection='3d')
+    display_graph(path+file, a)
+    # c = display_stats([path+file], ax = a, mnn = 3, node_metric = "k-core", deg = 2)
     # g = read_graph(path+file, return_ig=True)
 
     # display_graph([path+"\\interactions_resD7_1.csv", path+"\\interactions_resD7_1.csv"], a, node_metric = "closeness", cluster_num = 2, idx = [1, 1, 1, 0,0,1,1,1,1,1])
