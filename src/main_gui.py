@@ -1,6 +1,8 @@
 import tkinter as tk
 from tkinter import ttk
 import tkinter.font as tkFont
+from pprint import pprint
+
 from tkinter import filedialog
 import matplotlib
 from matplotlib.backends.backend_tkagg import (
@@ -16,7 +18,7 @@ from clustering_window import *
 
 #To-do: - include statement that graph display is from average when several subgraphs are selected.
 #       - implement average measures (average of graph != average of graph measures.)
-#       - fix display bug (approaches1 and approaches 2)
+#       - fix display bug (metrics are only colored properly for first layers, not next ones.)
 #       - make code work for affinity/distance graph. right now, mnn only works for affinity, as well as all display metrics.
 #           that inckude making the metric dependant on it, and the mnn as well as threshold function.
 #       - fix k-core with new visualization (0.01 instead of 0)
@@ -158,16 +160,18 @@ class App:
         self.stats_in_frame()
         
     def get_checked(self):
+        """ Updates list of paths when graph layer selector is clicked """
         lst = []
         for i, item in enumerate(self.path_variable_list):
             if item.get() == "1":
                 lst.append(self.path_label_list[i])
         self.active_path_list = lst
-        self.path_to_file = [self.dirpath + "/" + self.active_path_list[i] for i in range(len(self.active_path_list))]
+        self.path_to_file = [self.dirpath + "/" + self.active_path_list[i] for i in range(len(self.active_path_list))]   
         self.plot_in_frame(layout_style = self.layout_style, node_metric = self.node_metric,\
                                percentage_threshold=self.percentage_threshold, mnn = self.mnn_number, deg = self.degree)
 
     def path_button_command(self):
+        """ Selects the directory path where graph layers are contained, and updates the list of selectable graph layer """
         self.dirpath = filedialog.askdirectory()
         # dirpath = filedialog.askopenfilename(title="Select a File", filetypes=[("Text files", "*.csv"), ("All files", "*.txt*")])
         # self.graph_selector["values"] = os.listdir(self.dirpath)
@@ -176,10 +180,10 @@ class App:
         self.path_label_list = []
         # main list holding menu values
         path_list = os.listdir(self.dirpath)
-        
+                
         # Creating variables to store paths dynamically
         for i in range(0, len(path_list)):
-            globals()['var'+str(i)] = tk.StringVar()
+            globals()['var'+str(i)] = tk.StringVar(self.graph_selector)
         # Finally adding values to the actual Menubutton
         for i in range(0, len(path_list)):
             self.path_variable_list.append(globals()['var'+str(i)])

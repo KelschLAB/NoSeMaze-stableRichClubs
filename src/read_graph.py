@@ -104,7 +104,7 @@ def read_labels(path_to_file):
         labels = arr.iloc[:, 0]
         return [l for l in labels]
     
-    if type(path_to_file) == list:
+    elif type(path_to_file) == list:
         arr = pd.read_csv(path_to_file[0])
         labels = arr.iloc[:, 0]
         return [l for l in labels]
@@ -657,8 +657,8 @@ def display_stats(path_to_file, ax, percentage_threshold = 0.0, mnn = None, **kw
         
 if __name__ == '__main__':
 
-    path = "C:\\Users\\Corentin offline\\Documents\\GitHub\\clusterGUI\\data\\"
-    file = "test_shuffled_approach.csv"
+    path = "..\\data\\G1\\"
+    file = "interactions_resD7_1.csv"
     # c = community_clustering(path+file)
     print(read_labels(path+file))
     f = plt.Figure()
