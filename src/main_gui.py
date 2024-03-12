@@ -25,6 +25,8 @@ from clustering_window import *
 #       - arrow heads in graph cut should also disapear
 #       - mnn in clustering should be fixed (the code was not right)
 #       - include a reset button?
+#       - remove references to avg graph, or figure why that would be useful.
+#       - directed graph in 3D for multilayers!!! 
 
 class App:
     def __init__(self, root):

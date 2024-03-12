@@ -56,7 +56,6 @@ def nn_cut(arr, nn = 2):
 
     return nn_arr
 
-
 def mnn_cut(arr, nn = 2):
     """
     Cuts the edges of the graph in the input array by keeping only the edges that are mutual neighbors.
@@ -339,7 +338,6 @@ def display_graph(path_to_file, ax, percentage_threshold = 0.0, mnn = None, **kw
     Returns
     -------
     None.
-
     """
 
     random.seed(1) #making sure layout of plots stays the same when changing metrics
@@ -366,7 +364,7 @@ def display_graph(path_to_file, ax, percentage_threshold = 0.0, mnn = None, **kw
         g = ig.Graph.Weighted_Adjacency(data, mode='undirected')
     else:
         g = ig.Graph.Weighted_Adjacency(data, mode='directed')
-
+        
     # default values
     node_color = "blue"
     node_size = 15
@@ -432,11 +430,11 @@ def display_graph(path_to_file, ax, percentage_threshold = 0.0, mnn = None, **kw
     visual_style = {}
     visual_style["vertex_size"] = node_size
     visual_style["vertex_color"] = node_color
-    visual_style["edge_arrow_width"] = 5
+    visual_style["edge_arrow_width"] = rescale(np.array([w['weight'] for w in g.es]))*5
     visual_style["edge_width"] = rescale(np.array([w['weight'] for w in g.es]))
     visual_style["layout"] = layout
     visual_style["vertex_frame_color"] = marker_frame_color
-    visual_style["edge_curved"] = 0
+    visual_style["edge_curved"] = 0.2
     visual_style["vertex_frame_width"] = 3
     visual_style["vertex_label"] = node_labels
     # g.vs["label"] =  node_labels#[v.index for v in g.vs()]
@@ -444,7 +442,7 @@ def display_graph(path_to_file, ax, percentage_threshold = 0.0, mnn = None, **kw
     # visual_style["vertex_label_size"] = 20
     # visual_style["vertex_label_dist"] = 0.5
 
-    # visual_style["vertex_font"] = "Times"
+    visual_style["vertex_font"] = "Times"
     ig.plot(g, target=ax, **visual_style)
     
 def display_graph_3d(path_to_file, ax, percentage_threshold = 0.0, mnn = None, **kwargs):
