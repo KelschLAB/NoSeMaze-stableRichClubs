@@ -22,35 +22,38 @@ def chasings_vs_rc():
     arr50 = np.array([1, 2, 3, 5, 3, 2 ,1]) # chasing from RC for thres 50%
     plt.rcParams["figure.figsize"] = [7.00, 3.50]
     plt.rcParams["figure.autolayout"] = True
+    plt.rcParams.update({
+    "text.usetex": True,
+    "font.family": "Helvetica"
+    })
+
     labels = ['G1', 'G2', 'G4', 'G6', 'G7', 'G8', 'G10']
-    x = np.arange(len(labels))
-    width = 0.20
+    x = np.arange(len(labels))*1
+    width = 0.35
     fig, ax = plt.subplots()
     
-    rects1 = ax.bar(x - width/1.5, arr10/tot10, width, label='10%')
-    rects3 = ax.bar(x + width/1.5, arr50/tot50, width, label='50%')
-    rects2 = ax.bar(x, arr30/tot30, width, label='30%')
-
+    # colors = ["#ffeda0", "#feb24c", "#f03b20"] # reds
+    colors = ["#edf8b1", "#7fcdbb", "#2c7fb8"] # veridis
+    # colors = ['#f0f0f0','#bdbdbd','#636363'] # grays
+    # colors = ['#e0ecf4','#9ebcda','#8856a7'] # purples
+    # colors = ['#a1dab4','#41b6c4','#225ea8'] # veridis dark
     
-    ax.set_ylabel('Scores')
-    ax.set_title('Scores by group')
+    rects1 = ax.bar(x - width, 100*arr10/tot10, 2*width/3, label='10\%', align = 'edge', color = colors[0]) 
+    rects2 = ax.bar(x - width/3, 100*arr30/tot30, 2*width/3, label='30\%', align = 'edge', color = colors[1])
+    rects3 = ax.bar(x + width/3, 100*arr50/tot50, 2*width/3, label='50\%', align = 'edge', color = colors[2]) 
+
+     
+    ax.spines[['right', 'top']].set_visible(False)
+    ax.set_ylabel('Total chasings fraction (\%)')
+    ax.set_xlabel('Cohort')
+    ax.set_title('Rich-club members chasings')
     ax.set_xticks(x)
     ax.set_xticklabels(labels)
     ax.legend(title="Threshold:")
-
-    
-    # def autolabel(rects):
-    #    for rect in rects:
-    #       height = rect.get_height()
-    #       ax.annotate('{}'.format(height),
-    #          xy=(rect.get_x() + rect.get_width() / 2, height),
-    #          xytext=(0, 3), # 3 points vertical offset
-    #          textcoords="offset points",
-    #          ha='center', va='bottom')
-    
-    # autolabel(rects1)
-    # autolabel(rects2)
-    
+    ax.hlines(25, x[0] - width, x[-1] + width, linestyle = "--", color = "k", alpha = 0.5)  # 25 because there are 2 to 3 members of stable rich club
+    ax.annotate('Random chance', xy=(4.5, 25), xytext=(4 + width/10, 70), ha = 'left',      # 25 because there are 2 to 3 members of stable rich club
+            arrowprops=dict(facecolor='black', shrink=0.05, width = 0.5, headwidth = 5), textcoords='data', xycoords='data')
+    plt.savefig("C:\\Users\\Agarwal Lab\\Corentin\\Python\\clusterGUI\\plots\\chasings_vs_RC.png", dpi = 150)
     plt.show()
     
 chasings_vs_rc()
