@@ -2,13 +2,14 @@ import tkinter as tk
 from tkinter import ttk
 import tkinter.font as tkFont
 from pprint import pprint
-
+import webbrowser
 from tkinter import filedialog
 import matplotlib
 from matplotlib.backends.backend_tkagg import (
     FigureCanvasTkAgg,
     NavigationToolbar2Tk
 )
+from functools import partial
 matplotlib.use("TkAgg")
 from matplotlib.backends.backend_tkagg import *
 from matplotlib.figure import Figure
@@ -24,9 +25,9 @@ from clustering_window import *
 #       - fix k-core with new visualization (0.01 instead of 0)
 #       - arrow heads in graph cut should also disapear
 #       - mnn in clustering should be fixed (the code was not right)
-#       - include a reset button?
-#       - remove references to avg graph, or figure why that would be useful.
+#       - remove references to avg graph, or figure why that would be useful -> that can be useful for large graph that are hard to superpose.
 #       - directed graph in 3D for multilayers!!! 
+#       - right now, only compatible with csv format.
 
 class App:
     def __init__(self, root):
@@ -52,6 +53,7 @@ class App:
         self.idx = []
         self.cluster_num = 0
         self.display_type = "plot"
+        self.edge_type = "affinity"
     
         # Frames
         menu_frame = tk.Frame(root, bg = "gray", height= 100)
@@ -64,11 +66,16 @@ class App:
         self.content_frame.pack()#fill=tk.BOTH, expand=True)
         
         # Dir selection button
-        path_button=tk.Button(btn_frame)
+        path_button=tk.Menubutton(btn_frame, text = "File")
+        path_button.menu = tk.Menu(path_button, tearoff=False)   
+        path_button["menu"]= path_button.menu  
+        path_button.menu.add_command(label="Open",command = self.path_button_command)
+        path_button.menu.add_command(label="Settings", command=self.settings_window)
+        path_button.menu.add_command(label="Reset",command = self.reset)
+        link = "https://stackoverflow.com/questions/71458060/how-to-open-a-link-with-an-specific-button-tkinter" #link to docs
+        path_button.menu.add_command(label="Help", command =lambda: webbrowser.open(link))
         path_button["justify"] = "center"
-        path_button["text"] = "files path"
         path_button.pack(side="left", fill="x", padx = 5)
-        path_button["command"] = self.path_button_command
         
         # file(s) selection Menubutton
         self.graph_selector=tk.Menubutton(btn_frame, text = "Select graph file(s)")
@@ -101,7 +108,7 @@ class App:
         self.graphcut_selector.bind('<<ComboboxSelected>>', self.graphcut_param_window)
         
         # button to open clustering window
-        cluster_button=tk.Button(btn_frame)
+        cluster_button = tk.Button(btn_frame)
         cluster_button["text"] = "cluster nodes"
         cluster_button.pack(side="left", fill="x", padx = 5)
         cluster_button["command"] = self.cluster_button_command
@@ -118,8 +125,149 @@ class App:
         stats_btn = tk.Button(result_display_frame, text='statistics')
         stats_btn.pack(side = "left")
         stats_btn["command"] = self.stats_clicked
+        
+    # functions for 'file' menu 
+    def path_button_command(self):
+        """ Selects the directory path where graph layers are contained, and updates the list of selectable graph layer """
+        self.dirpath = filedialog.askdirectory(title="Select the directory which contains the graph file(s)")
+        menu = tk.Menu(self.graph_selector, tearoff=False)
+        self.path_variable_list = []
+        self.path_label_list = []
+        # main list holding menu values
+        path_list = [p for p in os.listdir(self.dirpath) if p.endswith(".csv")]
+                
+        # Creating variables to store paths dynamically
+        for i in range(0, len(path_list)):
+            globals()['var'+str(i)] = tk.StringVar(self.graph_selector)
+        # Finally adding values to the actual Menubutton
+        for i in range(0, len(path_list)):
+            self.path_variable_list.append(globals()['var'+str(i)])
+            self.path_label_list.append(path_list[i])
+            menu.add_checkbutton(label = self.path_label_list[i], variable = self.path_variable_list[i], command=self.get_checked)
+        self.graph_selector.configure(menu=menu)
+
+    def reset(self):
+        """
+        Resets every user-selected options aside from the path/graph selected and the type of graph edges.
+        """
+        def reset_clicked(self, win):
+            self.plot_selector.set("Graph layout")
+            self.node_metric_selector.set("Node metric")
+            self.graphcut_selector.set("Graph-cut type")
+            self.node_metric = None
+            self.idx = []
+            self.percentage_threshold = 0.0
+            self.mnn_number = None
+            self.plot_in_frame()
+            win.destroy()
+            
+        popup = tk.Toplevel(root)
+        popup.wm_title("Reset plot parameters?")
+        label = ttk.Label(popup, text=" Graph layout, color labels and cut threshold will be reset.\nPath and edge type (affinity/distance) will not be affected.")
+        label.pack(side="top")
+        B1 = ttk.Button(popup, text="Ok", command = partial(reset_clicked, self, popup))
+        B1.pack(side="left", padx = 50)
+        B2 = ttk.Button(popup, text="No", command = popup.destroy)
+        B2.pack(side="left")
+        
+    def settings_window(self):
+        """
+        Opens a window showing the current settings (edge type, multilayer view and stats type),
+        to allow user to change them.
+        """
+        def switch_edge_type(self):
+            if self.edge_type == "affinity":
+                self.edge_type = "distance"
+            elif self.edge_type == "distance":
+                self.edge_type = "affinity"
+            print(self.edge_type)
+                
+        settings_popup = tk.Toplevel(root)
+        settings_popup.wm_title("Settings")
+        global edge_type_var 
+        edge_type_var = tk.IntVar()
+        aff_button = tk.Radiobutton(settings_popup, text="affinity", variable = edge_type_var, value = 1, command = partial(switch_edge_type, self))
+        aff_button.grid(row = 1, column = 1)
+        dist_button = tk.Radiobutton(settings_popup, text="distance", variable = edge_type_var, value = 2, command = partial(switch_edge_type, self))
+        dist_button.grid(row = 1, column = 2)
+        edge_type_var.set(1)       
+        if self.edge_type == "distance":
+            edge_type_var.set(2)
+            
+        global view_var 
+        view_var = tk.IntVar()
+        multilayer_button = tk.Radiobutton(settings_popup, text="3D", variable = view_var, value = 1, command = partial(switch_edge_type, self))
+        multilayer_button.grid(row = 2, column = 1)
+        avg_button = tk.Radiobutton(settings_popup, text="Average", variable = view_var, value = 2, command = partial(switch_edge_type, self))
+        avg_button.grid(row = 2, column = 2)
+        view_var.set(1)       
+
+        
+    # central function for plotting the graph(s)
+    def plot_in_frame(self, layout_style = "fr", node_metric = "none", percentage_threshold=0.0, mnn = None, deg = 0):
+        for fm in self.content_frame.winfo_children():
+            fm.destroy()
+            root.update()
+        px = 1/plt.rcParams['figure.dpi']  # pixel in inches
+        f = Figure(figsize=(950*px,500*px))
+        if len(self.path_to_file) > 1:
+            a = f.add_subplot(111, projection='3d')
+            a.set_box_aspect((2,2,1), zoom=1.5)
+        else:
+            a = f.add_subplot(111)
+        display_graph(self.path_to_file, a, percentage_threshold = self.percentage_threshold, mnn = self.mnn_number,\
+                      layout = layout_style, node_metric = self.node_metric, idx = self.idx, \
+                          cluster_num = self.cluster_num, layer_labels=self.path_to_file, deg = self.degree)
+        f.colorbar(ScalarMappable(norm=Normalize(vmin=0, vmax=1), cmap=cm.Reds), ax=a, label="Relative metric value", shrink = 0.3, location = 'left')
+        f.colorbar(ScalarMappable(norm=Normalize(vmin=0, vmax=1), cmap=cm.viridis), ax=a, label="Relative edge value", shrink = 0.3, location = 'right', pad = 0.1)
+        f.subplots_adjust(left=0, bottom=0, right=0.948, top=1, wspace=0, hspace=0)
+
+        canvas = FigureCanvasTkAgg(f, master=self.content_frame)
+        NavigationToolbar2Tk(canvas, self.content_frame)
+        canvas.draw()
+        canvas.get_tk_widget().pack()#fill=tk.BOTH, expand=True, side="top") 
+        self.label.config(text="")
+        
+    # central function for displaying the statistics of the graph(s)
+    def stats_in_frame(self):
+        for fm in self.content_frame.winfo_children():
+            fm.destroy()
+            root.update()
+        px = 1/plt.rcParams['figure.dpi']  # pixel in inches
+        f = Figure(figsize=(800*px,400*px), dpi = 100)
+        a = f.add_subplot(111)
+        display_stats(self.path_to_file, a, percentage_threshold=self.percentage_threshold, mnn = self.mnn_number, node_metric = self.node_metric, deg = self.degree)
+    
+        canvas = FigureCanvasTkAgg(f, master=self.content_frame)
+        NavigationToolbar2Tk(canvas, self.content_frame)
+        canvas.draw()
+        canvas.get_tk_widget().pack()#fill=tk.BOTH, expand=True, side="top") 
+        self.label.config(text="")
+
+    # function for graph selection and display
+    def get_checked(self):
+        """ Updates list of paths when graph layer selector is clicked """
+        lst = []
+        for i, item in enumerate(self.path_variable_list):
+            if item.get() == "1":
+                lst.append(self.path_label_list[i])
+        self.active_path_list = lst
+        self.path_to_file = [self.dirpath + "/" + self.active_path_list[i] for i in range(len(self.active_path_list))]   
+        self.plot_in_frame(layout_style = self.layout_style, node_metric = self.node_metric,\
+                               percentage_threshold=self.percentage_threshold, mnn = self.mnn_number, deg = self.degree)
 
     def graphcut_param_window(self, event):
+        """
+        Prompt for selecting the parameter for graph cut, i.e. removal of edges.
+        
+        If 'threshold' is selected, a percentage has to be given as an input. This 
+            percentage is scaled w.r.t to the strongest edge in the graph. Any edge with 
+            a value below the input threshold (in % of strongest edge) will be removed.
+        If 'mutual nearest neighbors' is selected, only the edges between nodes that are
+            mutual nearest neighbors are preserved. The input value specifies the neighboring
+            'degree', e.g. 1 means only 1st neighbors are preserved, 2 means 
+            up to the 2nd nearest neighbors, 3 means up to the 3rd nearest neighbor etc.
+        """
         if self.graphcut_selector.get() == "none":
             self.percentage_threshold = 0.0
             self.mnn_number = None
@@ -161,38 +309,6 @@ class App:
         self.display_type = "stats"
         self.stats_in_frame()
         
-    def get_checked(self):
-        """ Updates list of paths when graph layer selector is clicked """
-        lst = []
-        for i, item in enumerate(self.path_variable_list):
-            if item.get() == "1":
-                lst.append(self.path_label_list[i])
-        self.active_path_list = lst
-        self.path_to_file = [self.dirpath + "/" + self.active_path_list[i] for i in range(len(self.active_path_list))]   
-        self.plot_in_frame(layout_style = self.layout_style, node_metric = self.node_metric,\
-                               percentage_threshold=self.percentage_threshold, mnn = self.mnn_number, deg = self.degree)
-
-    def path_button_command(self):
-        """ Selects the directory path where graph layers are contained, and updates the list of selectable graph layer """
-        self.dirpath = filedialog.askdirectory()
-        # dirpath = filedialog.askopenfilename(title="Select a File", filetypes=[("Text files", "*.csv"), ("All files", "*.txt*")])
-        # self.graph_selector["values"] = os.listdir(self.dirpath)
-        menu = tk.Menu(self.graph_selector, tearoff=False)
-        self.path_variable_list = []
-        self.path_label_list = []
-        # main list holding menu values
-        path_list = os.listdir(self.dirpath)
-                
-        # Creating variables to store paths dynamically
-        for i in range(0, len(path_list)):
-            globals()['var'+str(i)] = tk.StringVar(self.graph_selector)
-        # Finally adding values to the actual Menubutton
-        for i in range(0, len(path_list)):
-            self.path_variable_list.append(globals()['var'+str(i)])
-            self.path_label_list.append(path_list[i])
-            menu.add_checkbutton(label = self.path_label_list[i], variable = self.path_variable_list[i], command=self.get_checked)
-        self.graph_selector.configure(menu=menu)
-
     def plot_changed(self, event):
         self.layout_style = self.plot_selector.get()
         if self.display_type == "plot":
@@ -224,46 +340,6 @@ class App:
                                percentage_threshold=self.percentage_threshold, mnn = self.mnn_number)
         else:
             self.stats_in_frame()
-        
-    def plot_in_frame(self, layout_style = "fr", node_metric = "none", percentage_threshold=0.0, mnn = None, deg = 0):
-        for fm in self.content_frame.winfo_children():
-            fm.destroy()
-            root.update()
-        px = 1/plt.rcParams['figure.dpi']  # pixel in inches
-        f = Figure(figsize=(950*px,500*px))
-        if len(self.path_to_file) > 1:
-            a = f.add_subplot(111, projection='3d')
-            a.set_box_aspect((2,2,1), zoom=1.5)
-        else:
-            a = f.add_subplot(111)
-        display_graph(self.path_to_file, a, percentage_threshold = self.percentage_threshold, mnn = self.mnn_number,\
-                      layout = layout_style, node_metric = self.node_metric, idx = self.idx, \
-                          cluster_num = self.cluster_num, layer_labels=self.path_to_file, deg = self.degree)
-        f.colorbar(ScalarMappable(norm=Normalize(vmin=0, vmax=1), cmap=cm.Reds), ax=a, label="Relative metric value", shrink = 0.3, location = 'left')
-        f.colorbar(ScalarMappable(norm=Normalize(vmin=0, vmax=1), cmap=cm.viridis), ax=a, label="Relative edge value", shrink = 0.3, location = 'right', pad = 0.1)
-        f.subplots_adjust(left=0, bottom=0, right=0.948, top=1, wspace=0, hspace=0)
-
-        canvas = FigureCanvasTkAgg(f, master=self.content_frame)
-        NavigationToolbar2Tk(canvas, self.content_frame)
-        canvas.draw()
-        canvas.get_tk_widget().pack()#fill=tk.BOTH, expand=True, side="top") 
-        self.label.config(text="")
-        
-    def stats_in_frame(self):
-        for fm in self.content_frame.winfo_children():
-            fm.destroy()
-            root.update()
-        px = 1/plt.rcParams['figure.dpi']  # pixel in inches
-        f = Figure(figsize=(800*px,400*px), dpi = 100)
-        # f = Figure()
-        a = f.add_subplot(111)
-        display_stats(self.path_to_file, a, percentage_threshold=self.percentage_threshold, mnn = self.mnn_number, node_metric = self.node_metric, deg = self.degree)
-    
-        canvas = FigureCanvasTkAgg(f, master=self.content_frame)
-        NavigationToolbar2Tk(canvas, self.content_frame)
-        canvas.draw()
-        canvas.get_tk_widget().pack()#fill=tk.BOTH, expand=True, side="top") 
-        self.label.config(text="")
 
     def cluster_button_command(self):
         self.clustertype_wdw = tk.Toplevel(root)

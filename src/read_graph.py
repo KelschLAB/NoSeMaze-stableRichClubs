@@ -434,7 +434,10 @@ def display_graph(path_to_file, ax, percentage_threshold = 0.0, mnn = None, **kw
     visual_style["edge_width"] = rescale(np.array([w['weight'] for w in g.es]))
     visual_style["layout"] = layout
     visual_style["vertex_frame_color"] = marker_frame_color
-    visual_style["edge_curved"] = 0.2
+    if isSymmetric(data):
+        visual_style["edge_curved"] = 0.0
+    else:
+        visual_style["edge_curved"] = 0.2
     visual_style["vertex_frame_width"] = 3
     visual_style["vertex_label"] = node_labels
     # g.vs["label"] =  node_labels#[v.index for v in g.vs()]
