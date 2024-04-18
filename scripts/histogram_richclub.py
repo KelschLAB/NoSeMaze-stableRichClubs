@@ -1,6 +1,28 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
+plt.rcParams.update({"text.usetex": True})
+
+def total_chasings_cohort():
+    fig, ax = plt.subplots(1, 1)
+    cohort_num = [1, 2, 4, 6, 7, 8, 10]
+    control_cohort_num = [11, 12, 14, 15, 17]
+    total_chasings = np.array([4, 24, 17, 24, 29, 30, 10])
+    total_control_chasings = np.array([ 31, 54, 42, 38, 62])
+    for i in range(len(cohort_num)):
+        ax.bar(i, total_chasings[i], 0.5, color = "blue", alpha = 0.4) 
+    for i in range(len(control_cohort_num)):
+        ax.bar(i+7, total_control_chasings[i], 0.5, color = "red", alpha = 0.4) 
+    plt.xlabel("Cohort index")
+    plt.ylabel("Number of chasings (10\% threshold)", fontsize = 14); 
+    total_idx = []
+    total_idx.extend(cohort_num); total_idx.extend(control_cohort_num)
+    plt.xticks(range(12), total_idx)
+    ax.set_title("Total chasings in $1^{st}$ vs validation cohort", fontsize = 15)
+    ax.bar(np.nan, np.nan, color = "blue", alpha = 0.4, label = r"$1^{st}$ cohort") 
+    ax.bar(np.nan, np.nan, color = "red", alpha = 0.4, label = r"Validation cohort")
+    ax.legend()
+
 
 def tuberank_vs_rc():
     arr = np.array([2, 3, 5, 1, 2, 4, 1, 7, 4, 2, 2, 1, 1, 6, 4, 6, 5, 1, 2, 3]) # chasing rank
@@ -105,7 +127,8 @@ def chasings_vs_rc_validation():
     plt.savefig("C:\\Users\\Agarwal Lab\\Corentin\\Python\\clusterGUI\\plots\\chasings_vs_RC_validation.png", dpi = 150)
     plt.show()
     
-chasings_vs_rc()
+# chasings_vs_rc()
 # chasings_vs_rc_validation()
+total_chasings_cohort()
 
     
