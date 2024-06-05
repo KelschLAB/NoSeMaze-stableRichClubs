@@ -19,15 +19,18 @@ from clustering_window import *
 
 #To-do: - include statement that graph display is from average when several subgraphs are selected.
 #       - implement average measures (average of graph != average of graph measures.)
-#       - fix display bug (metrics are only colored properly for first layers, not next ones.)
+#       - fix colormap issues: metrics only follow the colormap for first layer. also, colormap for metric should only appear
+#           when one is selected. Also edge colormap should be shown for single layer.
 #       - make code work for affinity/distance graph. right now, mnn only works for affinity, as well as all display metrics.
-#           that inckude making the metric dependant on it, and the mnn as well as threshold function.
+#           that includes making the metric dependant on it, and the mnn as well as threshold function.
 #       - fix k-core with new visualization (0.01 instead of 0)
-#       - arrow heads in graph cut should also disapear
 #       - mnn in clustering should be fixed (the code was not right)
 #       - remove references to avg graph, or figure why that would be useful -> that can be useful for large graph that are hard to superpose.
-#       - directed graph in 3D for multilayers!!! 
+#       - check why the hell the mnn cut doesn't work for the corrected edge color in 3D
 #       - right now, only compatible with csv format.
+#       - bugs when plotting several directed graphs.
+#       - check spectral clustering
+#       - write tests
 
 class App:
     def __init__(self, root):

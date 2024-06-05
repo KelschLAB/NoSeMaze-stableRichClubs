@@ -471,8 +471,8 @@ def display_graph_3d(path_to_file, ax, percentage_threshold = 0.0, mnn = None, *
     None.
 
     """
-    layers_layout = read_graph(path_to_file, return_ig=True) #here to make sure layout stays consistent upon graph cut
-    layers = read_graph(path_to_file, percentage_threshold = percentage_threshold, mnn = mnn, return_ig=True)
+    layers_layout = read_graph(path_to_file, percentage_threshold = percentage_threshold, mnn = mnn, return_ig=True) #here to make sure layout stays consistent upon graph cut
+    layers = read_graph(path_to_file, percentage_threshold = percentage_threshold, mnn = mnn, return_ig=False)
 
     node_size = 15 #default value
     if "node_metric" in kwargs:

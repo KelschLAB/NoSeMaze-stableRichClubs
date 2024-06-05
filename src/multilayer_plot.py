@@ -9,9 +9,24 @@ from matplotlib import cm
 import os
 from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.mplot3d.art3d import Line3DCollection
+from matplotlib.patches import FancyArrowPatch
+from mpl_toolkits.mplot3d import proj3d
 from mpl_toolkits.mplot3d.art3d import Text3D
 
 from read_graph import *
+
+
+class Arrow3D(FancyArrowPatch):
+    def __init__(self, xs, ys, zs, *args, **kwargs):
+        super().__init__((0,0), (0,0), *args, **kwargs)
+        self._verts3d = xs, ys, zs
+
+    def do_3d_projection(self, renderer=None):
+        xs3d, ys3d, zs3d = self._verts3d
+        xs, ys, zs = proj3d.proj_transform(xs3d, ys3d, zs3d, self.axes.M)
+        self.set_positions((xs[0],ys[0]),(xs[1],ys[1]))
+
+        return np.min(zs)
 
 
 class LayeredNetworkGraph(object):
@@ -27,8 +42,9 @@ class LayeredNetworkGraph(object):
 
         Arguments:
         ----------
-        graphs : list of networkx.Graph objects
+        graphs_layout :  list of networkx.Graph objects
             List of graphs, one for each layer.
+        graphs : list of numpy arrays containing the exact weights of the graphs.
 
         node_labels : dict node ID : str label or None (default None)
             Dictionary mapping nodes to labels.
@@ -39,20 +55,31 @@ class LayeredNetworkGraph(object):
 
         ax : mpl_toolkits.mplot3d.Axes3d instance or None (default None)
             The axis to plot to. If None is given, a new figure and a new axis are created.
-
         """
         
         self.cmap_edges = cm.viridis
         self.graphs = [g.to_networkx() for g in graphs_layout]
+        self.data = [data for data in graphs]
         self.edge_width = []
         self.node_edge_colors = node_edge_colors
         self.layer_labels = layer_labels
+        self.symmetry = [] # to store whether or not graphs are directed
         scale_factor = 5
-        for g in graphs:
-            self.edge_width.extend(self.rescale(np.array([w['weight'] for w in g.es]), scale_factor))
+        for g in self.graphs:
+            weights = nx.get_edge_attributes(g, "weight").values()
+            self.edge_width.extend(self.rescale(np.array([w for w in weights]), scale_factor))
+        for d in self.data:
+            self.symmetry.extend([self.isSymmetric(d) for i in range(len(g.edges))])
+                
+        # for g in graphs:
+        #     self.edge_width.extend(self.rescale(np.array([w['weight'] for w in g.es]), scale_factor))
         self.edge_colors = []
         for w in self.edge_width:
+            # if w == 0: #0.01 represents 0, it is just to avoid division by 0 in the rescaling for thresholding (see read_graph).
+            #     self.edge_colors.append([1, 1, 1, 0])
+            # else:
             self.edge_colors.append(self.cmap_edges((w - 0.001)/scale_factor)) #subtracting 0.001 to ensure colormap is not called with 1 (which would be cycle back to 0).
+        
         self.nodes_width = nodes_width
         self.total_layers = len(graphs)
 
@@ -73,6 +100,12 @@ class LayeredNetworkGraph(object):
         # compute layout and plot
         self.get_node_positions()
         self.draw()
+        
+    def isSymmetric(self, mat):
+        transmat = np.array(mat).transpose()
+        if np.array_equal(mat, transmat):
+            return True
+        return False
         
     def rescale(self, arr, max_val = 5):
         normalized_arr = (arr - np.min(arr))/(np.max(arr)-np.min(arr))
@@ -127,10 +160,41 @@ class LayeredNetworkGraph(object):
         x, y, z = zip(*[self.node_positions[node] for node in nodes])
         self.ax.scatter(x, y, z, *args, **kwargs)
 
-    def draw_edges(self, edges, *args, **kwargs):
-        segments = [(self.node_positions[source], self.node_positions[target]) for source, target in edges]
-        line_collection = Line3DCollection(segments, *args, **kwargs)
-        self.ax.add_collection3d(line_collection)
+    def draw_edges(self, edges, arrow, *args, **kwargs):
+        # segments = [(self.node_positions[source], self.node_positions[target]) for source, target in edges]
+        # line_collection = Line3DCollection(segments, *args, **kwargs)
+        # self.ax.add_collection3d(line_collection)
+        counter = 0
+        for source, target in edges:
+            if self.symmetry[counter] or not arrow:
+                style = "-"
+            else:
+                style = '-|>'
+            # facecolor=self.edge_colors,  colors=self.edge_colors, alpha=1, linestyle='-', zorder=2, linewidths=self.edge_width
+            if "facecolor" in kwargs:
+                fc = kwargs["facecolor"][counter]
+            else:
+                fc = None
+            if "colors" in kwargs:
+                c = kwargs["colors"][counter]
+            else:
+                c = 'k'
+            if "linestyle" in kwargs:
+                ls = kwargs["linestyle"]
+            if "alpha" in kwargs:
+                a = kwargs["alpha"]
+            if "linewidths" in kwargs:
+                lw = kwargs["linewidths"][counter]
+            else:
+                lw = 1
+            if lw != 0:
+                x, y, z = self.node_positions[source]
+                u, v, w = self.node_positions[target]
+                # self.ax.plot([x, u], [y, v], [z, w])
+                arrow_prop_dict = dict(mutation_scale=20, arrowstyle=style, shrinkA=10, shrinkB=5, alpha = a, linestyle = ls, color = c, lw = lw)
+                a = Arrow3D([x, u], [y, v], [z, w], **arrow_prop_dict)
+                self.ax.add_artist(a)
+            counter += 1
 
     def get_extent(self, pad=0.1):
         xyz = np.array(list(self.node_positions.values()))
@@ -157,8 +221,8 @@ class LayeredNetworkGraph(object):
                 self.ax.text(*self.node_positions[(node, z)], node_labels[node], *args, **kwargs)
 
     def draw(self):
-        self.draw_edges(self.edges_within_layers,  facecolor=self.edge_colors,  colors=self.edge_colors, alpha=1, linestyle='-', zorder=2, linewidths=self.edge_width)
-        self.draw_edges(self.edges_between_layers, color='k', alpha=0.2, linestyle='--', zorder=2, lw = 1)
+        self.draw_edges(self.edges_within_layers, arrow = True, facecolor=self.edge_colors,  colors=self.edge_colors, alpha=1, linestyle='-', zorder=2, linewidths=self.edge_width)
+        self.draw_edges(self.edges_between_layers, arrow = False, color='k', alpha=0.2, linestyle='--', zorder=2, lw = 1)
         cmap_list = [cm.Reds, cm.Blues, cm.Greens, cm.Oranges, cm.Purples]*self.total_layers
         for z in range(self.total_layers):
             if self.layer_labels != None:
@@ -181,9 +245,11 @@ class LayeredNetworkGraph(object):
 
 if __name__ == '__main__':
 
-    path = "C:\\Users\\Corentin offline\\Documents\\Python Scripts\\micemaze\\data\\G2\\"
-    files = [path+"approach_prop_resD7_1.csv", path+"HWI_t_resD7_1.csv"]
-    
+    path = "C:\\Users\\Corentin offline\\Documents\\GitHub\\clusterGUI\\data\\social network matrices 3days\\G1\\"
+    # files = [path+"chasing_resD1_1.csv", path+"chasing_resD1_3.csv"]
+    files = [path+"interactions_resD3_1.csv", path+"interactions_resD3_2.csv"]
+
+  
     layers = read_graph(files, 0, None, True)
     # node_labels = {nn : str(nn) for nn in range(4*n)}
 
@@ -191,7 +257,7 @@ if __name__ == '__main__':
     fig = plt.figure(figsize=(6, 4))
     ax = fig.add_subplot(111, projection='3d')
     ax.set_box_aspect((2,2,1), zoom=1.4)
-    LayeredNetworkGraph(layers, ax=ax, layout=nx.circular_layout)
+    LayeredNetworkGraph(layers, read_graph(files), ax=ax, layout=nx.circular_layout)
     ax.set_axis_off()
     plt.colorbar(ScalarMappable(norm=Normalize(vmin=0, vmax=1), cmap=cm.viridis), ax=ax, label="Edge weight")
     plt.show()
