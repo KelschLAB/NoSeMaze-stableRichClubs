@@ -1,0 +1,4 @@
+- presence of rich club (show averaged data)
+- rc is stable in time (show single layer, but of multiple days)
+- mutants are less likely to be in RC
+- RC do most of chasing
