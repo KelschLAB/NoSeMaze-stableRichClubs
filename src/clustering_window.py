@@ -20,15 +20,15 @@ def rescale(arr, max_val = 5):
     normalized_arr = (arr - np.min(arr))/(np.max(arr)-np.min(arr))
     return normalized_arr*max_val
 
-class NewWindow(tk.Toplevel):
+class SpectralClustWindow(tk.Toplevel):
     def __init__(self, root = None, app = None, path_to_file = None):
 
         super().__init__(master = root)
         self.root = root
         self.title("New Window")
         self.geometry("1000x600")
-        label = tk.Label(self, text ="This is a new Window")
-        label.pack()
+        # label = tk.Label(self, text ="This is a new Window")
+        # label.pack()
         self.title('Clustering analysis window')
         self.app = app
         
@@ -37,7 +37,11 @@ class NewWindow(tk.Toplevel):
         self.path_to_file = path_to_file
         self.clusterer = None
         self.isAffinity = tk.BooleanVar()
-        self.isAffinity.set(True)
+        if self.app.edge_type == "affinity":
+            self.isAffinity.set(True)
+        else:
+            self.isAffinity.set(False)
+
         self.idx = None
         self.nn = 7
         self.cluster_num = 2
@@ -47,8 +51,8 @@ class NewWindow(tk.Toplevel):
         menu_frame = tk.Frame(self, bg = "gray", height= 100)
         menu_frame.pack(side="top", fill="x")
         # hyperparams
-        selection_btn_frame = tk.Frame(menu_frame, bg = "gray", height=50)
-        selection_btn_frame.pack(side="top", fill="x")
+        self.selection_btn_frame = tk.Frame(menu_frame, bg = "gray", height=50)
+        self.selection_btn_frame.pack(side="top", fill="x")
         self.hyperparam_btn_frame = tk.Frame(menu_frame, bg = "blue", height=50)
         self.hyperparam_btn_frame.pack(side="top", fill="x")
         # content frame
@@ -86,15 +90,15 @@ class NewWindow(tk.Toplevel):
         #     self.path_to_file = [self.dirpath + "/" + self.active_path_list[i] for i in range(len(self.active_path_list))]
         
         # graph type
-        tk.Label(selection_btn_frame, text="Type of graph").pack(side = "left")
-        self.affinity_button = tk.Radiobutton(selection_btn_frame, text="Affinity", variable=self.isAffinity, value=True)
-        self.affinity_button.pack(side="left")
-        self.distance_button = tk.Radiobutton(selection_btn_frame,text="Distance", variable=self.isAffinity, value = False)
-        self.distance_button.pack(side="left")
+        # tk.Label(selection_btn_frame, text="Type of graph").pack(side = "left")
+        # self.affinity_button = tk.Radiobutton(selection_btn_frame, text="Affinity", variable=self.isAffinity, value=True)
+        # self.affinity_button.pack(side="left")
+        # self.distance_button = tk.Radiobutton(selection_btn_frame,text="Distance", variable=self.isAffinity, value = False)
+        # self.distance_button.pack(side="left")
         
         # selecting the graph combination for clustering
-        tk.Label(selection_btn_frame, text="Laplacian combination").pack(side = "left")
-        self.laplacian_selector=ttk.Combobox(selection_btn_frame, state = "readonly")
+        tk.Label(self.selection_btn_frame, text="Laplacian combination").pack(side = "left")
+        self.laplacian_selector=ttk.Combobox(self.selection_btn_frame, state = "readonly")
         self.laplacian_selector.pack(side="left", fill="x")
         self.laplacian_selector.set("fully connected")
         self.laplacian_selector["values"] = ["fully connected", "nearest neighbours", "epsilon neighbourhood"]
@@ -102,8 +106,8 @@ class NewWindow(tk.Toplevel):
 
         self.hyperparams_buttons_fc() # setting up hyperparams button on start
         self.clustering_buttons_fc() # setting up clustering buttons on start
-        self.affinity_button["command"] = self.similarity_changed #commands need to be added after laplacian selector is created
-        self.distance_button["command"] = self.similarity_changed
+        # self.affinity_button["command"] = self.similarity_changed #commands need to be added after laplacian selector is created
+        # self.distance_button["command"] = self.similarity_changed
         
         D = read_graph(self.path_to_file)
         self.clusterer = graphClusterer(D, self.isAffinity.get(), self.laplacian_selector.get())
@@ -139,8 +143,8 @@ class NewWindow(tk.Toplevel):
             fm.destroy()
             self.root.update()
             # selecting the number of clusters
-        tk.Label(self.clustering_btn_frame, text="Number of clusters").pack(side = "left")
-        self.cluster_number_field = tk.Entry(self.clustering_btn_frame, width = 5)
+        tk.Label(self.selection_btn_frame, text="Number of clusters").pack(side = "left")
+        self.cluster_number_field = tk.Entry(self.selection_btn_frame, width = 5)
         self.cluster_number_field["justify"] = "center"
         self.cluster_number_field.pack(side = "left")
         self.cluster_number_field.insert(-1, 2)
@@ -152,7 +156,7 @@ class NewWindow(tk.Toplevel):
             self.nn_field.pack(side = "left", padx = 0)
             self.nn_field.insert(-1, 7)
          
-        connectivity_button=tk.Button(self.clustering_btn_frame)
+        connectivity_button=tk.Button(self.selection_btn_frame)
         connectivity_button["justify"] = "center"
         connectivity_button["text"] = "Show connectivity"
         connectivity_button.pack(side="left", fill="x", padx = 5)
@@ -161,7 +165,7 @@ class NewWindow(tk.Toplevel):
         cluster_button=tk.Button(self.clustering_btn_frame)
         cluster_button["justify"] = "center"
         cluster_button["text"] = "Cluster!"
-        cluster_button.pack(side="left", fill="x", padx = 5)
+        cluster_button.pack(side="top", fill="x", padx = 5)
         cluster_button["command"] = self.cluster_graphs
             
     def clustering_buttons_nn(self):
@@ -312,6 +316,8 @@ class NewWindow(tk.Toplevel):
             connectivity_param = int(self.epsilon_field.get())
         _, self.app.idx, _, _ = self.clusterer.clustering(cluster_num, self.isAffinity.get(), nn, connectivity_param)
         self.app.cluster_num = cluster_num
+        self.app.plot_in_frame(layout_style = self.app.layout_style, node_metric = self.app.node_metric, \
+                               percentage_threshold=self.app.percentage_threshold, mnn = self.app.mnn_number, deg = self.app.degree)
         
     def plot_clusNum_stats(self):
         for fm in self.content_frame.winfo_children():
@@ -378,7 +384,7 @@ class NewWindow(tk.Toplevel):
             fm.destroy()
             self.master.update()
         px = 1/plt.rcParams['figure.dpi']  # pixel in inches
-        f = Figure(figsize=(800*px,300*px), dpi = 100)
+        f = Figure(figsize=(750*px,450*px))
         
         cluster_num = int(self.cluster_number_field.get())
         if not(self.isAffinity.get()):
@@ -392,11 +398,16 @@ class NewWindow(tk.Toplevel):
         elif self.laplacian_selector.get() == "epsilon neighbourhood":
             connectivity_param = int(self.epsilon_field.get())
         S, _, _, _ = self.clusterer.clustering(cluster_num, self.isAffinity.get(), nn, connectivity_param)
-        
+        S_layout, _, _, _ = self.clusterer.clustering(cluster_num, self.isAffinity.get(), None, None)
+
         if len(S) > 1: #3d plot
             a = f.add_subplot(111, projection='3d')
+            a.set_box_aspect((2,2,1), zoom=1.5)
+            layers_layout = [ig.Graph.Weighted_Adjacency(data, mode='directed') for data in S_layout]
             layers = [ig.Graph.Weighted_Adjacency(data, mode='directed') for data in S]
-            LayeredNetworkGraph(layers, ax=a, layout = nx.spring_layout)
+            graphs_data = [data for data in S]
+            LayeredNetworkGraph(layers_layout, layers, graphs_data, ax=a, layout = nx.spring_layout)
+            # LayeredNetworkGraph(layers_layout, layers, read_graph(files), ax=ax, layout=nx.circular_layout)
             a.set_axis_off()
         else: #2d plot
             a = f.add_subplot(111)

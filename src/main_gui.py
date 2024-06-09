@@ -20,16 +20,14 @@ from clustering_window import *
 #To-do: - include statement that graph display is from average when several subgraphs are selected.
 #       - implement average measures (average of graph != average of graph measures.)
 #       - fix colormap issues: metrics only follow the colormap for first layer. also, colormap for metric should only appear
-#           when one is selected. Also edge colormap should be shown for single layer.
+#           when one is selected. Also edge colormap should be shown for single layer. maybe replace the colorbar by a text stating
+#           that the hue indicates the value, to improve visibility.
 #       - make code work for affinity/distance graph. right now, mnn only works for affinity, as well as all display metrics.
 #           that includes making the metric dependant on it, and the mnn as well as threshold function.
-#       - fix k-core with new visualization (0.01 instead of 0)
-#       - mnn in clustering should be fixed (the code was not right)
+#       - mnn in clustering should be fixed (the displayed graph isnt cut properly)
 #       - remove references to avg graph, or figure why that would be useful -> that can be useful for large graph that are hard to superpose.
-#       - check why the hell the mnn cut doesn't work for the corrected edge color in 3D
 #       - right now, only compatible with csv format.
-#       - bugs when plotting several directed graphs.
-#       - check spectral clustering
+#       - include minimal spanning tree?
 #       - write tests
 
 class App:
@@ -356,11 +354,12 @@ class App:
         supervised_button["command"] = self.supervised_button
         
     def supervised_button(self):
-        NewWindow(root, self, self.path_to_file)
+        SpectralClustWindow(root, self, self.path_to_file)
         self.clustertype_wdw.destroy()
         
     def unsupervised_button(self):
         self.idx = community_clustering(self.path_to_file)
+        print(self.idx)
         self.cluster_num = max(self.idx)+1
         self.clustertype_wdw.destroy()
         self.plot_in_frame(layout_style = self.layout_style, node_metric = self.node_metric)

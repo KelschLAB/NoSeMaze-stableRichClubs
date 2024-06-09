@@ -471,8 +471,11 @@ def display_graph_3d(path_to_file, ax, percentage_threshold = 0.0, mnn = None, *
     None.
 
     """
-    layers_layout = read_graph(path_to_file, percentage_threshold = percentage_threshold, mnn = mnn, return_ig=True) #here to make sure layout stays consistent upon graph cut
-    layers = read_graph(path_to_file, percentage_threshold = percentage_threshold, mnn = mnn, return_ig=False)
+    random.seed(1) #making sure layout of plots stays the same when changing metrics
+
+    layers_layout = read_graph(path_to_file, percentage_threshold = 0, mnn = None, return_ig=True) #here to make sure layout stays consistent upon graph cut
+    layers = read_graph(path_to_file, percentage_threshold = percentage_threshold, mnn = mnn, return_ig=True) 
+    layers_data = read_graph(path_to_file, percentage_threshold = percentage_threshold, mnn = mnn, return_ig=False)
 
     node_size = 15 #default value
     if "node_metric" in kwargs:
@@ -577,7 +580,7 @@ def display_graph_3d(path_to_file, ax, percentage_threshold = 0.0, mnn = None, *
     else:
         layer_labels = None
             
-    LayeredNetworkGraph(layers_layout, layers, ax=ax, layout=layout, node_labels = node_labels, nodes_width=node_size, node_edge_colors=marker_frame_color, layer_labels=layer_labels)
+    LayeredNetworkGraph(layers_layout, layers, layers_data, ax=ax, layout=layout, node_labels = node_labels, nodes_width=node_size, node_edge_colors=marker_frame_color, layer_labels=layer_labels)
     ax.set_axis_off()
 
     

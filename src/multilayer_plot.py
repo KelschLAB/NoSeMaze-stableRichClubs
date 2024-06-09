@@ -31,7 +31,7 @@ class Arrow3D(FancyArrowPatch):
 
 class LayeredNetworkGraph(object):
 
-    def __init__(self, graphs_layout, graphs, node_labels=None, layout=nx.spring_layout, nodes_width = None, ax=None, node_edge_colors = None, layer_labels = None):
+    def __init__(self, graphs_layout, graphs, graphs_data, node_labels=None, layout=nx.spring_layout, nodes_width = None, ax=None, node_edge_colors = None, layer_labels = None):
         """Given an ordered list of graphs [g1, g2, ..., gn] that represent
         different layers in a multi-layer network, plot the network in
         3D with the different layers separated along the z-axis.
@@ -42,9 +42,11 @@ class LayeredNetworkGraph(object):
 
         Arguments:
         ----------
-        graphs_layout :  list of networkx.Graph objects
-            List of graphs, one for each layer.
-        graphs : list of numpy arrays containing the exact weights of the graphs.
+        graphs_layout :  List of graphs (ig, converted to nx), without any graph cut params. 
+            This is to ensure the consistency of the layout under changes of graph cut.
+        graphs : list of ig graphs, that are converted to networkx.Graph objects List of graphs, 
+            one for each layer.
+        graphs_data : list of numpy arrays containing the exact weights of the graphs.
 
         node_labels : dict node ID : str label or None (default None)
             Dictionary mapping nodes to labels.
@@ -58,8 +60,9 @@ class LayeredNetworkGraph(object):
         """
         
         self.cmap_edges = cm.viridis
-        self.graphs = [g.to_networkx() for g in graphs_layout]
-        self.data = [data for data in graphs]
+        self.graphs_layout = [g.to_networkx() for g in graphs_layout] # for layout, should be read without graph-cut (mnn or threshold) in order to stay constant.
+        self.graphs = [g.to_networkx() for g in graphs]
+        self.data = [data for data in graphs_data]
         self.edge_width = []
         self.node_edge_colors = node_edge_colors
         self.layer_labels = layer_labels
@@ -68,8 +71,8 @@ class LayeredNetworkGraph(object):
         for g in self.graphs:
             weights = nx.get_edge_attributes(g, "weight").values()
             self.edge_width.extend(self.rescale(np.array([w for w in weights]), scale_factor))
-        for d in self.data:
-            self.symmetry.extend([self.isSymmetric(d) for i in range(len(g.edges))])
+        for graph_index, d in enumerate(self.data):
+            self.symmetry.extend([self.isSymmetric(d) for i in range(len(self.graphs[graph_index].edges))])
                 
         # for g in graphs:
         #     self.edge_width.extend(self.rescale(np.array([w['weight'] for w in g.es]), scale_factor))
@@ -143,8 +146,8 @@ class LayeredNetworkGraph(object):
         # positions to the nodes in all planes.
         # For a force-directed layout, this will approximately do the right thing.
 
-        composition = self.graphs[0]
-        for h in self.graphs[1:]:
+        composition = self.graphs_layout[0]
+        for h in self.graphs_layout[1:]:
             composition = nx.compose(composition, h)
 
         try: #not all layouts are random, and therefore some dont accept 'seed' argument
@@ -153,7 +156,7 @@ class LayeredNetworkGraph(object):
             pos = self.layout(composition, *args, **kwargs)
 
         self.node_positions = dict()
-        for z, g in enumerate(self.graphs):
+        for z, g in enumerate(self.graphs_layout):
             self.node_positions.update({(node, z) : (*pos[node], z) for node in g.nodes()})
 
     def draw_nodes(self, nodes, *args, **kwargs):
@@ -235,7 +238,7 @@ class LayeredNetworkGraph(object):
                                 s=self.nodes_width[z]*500, zorder=3, \
                                 edgecolors = self.node_edge_colors, linewidths=2, c = colors, depthshade=False)
             else:
-                self.draw_nodes([node for node in self.nodes if node[1]==z], s=300, zorder=3, depthshade=False)
+                self.draw_nodes([node for node in self.nodes if node[1]==z], edgecolors = self.node_edge_colors, linewidths=2.5, s=300, zorder=3, depthshade=False)
 
         if self.node_labels != None:
             self.draw_node_labels(self.node_labels,
@@ -250,14 +253,16 @@ if __name__ == '__main__':
     files = [path+"interactions_resD3_1.csv", path+"interactions_resD3_2.csv"]
 
   
-    layers = read_graph(files, 0, None, True)
+    layers_layout = read_graph(files, 0, None, True)
+    layers = read_graph(files, 10, None, True)
+
     # node_labels = {nn : str(nn) for nn in range(4*n)}
 
     # initialise figure and plot
     fig = plt.figure(figsize=(6, 4))
     ax = fig.add_subplot(111, projection='3d')
     ax.set_box_aspect((2,2,1), zoom=1.4)
-    LayeredNetworkGraph(layers, read_graph(files), ax=ax, layout=nx.circular_layout)
+    LayeredNetworkGraph(layers_layout, layers, read_graph(files), ax=ax, layout=nx.circular_layout)
     ax.set_axis_off()
     plt.colorbar(ScalarMappable(norm=Normalize(vmin=0, vmax=1), cmap=cm.viridis), ax=ax, label="Edge weight")
     plt.show()
