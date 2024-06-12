@@ -24,7 +24,7 @@ from clustering_window import *
 #           that the hue indicates the value, to improve visibility.
 #       - make code work for affinity/distance graph. right now, mnn only works for affinity, as well as all display metrics.
 #           that includes making the metric dependant on it, and the mnn as well as threshold function.
-#       - mnn in clustering should be fixed (the displayed graph isnt cut properly)
+#       - mnn in clustering should be fixed (the displayed cut graph isnt cut properly)
 #       - remove references to avg graph, or figure why that would be useful -> that can be useful for large graph that are hard to superpose.
 #       - right now, only compatible with csv format.
 #       - include minimal spanning tree?
