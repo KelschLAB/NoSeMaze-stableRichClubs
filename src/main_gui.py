@@ -27,7 +27,7 @@ from clustering_window import *
 #       - mnn in clustering should be fixed (the displayed cut graph isnt cut properly)
 #       - remove references to avg graph, or figure why that would be useful -> that can be useful for large graph that are hard to superpose.
 #       - right now, only compatible with csv format.
-#       - include minimal spanning tree?
+#       - include minimal spanning tree, and jaccard metric (Edge metrics for visual graph analytics: a comparative study) in later version of project.
 #       - write tests
 
 class App:
@@ -211,16 +211,23 @@ class App:
             root.update()
         px = 1/plt.rcParams['figure.dpi']  # pixel in inches
         f = Figure(figsize=(950*px,500*px))
+        display_colorbar = True
         if len(self.path_to_file) > 1:
             a = f.add_subplot(111, projection='3d')
             a.set_box_aspect((2,2,1), zoom=1.5)
+            display_colorbar = False
         else:
             a = f.add_subplot(111)
         display_graph(self.path_to_file, a, percentage_threshold = self.percentage_threshold, mnn = self.mnn_number,\
                       layout = layout_style, node_metric = self.node_metric, idx = self.idx, \
                           cluster_num = self.cluster_num, layer_labels=self.path_to_file, deg = self.degree)
-        f.colorbar(ScalarMappable(norm=Normalize(vmin=0, vmax=1), cmap=cm.Reds), ax=a, label="Relative metric value", shrink = 0.3, location = 'left')
+        
         f.colorbar(ScalarMappable(norm=Normalize(vmin=0, vmax=1), cmap=cm.viridis), ax=a, label="Relative edge value", shrink = 0.3, location = 'right', pad = 0.1)
+        if display_colorbar and node_metric != "none":
+            f.colorbar(ScalarMappable(norm=Normalize(vmin=0, vmax=1), cmap=cm.Reds), ax=a, label="Relative metric value", shrink = 0.3, location = 'left')
+            # f.colorbar(ScalarMappable(norm=Normalize(vmin=0, vmax=1), cmap=cm.viridis), ax=a, label="Relative edge value", shrink = 0.3, location = 'right', pad = 0.1)
+        
+        
         f.subplots_adjust(left=0, bottom=0, right=0.948, top=1, wspace=0, hspace=0)
 
         canvas = FigureCanvasTkAgg(f, master=self.content_frame)

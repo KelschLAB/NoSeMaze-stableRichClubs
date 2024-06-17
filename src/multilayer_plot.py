@@ -59,7 +59,7 @@ class LayeredNetworkGraph(object):
             The axis to plot to. If None is given, a new figure and a new axis are created.
         """
         
-        self.cmap_edges = cm.viridis
+        self.cmap_edges = cm.jet
         self.graphs_layout = [g.to_networkx() for g in graphs_layout] # for layout, should be read without graph-cut (mnn or threshold) in order to stay constant.
         self.graphs = [g.to_networkx() for g in graphs]
         self.data = [data for data in graphs_data]
@@ -224,7 +224,8 @@ class LayeredNetworkGraph(object):
                 self.ax.text(*self.node_positions[(node, z)], node_labels[node], *args, **kwargs)
 
     def draw(self):
-        self.draw_edges(self.edges_within_layers, arrow = True, facecolor=self.edge_colors,  colors=self.edge_colors, alpha=1, linestyle='-', zorder=2, linewidths=self.edge_width)
+        self.draw_edges(self.edges_within_layers, arrow = True, alpha=1, linestyle='-', zorder=2
+                        , linewidths=self.edge_width, facecolor=self.edge_colors,  colors=self.edge_colors)
         self.draw_edges(self.edges_between_layers, arrow = False, color='k', alpha=0.2, linestyle='--', zorder=2, lw = 1)
         cmap_list = [cm.Reds, cm.Blues, cm.Greens, cm.Oranges, cm.Purples]*self.total_layers
         for z in range(self.total_layers):

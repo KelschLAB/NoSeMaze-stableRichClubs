@@ -661,7 +661,7 @@ def display_stats(path_to_file, ax, percentage_threshold = 0.0, mnn = None, **kw
         
 if __name__ == '__main__':
 
-    path = "..\\data\\G1\\"
+    path = "..\\data\\averaged\\G1\\"
     file = "interactions_resD7_1.csv"
     # c = community_clustering(path+file)
     print(read_labels(path+file))
@@ -669,7 +669,7 @@ if __name__ == '__main__':
     a = f.add_subplot(111)#, projection='3d')
     display_graph(path+file, a)
     # c = display_stats([path+file], ax = a, mnn = 3, node_metric = "k-core", deg = 2)
-    # g = read_graph(path+file, return_ig=True)
+    g = read_graph(path+file, return_ig=True)
 
     # display_graph([path+"\\interactions_resD7_1.csv", path+"\\interactions_resD7_1.csv"], a, node_metric = "closeness", cluster_num = 2, idx = [1, 1, 1, 0,0,1,1,1,1,1])
     
