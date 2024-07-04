@@ -29,22 +29,21 @@ def mnn_cut(arr, nn = 2):
                 mnn_arr[j, i] += arr[j, i]
     return mnn_arr
 
-
-path = "..\\data\\averaged\\"
-G = os.listdir(path)[0]
-path_to_file = path+G+"\\interactions_resD7_1.csv"
-arr = np.loadtxt(path_to_file, delimiter=",", dtype=str)
-data = arr[1:, 1:].astype(float)
-data = mnn_cut(data, 5)
-
+def richness_from_data(arr, k):
+    """
+    This is a custom function to compute the weighted richness of the graph.
+    We cannot use the k_core in this case as it requires interconnectedness. Instead,
+    we use the definition of richness (see paper on rich clubs)
+    """
+    richness = []
+    for i in range(arr.shape[0]):
+        if np.sum(arr[i, :] > 0) >= k: #is this node rich?
+            richness.append(np.sum(arr[i, :]))
+    return np.sum(np.array(richness))
 
 
 def weighted_rich_club(data, k = 3, iterations = 100):
-    graph = ig.Graph.Weighted_Adjacency(data, mode='undirected')
-    graph_core = graph.k_core(k)
-    fig, ax = plt.subplots(1, 1)
-    ig.plot(graph_core, target = ax)
-    observed_richness = np.sum(graph_core.es["weight"])
+    observed_richness = richness_from_data(data, k)
     random_richness = []
     for i in tqdm(range(iterations)):
         ## shuffling array while keeping the symmetric structure of the array
@@ -60,16 +59,22 @@ def weighted_rich_club(data, k = 3, iterations = 100):
                     shuffled_data[m, n] = shuffled_values[counter]
                     shuffled_data[n, m] = shuffled_values[counter]
                     counter += 1
-        random_graph = ig.Graph.Weighted_Adjacency(shuffled_data, mode='undirected')
-        random_core = random_graph.k_core(k)
-        random_richness.append(np.sum(random_core.es["weight"]))
+        random_richness.append(richness_from_data(shuffled_data, k))
         
     normalization_factor = np.sum(np.array(random_richness))/iterations
-    print(observed_richness)
-    print(normalization_factor)
     return observed_richness/normalization_factor
     
-rc = weighted_rich_club(data, 3, 1000)
+if __name__ == '__main__':
+    
+    path = "..\\data\\averaged\\"
+    G = os.listdir(path)[0]
+    path_to_file = path+G+"\\interactions_resD7_1.csv"
+    arr = np.loadtxt(path_to_file, delimiter=",", dtype=str)
+    data = arr[1:, 1:].astype(float)
+    data = mnn_cut(data, 4)
+    for k in range(6):
+        rc = weighted_rich_club(data, k, 100)
+        print(rc)
     
         
     

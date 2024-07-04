@@ -17,11 +17,8 @@ import os
 from read_graph import *
 from clustering_window import *
 
-#To-do: - include statement that graph display is from average when several subgraphs are selected.
+#To-do: 
 #       - implement average measures (average of graph != average of graph measures.)
-#       - fix colormap issues: metrics only follow the colormap for first layer. also, colormap for metric should only appear
-#           when one is selected. Also edge colormap should be shown for single layer. maybe replace the colorbar by a text stating
-#           that the hue indicates the value, to improve visibility.
 #       - make code work for affinity/distance graph. right now, mnn only works for affinity, as well as all display metrics.
 #           that includes making the metric dependant on it, and the mnn as well as threshold function.
 #       - mnn in clustering should be fixed (the displayed cut graph isnt cut properly)
@@ -211,22 +208,22 @@ class App:
             root.update()
         px = 1/plt.rcParams['figure.dpi']  # pixel in inches
         f = Figure(figsize=(950*px,500*px))
-        display_colorbar = True
         if len(self.path_to_file) > 1:
             a = f.add_subplot(111, projection='3d')
             a.set_box_aspect((2,2,1), zoom=1.5)
-            display_colorbar = False
         else:
             a = f.add_subplot(111)
         display_graph(self.path_to_file, a, percentage_threshold = self.percentage_threshold, mnn = self.mnn_number,\
                       layout = layout_style, node_metric = self.node_metric, idx = self.idx, \
                           cluster_num = self.cluster_num, layer_labels=self.path_to_file, deg = self.degree)
         
-        f.colorbar(ScalarMappable(norm=Normalize(vmin=0, vmax=1), cmap=cm.viridis), ax=a, label="Relative edge value", shrink = 0.3, location = 'right', pad = 0.1)
-        if display_colorbar and node_metric != "none":
-            f.colorbar(ScalarMappable(norm=Normalize(vmin=0, vmax=1), cmap=cm.Reds), ax=a, label="Relative metric value", shrink = 0.3, location = 'left')
+        f.colorbar(ScalarMappable(norm=Normalize(vmin=0, vmax=1), cmap=cm.Greys), ax=a, label="Normalized edge value", shrink = 0.3, location = 'right', pad = 0.1)
+        if node_metric != "none":
+            f.colorbar(ScalarMappable(norm=Normalize(vmin=0, vmax=1), cmap=cm.Reds), ax=a, label="Normalized metric value", shrink = 0.3, location = 'left')
             # f.colorbar(ScalarMappable(norm=Normalize(vmin=0, vmax=1), cmap=cm.viridis), ax=a, label="Relative edge value", shrink = 0.3, location = 'right', pad = 0.1)
-        
+        else:
+            cb = f.colorbar(ScalarMappable(norm=Normalize(vmin=0, vmax=1), cmap=cm.Reds), ax=a, label="Normalized metric value", shrink = 0.3, location = 'left')
+            cb.remove()
         
         f.subplots_adjust(left=0, bottom=0, right=0.948, top=1, wspace=0, hspace=0)
 

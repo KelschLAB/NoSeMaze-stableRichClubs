@@ -3,8 +3,32 @@ import numpy as np
 import igraph as ig
 import networkx as nx
 import os
+from weighted_rc import weighted_rich_club
 
 plt.rcParams.update({"text.usetex": True})
+
+def rich_club_piechart():
+    fig, ax = plt.subplots()
+    plt.style.use('seaborn')
+    sizes = [12/16, 2/16, 2/16]
+    labels = ["Single club", "Double club", "No rich club"]
+    ax.pie(sizes, labels=labels, autopct='%1.f\%%',
+        wedgeprops={"linewidth" : 2.0, "edgecolor": "white"},
+        textprops={'size': 'xx-large'})
+    plt.show()
+
+def mutants_RC_hist():
+    fig = plt.Figure(figsize = (4,8))
+    mutants_in_rc = [1, 0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,1,0]
+    # counts, bins = plt.hist(mutants_in_rc, bins = 2, label = ["0", "1"], rwidth = 0.7)
+    plt.bar([0, 0.3], [16, 2], width=0.25)
+    # tick_values, tick_labels = plt.xticks()
+    plt.xticks([0, 0.3], ["0", "1"])
+    plt.xlabel("Number of mutants in the rich-club", fontsize = 25)
+    plt.ylabel("Count", fontsize = 25)
+    plt.xticks(fontsize=18)
+    plt.yticks(fontsize=18)
+    plt.grid(False)
 
 def mnn_cut(arr, nn = 2):
     """
@@ -29,7 +53,7 @@ def mnn_cut(arr, nn = 2):
                 mnn_arr[j, i] += arr[j, i]
     return mnn_arr
 
-def rc_coefficient_histogram(nn = 6):
+def rc_coefficient_histogram(nn = 4, k = 3):
     coefficients = []
     path = "..\\data\\averaged\\"
     for G in os.listdir(path):
@@ -41,7 +65,8 @@ def rc_coefficient_histogram(nn = 6):
         try:
             plt.show()
             nx_graph = graph.to_networkx()
-            coefficients.append(nx.rich_club_coefficient(nx_graph, normalized=True)[3])
+            # coefficients.append(nx.rich_club_coefficient(nx_graph, normalized=True)[3])
+            coefficients.append(weighted_rich_club(data, k))
         except:
             pass
     for G in os.listdir(path):
@@ -53,7 +78,8 @@ def rc_coefficient_histogram(nn = 6):
             graph = ig.Graph.Weighted_Adjacency(data, mode='undirected')
             plt.show()
             nx_graph = graph.to_networkx()
-            coefficients.append(nx.rich_club_coefficient(nx_graph, normalized=True)[3])
+            # coefficients.append(nx.rich_club_coefficient(nx_graph, normalized=True)[3])
+            coefficients.append(weighted_rich_club(data, k))
         except:
             pass
     # path = "..\\data\\validation cohort\\7days\\"
@@ -81,7 +107,7 @@ def rc_coefficient_histogram(nn = 6):
     #         coefficients.append(nx.rich_club_coefficient(nx_graph, normalized=True)[3])
     #     except:
     #         pass
-    plt.hist(coefficients, bins=8)
+    plt.hist(coefficients, bins=7)
 
 
 def total_chasings_cohort():
@@ -208,7 +234,10 @@ def chasings_vs_rc_validation():
     plt.savefig("C:\\Users\\Agarwal Lab\\Corentin\\Python\\clusterGUI\\plots\\chasings_vs_RC_validation.png", dpi = 150)
     plt.show()
     
-rc_coefficient_histogram()
+if __name__ == "__main__":
+    # rich_club_piechart()
+    mutants_RC_hist()
+# rc_coefficient_histogram(4, 3)
 # chasings_vs_rc()
 # chasings_vs_rc_validation()
 # total_chasings_cohort()

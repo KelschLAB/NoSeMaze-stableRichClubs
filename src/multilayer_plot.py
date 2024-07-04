@@ -59,7 +59,7 @@ class LayeredNetworkGraph(object):
             The axis to plot to. If None is given, a new figure and a new axis are created.
         """
         
-        self.cmap_edges = cm.jet
+        self.cmap_edges = cm.Greys
         self.graphs_layout = [g.to_networkx() for g in graphs_layout] # for layout, should be read without graph-cut (mnn or threshold) in order to stay constant.
         self.graphs = [g.to_networkx() for g in graphs]
         self.data = [data for data in graphs_data]
@@ -265,5 +265,5 @@ if __name__ == '__main__':
     ax.set_box_aspect((2,2,1), zoom=1.4)
     LayeredNetworkGraph(layers_layout, layers, read_graph(files), ax=ax, layout=nx.circular_layout)
     ax.set_axis_off()
-    plt.colorbar(ScalarMappable(norm=Normalize(vmin=0, vmax=1), cmap=cm.viridis), ax=ax, label="Edge weight")
+    plt.colorbar(ScalarMappable(norm=Normalize(vmin=0, vmax=1), cmap=cm.Greys), ax=ax, label="Edge weight")
     plt.show()
