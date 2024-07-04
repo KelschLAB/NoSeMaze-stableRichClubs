@@ -25,6 +25,9 @@ from clustering_window import *
 #       - remove references to avg graph, or figure why that would be useful -> that can be useful for large graph that are hard to superpose.
 #       - right now, only compatible with csv format.
 #       - include minimal spanning tree, and jaccard metric (Edge metrics for visual graph analytics: a comparative study) in later version of project.
+#       - add local clustering coefficient metric
+#       - Include measure of topology type? i.e. homophily/clustering/degree/spatial 
+#           (see Spatially embedded recurrent neural networks reveal widespread links between structural and functional neuroscience, 2023)
 #       - write tests
 
 class App:
