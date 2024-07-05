@@ -8,6 +8,7 @@ from matplotlib.colors import LinearSegmentedColormap, Normalize
 from igraph.drawing.colors import ClusterColoringPalette
 import random
 from warnings import warn
+from tkinter import messagebox as mb
 from clustering_algorithm import *
 from multilayer_plot import *
 import pandas as pd
@@ -22,7 +23,7 @@ def rescale(arr, max_val = 5):
     normalized_arr = (arr - np.min(arr))/(np.max(arr)-np.min(arr))
     return normalized_arr*max_val
 
-def inverse(arr):
+def inverse(arr, remove_feedback_loops = True):
     """
     Computes the 'inverse' of a graph matrix by taking 1/x where x is an entry
     only when x != 0 and represents the edge values (or distances between vertices).
@@ -30,6 +31,9 @@ def inverse(arr):
     inv_arr = deepcopy(arr)
     inv_arr[inv_arr == 0] = 10e-10 #np.Inf
     inv_arr = 1/inv_arr
+    if remove_feedback_loops: # affinity for each element with itself is set to 0 in this case.
+        idx = np.diag_indices(inv_arr.shape[0], 2)
+        inv_arr[idx] = 0 
     return inv_arr
 
 def nn_cut(arr, nn = 2):
@@ -108,7 +112,7 @@ def read_labels(path_to_file):
         labels = arr.iloc[:, 0]
         return [l for l in labels]
         
-def read_graph(path_to_file, percentage_threshold = 0.01, mnn = None, return_ig = False, avg_graph = False):
+def read_graph(path_to_file, percentage_threshold = 0.01, mnn = None, return_ig = False, avg_graph = False, affinity = True, rm_fb_loops = True):
     """
     Reads a file containing the weights defning the adjacency matrix. 
 
@@ -121,6 +125,8 @@ def read_graph(path_to_file, percentage_threshold = 0.01, mnn = None, return_ig 
     return_ig : TYPE, optional
         Whether or not to return the read graphs as an ig.Graph. if false, numpy arrays are returned.
         The default is False.
+    affinity: TYPE Bool. Whethere or not the data stored in the graph represents affinity between nodes or distance.
+        If true, the graph is read as is, otherwise the values in the input matrice(s) are inverted.
 
     Returns
     -------
@@ -130,50 +136,45 @@ def read_graph(path_to_file, percentage_threshold = 0.01, mnn = None, return_ig 
 
     random.seed(1) #making sure layout of plots stays the same when changing metrics
 
-    if type(path_to_file) == str:
-        arr = np.loadtxt(path_to_file, delimiter=",", dtype=str)
-        data = arr[1:, 1:].astype(float)
+    if not avg_graph:
+        #accounting for potential multiple layers
+        data = []
+        for i in range(len(path_to_file)):
+            arr = np.loadtxt(path_to_file[i], delimiter=",", dtype=str)
+            layer_data = arr[1:, 1:].astype(float)
+            if not affinity: # if graph edges represent distances and not affinities, need to invert values
+               layer_data = inverse(layer_data, rm_fb_loops)
+
+            threshold = np.max(layer_data) * (percentage_threshold / 100.0)
+            layer_data = np.where(layer_data < threshold, 0.01, layer_data)  #0.01 for visualization, to force igraph to keep layout
+            if mnn is not None:
+                layer_data = mnn_cut(layer_data, mnn)
+            data.append(layer_data)
+        if return_ig: # return_ig specifies if the output should be returned as an ig.Graph.
+            layers = [ig.Graph.Weighted_Adjacency(d, mode='directed') for d in data]
+            return layers
+        return data
+    
+    elif avg_graph:
+        # averaged graph
+        arr = np.loadtxt(path_to_file[0], delimiter=",", dtype=str)
+        data = arr[1:, 1:].astype(float)/len(path_to_file)
+        for i in range(1, len(path_to_file)):
+            arr = np.loadtxt(path_to_file[i], delimiter=",", dtype=str)
+            data += arr[1:, 1:].astype(float)/len(path_to_file) 
+        if not affinity:
+           data = inverse(data, rm_fb_loops)
+           
         threshold = np.max(data) * (percentage_threshold / 100.0)
         data = np.where(data < threshold, 0.01, data)
         if mnn is not None:
             data = mnn_cut(data, mnn)
         if return_ig: # return ig specifies if the read graphs should be returned as an ig.Graph.
-            graph = [ig.Graph.Weighted_Adjacency(data, mode='directed')]
-            return graph
+            avg_layer = ig.Graph.Weighted_Adjacency(data, mode='directed') 
+            return [avg_layer]
         return [data]
-    
-    if type(path_to_file) == list:
-        if not avg_graph:
-            ## separated layers
-            data = []
-            for i in range(len(path_to_file)):
-                arr = np.loadtxt(path_to_file[i], delimiter=",", dtype=str)
-                layer_data = arr[1:, 1:].astype(float)
-                threshold = np.max(layer_data) * (percentage_threshold / 100.0)
-                layer_data = np.where(layer_data < threshold, 0.01, layer_data)  #0.01 for visualization, to force igraph to keep layout
-                if mnn is not None:
-                    layer_data = mnn_cut(layer_data, mnn)
-                data.append(layer_data)
-                # data.append(rescale(arr[1:, 1:].astype(float), 10)) #normalizing input data
-            if return_ig: # return ig specifies if the read graphs should be returned as an ig.Graph.
-                layers = [ig.Graph.Weighted_Adjacency(d, mode='directed') for d in data]
-                return layers
-            return data
         
-        elif avg_graph:
-            # averaged graph
-            arr = np.loadtxt(path_to_file[0], delimiter=",", dtype=str)
-            data = rescale(arr[1:, 1:].astype(float), 1)/len(path_to_file) #normalizing input data # average graph
-            for i in range(1, len(path_to_file)):
-                arr = np.loadtxt(path_to_file[i], delimiter=",", dtype=str)
-                data += rescale(arr[1:, 1:].astype(float), 1)/len(path_to_file) #normalizing input data
-                # data.append(rescale(arr[1:, 1:].astype(float), 1)) #normalizing input data
-            if return_ig: # return ig specifies if the read graphs should be returned as an ig.Graph.
-                layers = ig.Graph.Weighted_Adjacency(data, mode='directed') 
-                return data
-            return data
-        
-def randomize_graph(path_to_file, percentage_threshold = 0.01, mnn = None, return_ig = False):
+def randomize_graph(path_to_file, percentage_threshold = 0.01, mnn = None, return_ig = False, avg_graph = False, affinity = True):
     """
     Reads a file containing the weights defning the adjacency matrix, then randomizes the graph 
     for bootstrap purposes.
@@ -183,12 +184,15 @@ def randomize_graph(path_to_file, percentage_threshold = 0.01, mnn = None, retur
 
     random.seed(1) #making sure layout of plots stays the same when changing metrics
 
-    if type(path_to_file) == str:
+    if len(path_to_file) == 1:
         arr = np.loadtxt(path_to_file, delimiter=",", dtype=str)
         data = arr[1:, 1:].astype(float)
         np.random.shuffle(data) # randomizing graph while keeping weights constant.
+        if not affinity: # If input data represents distance, need to invert values
+            data = inverse(data)
         threshold = np.max(data) * (percentage_threshold / 100.0)
         data = np.where(data < threshold, 0.01, data)
+        
         if mnn is not None:
             data = mnn_cut(data, mnn)
         if return_ig: # return ig specifies if the read graphs should be returned as an ig.Graph.
@@ -196,25 +200,24 @@ def randomize_graph(path_to_file, percentage_threshold = 0.01, mnn = None, retur
             return graph
         return [data]
     
-    if type(path_to_file) == list:
-        if not avg_graph:
-            ## separated layers
-            data = []
-            for i in range(len(path_to_file)):
-                arr = np.loadtxt(path_to_file[i], delimiter=",", dtype=str)
-                layer_data = arr[1:, 1:].astype(float)
-                np.random.shuffle(layer_data) # randomizing graph while keeping weights constant.
-                threshold = np.max(layer_data) * (percentage_threshold / 100.0)
-                layer_data = np.where(layer_data < threshold, 0.01, layer_data)  #0.01 for visualization, to force igraph to keep layout
-                if mnn is not None:
-                    layer_data = mnn_cut(layer_data, mnn)
-                data.append(layer_data)
-                # data.append(rescale(arr[1:, 1:].astype(float), 10)) #normalizing input data
-            if return_ig: # return ig specifies if the read graphs should be returned as an ig.Graph.
-                layers = [ig.Graph.Weighted_Adjacency(d, mode='directed') for d in data]
-                return layers
-            return data
-        
+    elif len(path_to_file) > 1:
+        arr = np.loadtxt(path_to_file[0], delimiter=",", dtype=str)
+        data = arr[1:, 1:].astype(float)/len(path_to_file)
+        for i in range(1, len(path_to_file)):
+            arr = np.loadtxt(path_to_file[i], delimiter=",", dtype=str)
+            data += arr[1:, 1:].astype(float)/len(path_to_file) 
+        np.random.shuffle(data) # randomizing graph while keeping weights constant.
+        if not affinity: # If input data represents distance, need to invert values
+            data = inverse(data)
+        threshold = np.max(data) * (percentage_threshold / 100.0)
+        data = np.where(data < threshold, 0.01, layer_data)  #0.01 for visualization, to force igraph to keep layout
+        if mnn is not None:
+            data = mnn_cut(data, mnn)
+
+        if return_ig: # return ig specifies if the read graphs should be returned as an ig.Graph.
+            avg_layer = ig.Graph.Weighted_Adjacency(data, mode='directed')
+            return [avg_layer]
+        return [data]
         
 def k_core_weights(graph, k, min_val = 0.05):
     """
@@ -251,7 +254,7 @@ def k_core_size(graph, k, min_val = 0.05):
             core_size += 1
     return core_size
 
-def k_core_p_value(path_to_file, k, percentage_threshold, mnn, bootstrap_iter = 250):
+def k_core_p_value(path_to_file, k, percentage_threshold, mnn, affinity = True, bootstrap_iter = 250):
     """
     Computes an estimation of the k core size in the random case to give a p-value for
     the computed k-core in the input graph. Does so by randomizing the network (keep weights same) 
@@ -268,13 +271,15 @@ def k_core_p_value(path_to_file, k, percentage_threshold, mnn, bootstrap_iter = 
     p_value
 
     """
+    if len(path_to_file) > 1:
+        mb.showwarning(title = "Warning", message = "The measurment of the k-core p-value is given for the averaged graph, as no multilayer single confidence interval can be given. ")
     input_layer = randomize_graph(path_to_file, percentage_threshold=percentage_threshold,\
-                                       mnn=mnn,return_ig= True)[0]
+                                       mnn=mnn,return_ig= True, avg_graph = True, affinity = affinity)
     actual_observation = k_core_size(input_layer, k)
     random_observations = np.zeros(bootstrap_iter)
     for i in range(bootstrap_iter):
         random_layer = randomize_graph(path_to_file, percentage_threshold=percentage_threshold,\
-                                       mnn=mnn,return_ig= True)[0]
+                                       mnn=mnn,return_ig= True, avg_graph = True, affinity = affinity)
         random_observations[i] = k_core_size(random_layer, k)
     p_value = np.sum(random_observations == actual_observation)/bootstrap_iter
     return p_value
@@ -291,31 +296,27 @@ def community_clustering(path_to_file):
     -------
     idx: list of indexes for the nodes.
     """
-    if type(path_to_file) == list:
-        warn("Computing communities over averaged graph.")
-        data = read_graph(path_to_file, avg_graph=True)
+    if len(path_to_file) > 1:
+        mb.showwarning(title = "Warning", message = "Community will be computed on the averaged graph, as the algorithm cannot deal with multilyer information.")
+        data = read_graph(path_to_file, avg_graph=True, affinity = affinity)
     else:
-        data = read_graph(path_to_file)
+        data = read_graph(path_to_file, affinity = affinity)
     
     if isSymmetric(data):
         g = ig.Graph.Weighted_Adjacency(data, mode='undirected')
-        # inv_g = ig.Graph.Weighted_Adjacency(inv_data, mode='undirected')
     else:
         g = ig.Graph.Weighted_Adjacency(data, mode='directed')
-        # inv_g = ig.Graph.Weighted_Adjacency(data, mode='directed')
         
     communities = g.community_optimal_modularity(weights = [1/(e['weight']) for e in g.es()])
-    # communities = g.community_walktrap(weights = [1/(e['weight']) for e in g.es()], steps = 40).as_clustering()
 
     total_length = data.shape[0]
     idx = [0 for i in range(total_length)]
     for i in range(len(communities)):
-        print(communities[i])
         for j in communities[i]:
             idx[j] = i
     return idx
     
-def display_graph(path_to_file, ax, percentage_threshold = 0.0, mnn = None, edge_type = "affinity", **kwargs):
+def display_graph(path_to_file, ax, percentage_threshold = 0.0, mnn = None, avg_graph = False, affinity = True, rm_fb_loops = True, **kwargs):
     """
     This function displays the graph to analyze and colors the vertices/edges according
     to the given input parameters.
@@ -329,8 +330,10 @@ def display_graph(path_to_file, ax, percentage_threshold = 0.0, mnn = None, edge
         the axis to plot the graph onto.
     threshold : parameter specifying the edge value threshold under which edges are not displayed.
     mnn : number of nearest neighbours for graph cut
-    edge_type: Whether the edges represent an affinity measurement or a distance (i.e. high value = high similarity or 
-        high value = high difference). Can be "affinity" or "distance". Defaults to "affinity"
+    avg_graph: Bool. In case of multilayers, whether or not to plot the averaged graph instead.
+    affinity: Whether the edges represent an affinity measurement (if True) or a distance (if False) (i.e. high value = high similarity or 
+        high value = high difference). Defaults to True.
+    rm_fb_loops: Bool. Whether or not to remove the feedback loops (edges of nodes with themselves) in graph display.
     **kwargs : strings
         layout : specifies which layout to use for displaying the graph. see igraph documentation for 
             a detailed list of all layout. should be given as a string as stated in the igraph doc.
@@ -349,19 +352,18 @@ def display_graph(path_to_file, ax, percentage_threshold = 0.0, mnn = None, edge
     else:
         layout_style = "fr"
         
-    warn("Metric computation only supports affinity type graph at the moment. Correct that.")    
     node_labels = read_labels(path_to_file)
         
-    if type(path_to_file) == list and len(path_to_file) > 1:
+    if len(path_to_file) > 1 and not avg_graph:
         layer_labels = kwargs["layer_labels"] if "layer_labels" in kwargs else None
         warn("Multilayer integration for statistics still needs to be implemented.")
-        display_graph_3d(path_to_file, ax = ax, percentage_threshold = percentage_threshold, mnn = mnn, layout = layout_style, \
+        display_graph_3d(path_to_file, ax = ax, percentage_threshold = percentage_threshold, mnn = mnn, affinity = affinity, rm_fb_loops = rm_fb_loops, layout = layout_style, \
                          node_metric = kwargs["node_metric"], idx = kwargs["idx"], cluster_num = kwargs["cluster_num"], layer_labels = layer_labels, \
                              node_labels = node_labels, deg = kwargs["deg"])
         return
     else:
-        data = read_graph(path_to_file, percentage_threshold = percentage_threshold, mnn = mnn)[0]
-    
+        data = read_graph(path_to_file, percentage_threshold = percentage_threshold, mnn = mnn, avg_graph = avg_graph, affinity = affinity, rm_fb_loops = rm_fb_loops)[0]
+
     if isSymmetric(data):
         g = ig.Graph.Weighted_Adjacency(data, mode='undirected')
     else:
@@ -453,7 +455,7 @@ def display_graph(path_to_file, ax, percentage_threshold = 0.0, mnn = None, edge
     visual_style["vertex_font"] = "Times"
     ig.plot(g, target=ax, **visual_style)
     
-def display_graph_3d(path_to_file, ax, percentage_threshold = 0.0, mnn = None, edge_type = "affinity", **kwargs):
+def display_graph_3d(path_to_file, ax, percentage_threshold = 0.0, mnn = None, affinity = True, rm_fb_loops = True, **kwargs):
     """
     This function displays the graph to analyze and colors the vertices/edges according
     to the given input parameters.
@@ -467,8 +469,9 @@ def display_graph_3d(path_to_file, ax, percentage_threshold = 0.0, mnn = None, e
         the axis to plot the graph onto.
     threshold : parameter specifying the edge value threshold under which edges are not displayed.
     mnn : number of nearest neighbours for graph cut
-    edge_type: Whether the edges represent an affinity measurement or a distance (i.e. high value = high similarity or 
-         high value = high difference). Can be "affinity" or "distance". Defaults to "affinity"
+    affinity: Whether the edges represent an affinity measurement (if True) or a distance (if False) (i.e. high value = high similarity or 
+        high value = high difference). Defaults to True.
+    rm_fb_loops: Bool. Whether or not to remove feedback loops from graph display
     **kwargs : strings
         layout : specifies which layout to use for displaying the graph. see igraph documentation for 
             a detailed list of all layout. should be given as a string as stated in the igraph doc.
@@ -482,9 +485,9 @@ def display_graph_3d(path_to_file, ax, percentage_threshold = 0.0, mnn = None, e
     """
     random.seed(1) #making sure layout of plots stays the same when changing metrics
 
-    layers_layout = read_graph(path_to_file, percentage_threshold = 0, mnn = None, return_ig=True) #here to make sure layout stays consistent upon graph cut
-    layers = read_graph(path_to_file, percentage_threshold = percentage_threshold, mnn = mnn, return_ig=True) 
-    layers_data = read_graph(path_to_file, percentage_threshold = percentage_threshold, mnn = mnn, return_ig=False)
+    layers_layout = read_graph(path_to_file, percentage_threshold = 0, mnn = None, return_ig=True, affinity = affinity, rm_fb_loops = rm_fb_loops) #here to make sure layout stays consistent upon graph cut
+    layers = read_graph(path_to_file, percentage_threshold = percentage_threshold, mnn = mnn, return_ig=True, affinity = affinity, rm_fb_loops = rm_fb_loops) 
+    layers_data = read_graph(path_to_file, percentage_threshold = percentage_threshold, mnn = mnn, return_ig=False, affinity = affinity, rm_fb_loops = rm_fb_loops)
 
     node_size = 15 #default value
     if "node_metric" in kwargs:
@@ -584,7 +587,7 @@ def display_graph_3d(path_to_file, ax, percentage_threshold = 0.0, mnn = None, e
     ax.set_axis_off()
 
     
-def display_stats(path_to_file, ax, percentage_threshold = 0.0, mnn = None, **kwargs):
+def display_stats(path_to_file, ax, percentage_threshold = 0.0, mnn = None, affinity = True, **kwargs):
     """
     This function displays a histogram representation of the metrics of the graph to analyze.
 
@@ -595,6 +598,9 @@ def display_stats(path_to_file, ax, percentage_threshold = 0.0, mnn = None, **kw
         is stored. Should be a .csv file.
     ax : matplotlib.axis
         the axis to plot the graph onto.
+    mnn: whether or not to do a graph cut based on mutual nearest neighbors. If an 'int' is provided,
+        this represents the number of nn to take into account.
+    affinity: bool. Whether or not the graph type is affinity or distance.
     **kwargs : strings
         node_metric : specifies which metric to use in order to color and size the vertices of the graph.
             allowed values: ["strength", "betweenness", "closeness", "eigenvector centrality", "page rank", "hub score", "authority score"]
@@ -607,9 +613,9 @@ def display_stats(path_to_file, ax, percentage_threshold = 0.0, mnn = None, **kw
             
     if type(path_to_file) == list:
         warn("More than one input graph path has been provided. \n Multilayer plotting is not yet supported. Only first one will be displayed.")
-        data = read_graph(path_to_file[0], percentage_threshold = percentage_threshold, mnn = mnn)[0]
+        data = read_graph(path_to_file[0], percentage_threshold = percentage_threshold, mnn = mnn, affinty = affinity)[0]
     else:
-        data = read_graph(path_to_file, percentage_threshold = percentage_threshold, mnn = mnn)[0]
+        data = read_graph(path_to_file, percentage_threshold = percentage_threshold, mnn = mnn, affinity = affinity)[0]
 
     if isSymmetric(data):
         g = ig.Graph.Weighted_Adjacency(data, mode='undirected')
@@ -667,7 +673,7 @@ if __name__ == '__main__':
     # f = plt.Figure()
     # a = f.add_subplot(111, projection='3d')
     fig, ax = plt.subplots(1, 1)
-    display_graph(path+file, ax)#, idx = [1,1,1,0,0,0,1,1,1,0])
+    display_graph([path+file], ax, affinity = False)#, idx = [1,1,1,0,0,0,1,1,1,0])
     plt.show()
     # c = display_stats([path+file], ax = a, mnn = 3, node_metric = "k-core", deg = 2)
     # g = read_graph(path+file, return_ig=True)

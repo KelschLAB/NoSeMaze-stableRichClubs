@@ -19,10 +19,10 @@ from clustering_window import *
 
 #To-do: 
 #       - implement average measures (average of graph != average of graph measures.)
-#       - make code work for affinity/distance graph. right now, mnn only works for affinity, as well as all display metrics.
-#           that includes making the metric dependant on it, and the mnn as well as threshold function.
+#       * removing of loops doesn't work for multilayers. Fix that
 #       - mnn in clustering should be fixed (the displayed cut graph isnt cut properly)
-#       - remove references to avg graph, or figure why that would be useful -> that can be useful for large graph that are hard to superpose.
+#       - fix bug in setting window: buttons are not clicked upon hovering (tkinter bug?)
+#       - code the statistics display
 #       - right now, only compatible with csv format.
 #       - include minimal spanning tree, and jaccard metric (Edge metrics for visual graph analytics: a comparative study) in later version of project.
 #       - add local clustering coefficient metric
@@ -55,6 +55,11 @@ class App:
         self.cluster_num = 0
         self.display_type = "plot"
         self.edge_type = "affinity"
+        self.view_type = "3D"
+        self.remove_loops = True # for the app to know if feedback loops should be plotted or not 
+        self.edge_type_var = tk.IntVar(value = 1) # variable for changing affinity/distance in settings window
+        self.view_var = tk.IntVar(value = 1)      # variable for changing view from 3D to average in settings window
+        self.loops_var = tk.IntVar(value = 1)     # variable for the removal of feedback loops in graph display
     
         # Frames
         menu_frame = tk.Frame(root, bg = "gray", height= 100)
@@ -176,34 +181,51 @@ class App:
         Opens a window showing the current settings (edge type, multilayer view and stats type),
         to allow user to change them.
         """
-        def switch_edge_type(self):
-            if self.edge_type == "affinity":
-                self.edge_type = "distance"
-            elif self.edge_type == "distance":
-                self.edge_type = "affinity"
-            print(self.edge_type)
-                
         settings_popup = tk.Toplevel(root)
         settings_popup.wm_title("Settings")
-        global edge_type_var 
-        edge_type_var = tk.IntVar()
-        aff_button = tk.Radiobutton(settings_popup, text="affinity", variable = edge_type_var, value = 1, command = partial(switch_edge_type, self))
-        aff_button.grid(row = 1, column = 1)
-        dist_button = tk.Radiobutton(settings_popup, text="distance", variable = edge_type_var, value = 2, command = partial(switch_edge_type, self))
-        dist_button.grid(row = 1, column = 2)
-        edge_type_var.set(1)       
         if self.edge_type == "distance":
-            edge_type_var.set(2)
+            self.edge_type_var.set(2)
             
-        global view_var 
-        view_var = tk.IntVar()
-        multilayer_button = tk.Radiobutton(settings_popup, text="3D", variable = view_var, value = 1, command = partial(switch_edge_type, self))
-        multilayer_button.grid(row = 2, column = 1)
-        avg_button = tk.Radiobutton(settings_popup, text="Average", variable = view_var, value = 2, command = partial(switch_edge_type, self))
-        avg_button.grid(row = 2, column = 2)
-        view_var.set(1)       
+        dist_button = tk.Radiobutton(settings_popup, text="Distance", variable = self.edge_type_var, value = 2, command = self.switch_edge_type)
+        dist_button.grid(row = 1, column = 1)    
+        aff_button = tk.Radiobutton(settings_popup, text="Affinity", variable = self.edge_type_var, value = 1, command = self.switch_edge_type)
+        aff_button.grid(row = 1, column = 2)
 
+        avg_button = tk.Radiobutton(settings_popup, text="Average", variable = self.view_var, value = 2, command = self.switch_view_type)
+        avg_button.grid(row = 2, column = 1)
+        multilayer_button = tk.Radiobutton(settings_popup, text="3D", variable = self.view_var, value = 1, command = self.switch_view_type)
+        multilayer_button.grid(row = 2, column = 2)
         
+        fb_loop_button = tk.Checkbutton(settings_popup, text="Remove feedback loops", variable = self.loops_var, onvalue = 1, offvalue = 0, command = self.loops_button_clicked)
+        if self.loops_var.get() == 1:
+            fb_loop_button.select()
+        fb_loop_button.grid(row = 3, column = 1)
+
+    def switch_edge_type(self):
+        if self.edge_type == "affinity":
+            self.edge_type = "distance"
+        elif self.edge_type == "distance":
+            self.edge_type = "affinity"
+        self.plot_in_frame(layout_style = self.layout_style, node_metric = self.node_metric,\
+                               percentage_threshold=self.percentage_threshold, mnn = self.mnn_number, deg = self.degree)
+        
+    def switch_view_type(self):
+        if self.view_type == "3D":
+            self.view_type = "avg"
+        elif self.view_type == "avg":
+            self.view_type = "3D"
+        self.plot_in_frame(layout_style = self.layout_style, node_metric = self.node_metric,\
+                               percentage_threshold=self.percentage_threshold, mnn = self.mnn_number, deg = self.degree)
+    
+    def loops_button_clicked(self):
+        if self.remove_loops:
+            self.remove_loops = False
+        elif not self.remove_loops:
+            self.remove_loops = True
+        self.plot_in_frame(layout_style = self.layout_style, node_metric = self.node_metric,\
+                               percentage_threshold=self.percentage_threshold, mnn = self.mnn_number, deg = self.degree)
+            
+
     # central function for plotting the graph(s)
     def plot_in_frame(self, layout_style = "fr", node_metric = "none", percentage_threshold=0.0, mnn = None, deg = 0):
         for fm in self.content_frame.winfo_children():
@@ -211,14 +233,15 @@ class App:
             root.update()
         px = 1/plt.rcParams['figure.dpi']  # pixel in inches
         f = Figure(figsize=(950*px,500*px))
-        if len(self.path_to_file) > 1:
+        if len(self.path_to_file) > 1 and self.view_type == "3D":
             a = f.add_subplot(111, projection='3d')
             a.set_box_aspect((2,2,1), zoom=1.5)
         else:
             a = f.add_subplot(111)
-        display_graph(self.path_to_file, a, percentage_threshold = self.percentage_threshold, mnn = self.mnn_number,\
-                      layout = layout_style, node_metric = self.node_metric, idx = self.idx, \
-                          cluster_num = self.cluster_num, layer_labels=self.path_to_file, deg = self.degree)
+            
+        display_graph(self.path_to_file, a, percentage_threshold = self.percentage_threshold, mnn = self.mnn_number, avg_graph = self.view_type == "avg", \
+                      affinity = self.edge_type == "affinity",  rm_fb_loops = self.remove_loops, layout = layout_style, node_metric = self.node_metric, \
+                      idx = self.idx, cluster_num = self.cluster_num, layer_labels=self.path_to_file, deg = self.degree)
         
         f.colorbar(ScalarMappable(norm=Normalize(vmin=0, vmax=1), cmap=cm.Greys), ax=a, label="Normalized edge value", shrink = 0.3, location = 'right', pad = 0.1)
         if node_metric != "none":
