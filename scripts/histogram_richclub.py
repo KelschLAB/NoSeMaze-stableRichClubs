@@ -240,10 +240,10 @@ def chasings_vs_rc_validation():
     plt.show()
     
 if __name__ == "__main__":
-    rich_club_piechart()
+    # rich_club_piechart()
     # mutants_RC_hist()
-# rc_coefficient_histogram(4, 3)
-# chasings_vs_rc()
+    # rc_coefficient_histogram(4, 3)
+    # chasings_vs_rc()
 # chasings_vs_rc_validation()
 # total_chasings_cohort()
 
