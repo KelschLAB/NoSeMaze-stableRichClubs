@@ -8,11 +8,16 @@ from weighted_rc import weighted_rich_club
 plt.rcParams.update({"text.usetex": True})
 
 def rich_club_piechart():
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(1, 2)
     plt.style.use('seaborn')
-    sizes = [12/16, 2/16, 2/16]
-    labels = ["Single club", "Double club", "No rich club"]
-    ax.pie(sizes, labels=labels, autopct='%1.f\%%',
+    sizes = [8/9, 1/9]
+    labels = ["Rich club", "No stable club"]
+    ax[0].pie(sizes, labels=labels, autopct='%1.f\%%',
+        wedgeprops={"linewidth" : 2.0, "edgecolor": "white"},
+        textprops={'size': 'xx-large'})
+    sizes =     sizes = [4/7, 3/7]
+    labels = ["Single club", "No stable club"]
+    ax[1].pie(sizes, labels=labels, autopct='%1.f\%%',
         wedgeprops={"linewidth" : 2.0, "edgecolor": "white"},
         textprops={'size': 'xx-large'})
     plt.show()
@@ -235,8 +240,8 @@ def chasings_vs_rc_validation():
     plt.show()
     
 if __name__ == "__main__":
-    # rich_club_piechart()
-    mutants_RC_hist()
+    rich_club_piechart()
+    # mutants_RC_hist()
 # rc_coefficient_histogram(4, 3)
 # chasings_vs_rc()
 # chasings_vs_rc_validation()
