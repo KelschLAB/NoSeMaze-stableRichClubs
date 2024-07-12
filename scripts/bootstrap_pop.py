@@ -122,7 +122,7 @@ def mutants_in_validation():
     mutants = np.array([1, 2, 3])
     shuffled_arr = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
     
-    for i in tqdm(range(5000)):
+    for i in tqdm(range(1000)):
         hits = 0
         for j in range(1):
             # expID 11
@@ -131,25 +131,23 @@ def mutants_in_validation():
             # expID 12
             np.random.shuffle(shuffled_arr)
             hits += np.any(np.isin(mutants, shuffled_arr[:2]))
-            # expID 14
-            np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(mutants, shuffled_arr[:3]))
             # expID 15
             np.random.shuffle(shuffled_arr)
             hits += np.any(np.isin(mutants, shuffled_arr[:3]))
+            # expID 16
+            # np.random.shuffle(shuffled_arr)
+            # hits += np.any(np.isin(mutants, shuffled_arr[:3]))
             # expID 17
             np.random.shuffle(shuffled_arr)
             hits += np.any(np.isin(mutants, shuffled_arr[:2]))
-            # # expID 18
-            # np.random.shuffle(shuffled_arr)
-            # hits += np.any(np.isin(mutants, shuffled_arr[:3]))
+
             
         number_of_hits.append(hits)
         
     plt.hist(number_of_hits, bins = np.arange(7), density = True, align = 'left', label = "Expected by random chance")
     plt.axvline(np.percentile(number_of_hits, 5), ls = "--", color = 'k')
     plt.axvline(np.percentile(number_of_hits, 95), ls = "--", color = 'k', label = "95% CI")
-    plt.axvline(1, color = 'red', label = "Experimentally observed")
+    plt.axvline(0, color = 'red', label = "Experimentally observed")
     plt.title("Random chance of mutant in rich-club\n 2nd cohort")
     plt.xlabel("Groups with at least 1 mutants in RC", fontsize=15)
     plt.ylabel("Probability", fontsize=15)
@@ -159,5 +157,5 @@ def mutants_in_validation():
 for i in range(1):
     plt.figure()
     # mutant_in_cohort()
-    # mutants_in_validation()
-    mutants_in_both()
+    mutants_in_validation()
+    # mutants_in_both()
