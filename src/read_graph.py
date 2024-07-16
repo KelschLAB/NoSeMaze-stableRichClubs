@@ -667,13 +667,13 @@ def display_stats(path_to_file, ax, percentage_threshold = 0.0, mnn = None, affi
         
 if __name__ == '__main__':
 
-    path = "..\\data\\averaged\\G3\\"
-    file = "interactions_resD7_1.csv"
+    path = "..\\data\\social network matrices 3days\\G1\\"
+    file = "approach_prop_resD3_1.csv"
     # c = community_clustering(path+file)
     # f = plt.Figure()
     # a = f.add_subplot(111, projection='3d')
     fig, ax = plt.subplots(1, 1)
-    display_graph([path+file], ax, affinity = False)#, idx = [1,1,1,0,0,0,1,1,1,0])
+    display_graph([path+file], ax, mnn = 4, deg = 3, node_metric = "k-core")#, idx = [1,1,1,0,0,0,1,1,1,0])
     plt.show()
     # c = display_stats([path+file], ax = a, mnn = 3, node_metric = "k-core", deg = 2)
     # g = read_graph(path+file, return_ig=True)
