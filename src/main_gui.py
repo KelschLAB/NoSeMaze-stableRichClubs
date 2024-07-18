@@ -18,6 +18,7 @@ from read_graph import *
 from clustering_window import *
 
 #To-do: 
+#       - Add nn to graph cut options
 #       - implement average measures (average of graph != average of graph measures.)
 #       * removing of loops doesn't work for multilayers. Fix that
 #       - mnn in clustering should be fixed (the displayed cut graph isnt cut properly)

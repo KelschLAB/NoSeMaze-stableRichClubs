@@ -112,7 +112,8 @@ def read_labels(path_to_file):
         labels = arr.iloc[:, 0]
         return [l for l in labels]
         
-def read_graph(path_to_file, percentage_threshold = 0.01, mnn = None, return_ig = False, avg_graph = False, affinity = True, rm_fb_loops = True):
+def read_graph(path_to_file, percentage_threshold = 0.01, mnn = None, return_ig = False,
+               avg_graph = False, affinity = True, rm_fb_loops = True, mutual = True):
     """
     Reads a file containing the weights defning the adjacency matrix. 
 
@@ -148,7 +149,11 @@ def read_graph(path_to_file, percentage_threshold = 0.01, mnn = None, return_ig 
             threshold = np.max(layer_data) * (percentage_threshold / 100.0)
             layer_data = np.where(layer_data < threshold, 0.01, layer_data)  #0.01 for visualization, to force igraph to keep layout
             if mnn is not None:
-                layer_data = mnn_cut(layer_data, mnn)
+                if mutual:
+                    layer_data = mnn_cut(layer_data, mnn) # mutual nearest neighbours
+                else:
+                    layer_data = nn_cut(layer_data, mnn)  # nearest neighbours
+
             data.append(layer_data)
         if return_ig: # return_ig specifies if the output should be returned as an ig.Graph.
             layers = [ig.Graph.Weighted_Adjacency(d, mode='directed') for d in data]
@@ -168,13 +173,17 @@ def read_graph(path_to_file, percentage_threshold = 0.01, mnn = None, return_ig 
         threshold = np.max(data) * (percentage_threshold / 100.0)
         data = np.where(data < threshold, 0.01, data)
         if mnn is not None:
-            data = mnn_cut(data, mnn)
+            if mutual:
+                data = mnn_cut(data, mnn)
+            else:
+                data = nn_cut(data, mnn)
         if return_ig: # return ig specifies if the read graphs should be returned as an ig.Graph.
             avg_layer = ig.Graph.Weighted_Adjacency(data, mode='directed') 
             return [avg_layer]
         return [data]
         
-def randomize_graph(path_to_file, percentage_threshold = 0.01, mnn = None, return_ig = False, avg_graph = False, affinity = True):
+def randomize_graph(path_to_file, percentage_threshold = 0.01, mnn = None, return_ig = False,
+                    avg_graph = False, affinity = True, mutual = True):
     """
     Reads a file containing the weights defning the adjacency matrix, then randomizes the graph 
     for bootstrap purposes.
@@ -194,7 +203,11 @@ def randomize_graph(path_to_file, percentage_threshold = 0.01, mnn = None, retur
         data = np.where(data < threshold, 0.01, data)
         
         if mnn is not None:
-            data = mnn_cut(data, mnn)
+            if mutual:
+                data = mnn_cut(data, mnn)
+            else:
+                data = nn_cut(data, mnn)
+
         if return_ig: # return ig specifies if the read graphs should be returned as an ig.Graph.
             graph = [ig.Graph.Weighted_Adjacency(data, mode='directed')]
             return graph
@@ -212,7 +225,10 @@ def randomize_graph(path_to_file, percentage_threshold = 0.01, mnn = None, retur
         threshold = np.max(data) * (percentage_threshold / 100.0)
         data = np.where(data < threshold, 0.01, layer_data)  #0.01 for visualization, to force igraph to keep layout
         if mnn is not None:
-            data = mnn_cut(data, mnn)
+            if mutual:
+                data = mnn_cut(data, mnn)
+            else:
+                data = nn_cut(data, mnn)
 
         if return_ig: # return ig specifies if the read graphs should be returned as an ig.Graph.
             avg_layer = ig.Graph.Weighted_Adjacency(data, mode='directed')
@@ -254,7 +270,7 @@ def k_core_size(graph, k, min_val = 0.05):
             core_size += 1
     return core_size
 
-def k_core_p_value(path_to_file, k, percentage_threshold, mnn, affinity = True, bootstrap_iter = 250):
+def k_core_p_value(path_to_file, k, percentage_threshold, mnn, affinity = True, bootstrap_iter = 250, mutual = True):
     """
     Computes an estimation of the k core size in the random case to give a p-value for
     the computed k-core in the input graph. Does so by randomizing the network (keep weights same) 
@@ -274,12 +290,12 @@ def k_core_p_value(path_to_file, k, percentage_threshold, mnn, affinity = True, 
     if len(path_to_file) > 1:
         mb.showwarning(title = "Warning", message = "The measurment of the k-core p-value is given for the averaged graph, as no multilayer single confidence interval can be given. ")
     input_layer = randomize_graph(path_to_file, percentage_threshold=percentage_threshold,\
-                                       mnn=mnn,return_ig= True, avg_graph = True, affinity = affinity)
+                                       mnn=mnn,return_ig= True, avg_graph = True, affinity = affinity, mutual = mutual)
     actual_observation = k_core_size(input_layer, k)
     random_observations = np.zeros(bootstrap_iter)
     for i in range(bootstrap_iter):
         random_layer = randomize_graph(path_to_file, percentage_threshold=percentage_threshold,\
-                                       mnn=mnn,return_ig= True, avg_graph = True, affinity = affinity)
+                                       mnn=mnn,return_ig= True, avg_graph = True, affinity = affinity, mutual = mutual)
         random_observations[i] = k_core_size(random_layer, k)
     p_value = np.sum(random_observations == actual_observation)/bootstrap_iter
     return p_value
@@ -316,7 +332,8 @@ def community_clustering(path_to_file):
             idx[j] = i
     return idx
     
-def display_graph(path_to_file, ax, percentage_threshold = 0.0, mnn = None, avg_graph = False, affinity = True, rm_fb_loops = True, **kwargs):
+def display_graph(path_to_file, ax, percentage_threshold = 0.0, mnn = None, avg_graph = False,
+                  affinity = True, rm_fb_loops = True, mutual = True, **kwargs):
     """
     This function displays the graph to analyze and colors the vertices/edges according
     to the given input parameters.
@@ -357,12 +374,13 @@ def display_graph(path_to_file, ax, percentage_threshold = 0.0, mnn = None, avg_
     if len(path_to_file) > 1 and not avg_graph:
         layer_labels = kwargs["layer_labels"] if "layer_labels" in kwargs else None
         warn("Multilayer integration for statistics still needs to be implemented.")
-        display_graph_3d(path_to_file, ax = ax, percentage_threshold = percentage_threshold, mnn = mnn, affinity = affinity, rm_fb_loops = rm_fb_loops, layout = layout_style, \
-                         node_metric = kwargs["node_metric"], idx = kwargs["idx"], cluster_num = kwargs["cluster_num"], layer_labels = layer_labels, \
-                             node_labels = node_labels, deg = kwargs["deg"])
+        display_graph_3d(path_to_file, ax = ax, percentage_threshold = percentage_threshold, mnn = mnn, affinity = affinity, \
+                         rm_fb_loops = rm_fb_loops, mutual = mutual, layout = layout_style, node_metric = kwargs["node_metric"], idx = kwargs["idx"], \
+                         cluster_num = kwargs["cluster_num"], layer_labels = layer_labels, node_labels = node_labels, deg = kwargs["deg"])
         return
     else:
-        data = read_graph(path_to_file, percentage_threshold = percentage_threshold, mnn = mnn, avg_graph = avg_graph, affinity = affinity, rm_fb_loops = rm_fb_loops)[0]
+        data = read_graph(path_to_file, percentage_threshold = percentage_threshold, mnn = mnn, mutual = mutual, \
+                          avg_graph = avg_graph, affinity = affinity, rm_fb_loops = rm_fb_loops)[0]
 
     if isSymmetric(data):
         g = ig.Graph.Weighted_Adjacency(data, mode='undirected')
@@ -455,7 +473,7 @@ def display_graph(path_to_file, ax, percentage_threshold = 0.0, mnn = None, avg_
     visual_style["vertex_font"] = "Times"
     ig.plot(g, target=ax, **visual_style)
     
-def display_graph_3d(path_to_file, ax, percentage_threshold = 0.0, mnn = None, affinity = True, rm_fb_loops = True, **kwargs):
+def display_graph_3d(path_to_file, ax, percentage_threshold = 0.0, mnn = None, affinity = True, rm_fb_loops = True, mutual = True, **kwargs):
     """
     This function displays the graph to analyze and colors the vertices/edges according
     to the given input parameters.
@@ -485,9 +503,9 @@ def display_graph_3d(path_to_file, ax, percentage_threshold = 0.0, mnn = None, a
     """
     random.seed(1) #making sure layout of plots stays the same when changing metrics
 
-    layers_layout = read_graph(path_to_file, percentage_threshold = 0, mnn = None, return_ig=True, affinity = affinity, rm_fb_loops = rm_fb_loops) #here to make sure layout stays consistent upon graph cut
-    layers = read_graph(path_to_file, percentage_threshold = percentage_threshold, mnn = mnn, return_ig=True, affinity = affinity, rm_fb_loops = rm_fb_loops) 
-    layers_data = read_graph(path_to_file, percentage_threshold = percentage_threshold, mnn = mnn, return_ig=False, affinity = affinity, rm_fb_loops = rm_fb_loops)
+    layers_layout = read_graph(path_to_file, percentage_threshold = 0, mnn = None, return_ig=True, affinity = affinity, rm_fb_loops = rm_fb_loops, mutual = mutual) #here to make sure layout stays consistent upon graph cut
+    layers = read_graph(path_to_file, percentage_threshold = percentage_threshold, mnn = mnn, return_ig=True, affinity = affinity, rm_fb_loops = rm_fb_loops, mutual = mutual) 
+    layers_data = read_graph(path_to_file, percentage_threshold = percentage_threshold, mnn = mnn, return_ig=False, affinity = affinity, rm_fb_loops = rm_fb_loops, mutual = mutual)
 
     node_size = 15 #default value
     if "node_metric" in kwargs:
@@ -673,7 +691,7 @@ if __name__ == '__main__':
     # f = plt.Figure()
     # a = f.add_subplot(111, projection='3d')
     fig, ax = plt.subplots(1, 1)
-    display_graph([path+file], ax, mnn = 4, deg = 3, node_metric = "k-core")#, idx = [1,1,1,0,0,0,1,1,1,0])
+    display_graph([path+file], ax, mnn = 2, deg = 3, node_metric = "k-core", mutual = False)#, idx = [1,1,1,0,0,0,1,1,1,0])
     plt.show()
     # c = display_stats([path+file], ax = a, mnn = 3, node_metric = "k-core", deg = 2)
     # g = read_graph(path+file, return_ig=True)
