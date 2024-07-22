@@ -37,13 +37,7 @@ class graphClusterer:
     """
 
     def __init__(self, input_graphs, isAffinity, connectivity_type):
-        self.D = input_graphs
-        # if len(self.graphs) == 1:
-        #     self.D = input_graphs[0]
-        #     self.L_sym = np.zeros_like(self.D) #initializing S to zeros, fill during actual clustering.
-        # else:
-        #     self.L_sym = combine_graphs(self.graphs)
-        
+        self.D = input_graphs 
         self.connectivity_type = connectivity_type
         self.idx = [] # initializing as empty, fill after clustering
         self.V = [] # for storing eigenvectors of the laplacian
@@ -51,20 +45,22 @@ class graphClusterer:
 
     def mutual_nn_affinity(self, S, nn = 2):
         """
-        Makes a sparse affinity matrix by keeping only the nn nearest neighbours in the connections. 
+        Makes a sparse affinity matrix by keeping only the nn mutual nearest neighbours in the connections. 
         Other connexions are set to 0.
         """
         mnn_S = []
+        nn -= 1 # to account for python indexing
         for graph in range(len(S)):
             curr_S = np.zeros_like(S[graph]) 
-            neighbors_i = np.argsort(S[graph], 1) #computing the nearest neighbors for local nn estimation
-            neighbors_j = np.argsort(S[graph], 0)
+            neighbors_i = np.argsort(-S[graph], 1) #computing the nearest neighbors for local nn estimation
+            neighbors_j = np.argsort(-S[graph], 0)
             for i in range(S[graph].shape[1]):
                 for j in range(i, S[graph].shape[1]):
-                    if any(np.isin(neighbors_i[i, 1:nn], neighbors_j[1:nn, j])): #local nearest distance estimation
+                    if any(np.isin(neighbors_i[i, 0:nn], j)) and any(np.isin(neighbors_j[0:nn, j], i)): #local nearest distance estimation
                         curr_S[i, j] += S[graph][i, j]
                         curr_S[j, i] += S[graph][j, i]
             mnn_S.append(curr_S)
+            
         return mnn_S
         
     def epsilon_affinity(self, S, epsilon = 2):
@@ -72,7 +68,7 @@ class graphClusterer:
         Makes a sparse affinity matrix by keeping only the neighbours within epsilon of each other. 
         Other connexions are set to 0.
         """
-        mnn_S = []
+        eps_S = []
         for graph in range(len(S)):
             curr_S = np.zeros_like(S[graph]) 
             for i in range(S[graph].shape[1]):
@@ -80,8 +76,8 @@ class graphClusterer:
                     if S[graph][i, j] >= epsilon: #local nearest distance estimation
                         curr_S[i, j] = S[graph][i, j]
                         curr_S[j, i] = S[graph][j, i]
-            mnn_S.append(curr_S)
-        return mnn_S
+            eps_S.append(curr_S)
+        return eps_S
 
     def compute_S(self, nn = None):
         """Computes the affinity matrix S from the distance matrix D.
@@ -149,9 +145,9 @@ class graphClusterer:
         """
         S = self.compute_S(nn)
         if self.connectivity_type == "nearest neighbours" and connectivity_param != None:
-            S = self.mutual_nn_affinity(S, connectivity_param)
+            S = self.mutual_nn_affinity(S, nn)
         elif self.connectivity_type == "epsilon neighbourhood" and connectivity_param != None:
-            S = self.epsilon_affinity(S, connectivity_param)
+            S = self.epsilon_affinity(S, nn)
         
         lambdas, V, idx = scml(S, cluster_num, torch.device("cpu"))
 
@@ -160,58 +156,58 @@ class graphClusterer:
 
         return S, idx, V, lambdas
 
-    def merge_clusters(self, clusters_to_merge):
-        """Merges two clusters together by putting all their elements under the same index in the 'idx' property.
-        This operation is done in place.
+    # def merge_clusters(self, clusters_to_merge):
+    #     """Merges two clusters together by putting all their elements under the same index in the 'idx' property.
+    #     This operation is done in place.
 
-        Parameters:
-            clusters_to_merge (array_like): an array containing the indexes of the clusters to merge together.
-        """
-        new_clusters = deepcopy(self.clustered_series)
-        merged_cluster = new_clusters[clusters_to_merge[0]]
-        for i in range(1, len(clusters_to_merge)):
-            tmp = new_clusters[clusters_to_merge[i]]
-            for elt in tmp:
-                merged_cluster.append(elt)
+    #     Parameters:
+    #         clusters_to_merge (array_like): an array containing the indexes of the clusters to merge together.
+    #     """
+    #     new_clusters = deepcopy(self.clustered_series)
+    #     merged_cluster = new_clusters[clusters_to_merge[0]]
+    #     for i in range(1, len(clusters_to_merge)):
+    #         tmp = new_clusters[clusters_to_merge[i]]
+    #         for elt in tmp:
+    #             merged_cluster.append(elt)
 
-            new_clusters[i] = []; #removing corresponding cluster
-            idx_filter = self.idx == clusters_to_merge[i]
-            self.idx[idx_filter] = clusters_to_merge[0]; #replacing entries of 'idx' equal to idx2 by idx1.
+    #         new_clusters[i] = []; #removing corresponding cluster
+    #         idx_filter = self.idx == clusters_to_merge[i]
+    #         self.idx[idx_filter] = clusters_to_merge[0]; #replacing entries of 'idx' equal to idx2 by idx1.
         
-        new_clusters = list(filter(lambda c : len(c) != 0, new_clusters))
-        new_clusters[clusters_to_merge[0]] = merged_cluster; #replacing first cluster from 'clusters_to_merge' by merged cluster.
-        self.clustered_series = new_clusters
-        new_idx = np.unique(self.idx)
-        for i in range(len(new_idx)): #re-ordering the idx in memory so that there are no gaps
-            idx_filter = self.idx == new_idx[i]
-            self.idx[idx_filter] = i
+    #     new_clusters = list(filter(lambda c : len(c) != 0, new_clusters))
+    #     new_clusters[clusters_to_merge[0]] = merged_cluster; #replacing first cluster from 'clusters_to_merge' by merged cluster.
+    #     self.clustered_series = new_clusters
+    #     new_idx = np.unique(self.idx)
+    #     for i in range(len(new_idx)): #re-ordering the idx in memory so that there are no gaps
+    #         idx_filter = self.idx == new_idx[i]
+    #         self.idx[idx_filter] = i
 
-        print("Merged clusters. To recover previous clusters, run 'clustering' function anew")
+    #     print("Merged clusters. To recover previous clusters, run 'clustering' function anew")
 
-    def split_clusters(self, clust_idx, split_num):
-        """
-        This function splits a cluster into several subclusters. This is done in place.
-        Parameters:
-            clust_idx (int): the index of the cluster to split. Cluster indexing starts from 0.
+    # def split_clusters(self, clust_idx, split_num):
+    #     """
+    #     This function splits a cluster into several subclusters. This is done in place.
+    #     Parameters:
+    #         clust_idx (int): the index of the cluster to split. Cluster indexing starts from 0.
 
-            split_num (int): how many parts should the cluster be splitted into.
-        """
-        assert type(clust_idx) == int, "'clust_idx' expected to be integer."
-        S_split = np.transpose(self.S[self.idx == clust_idx])[self.idx == clust_idx]
-        new_idx = clust.spectral_clustering(S_split, n_clusters = split_num)
-        new_clusters = [self.clustered_series[i] for i in range(clust_idx)] # initializing with all element that have idx < clust_idx
-        old_cluster = self.clustered_series[clust_idx]
-        for i in range(split_num): # appending splitted elements
-            filter_k = new_idx == i
-            new_clusters.append([old_cluster[k] for k in range(len(filter_k)) if filter_k[k]])
-        for i in range(clust_idx+1, len(self.clustered_series)): # appending remaining elements from clusters with idx > clust_idx
-            new_clusters.append(self.clustered_series[i])
+    #         split_num (int): how many parts should the cluster be splitted into.
+    #     """
+    #     assert type(clust_idx) == int, "'clust_idx' expected to be integer."
+    #     S_split = np.transpose(self.S[self.idx == clust_idx])[self.idx == clust_idx]
+    #     new_idx = clust.spectral_clustering(S_split, n_clusters = split_num)
+    #     new_clusters = [self.clustered_series[i] for i in range(clust_idx)] # initializing with all element that have idx < clust_idx
+    #     old_cluster = self.clustered_series[clust_idx]
+    #     for i in range(split_num): # appending splitted elements
+    #         filter_k = new_idx == i
+    #         new_clusters.append([old_cluster[k] for k in range(len(filter_k)) if filter_k[k]])
+    #     for i in range(clust_idx+1, len(self.clustered_series)): # appending remaining elements from clusters with idx > clust_idx
+    #         new_clusters.append(self.clustered_series[i])
 
-        self.idx[self.idx > clust_idx] += split_num - 1
-        self.idx[self.idx == clust_idx] += new_idx + clust_idx - 1#replacing indexes of cluster to split by new indexes.
-        self.clustered_series = new_clusters
+    #     self.idx[self.idx > clust_idx] += split_num - 1
+    #     self.idx[self.idx == clust_idx] += new_idx + clust_idx - 1#replacing indexes of cluster to split by new indexes.
+    #     self.clustered_series = new_clusters
         
-        print("Splitted cluster %d in %d parts. To recover old clusters, run 'clustering' function anew" %(clust_idx, split_num))
+    #     print("Splitted cluster %d in %d parts. To recover old clusters, run 'clustering' function anew" %(clust_idx, split_num))
 
     def dunn_index(self):
         """
@@ -466,42 +462,7 @@ class graphClusterer:
         plt.show()
         return ev_plot
 
-    def visualize_3D(self, cluster_num, nn = None, perplexity = 30):
-            """Plots a 3D representation of the input series using the distance matrix projected onto the eigenvectors.
 
-            If k clusters are used, the reduction is done using the projection of the series onto the k eigenvectors corresponding
-            to the k lowest eigenvalues of the laplacien. Points are there further reduced in dimensionality via t-sne.
-            This is fast fast, and exact, as it directly uses the distance matrix without further processing (padding or truncating).
-            
-            Parameters:
-                cluster_num (int): how many clusters should the data be reduced to.
-
-                percentile_filter (int): whether or not to remove outlier elements that have a distance much larger than other elements. 
-                    'outlier_filter' specifies a percentile of the highest distances to exclude. 
-                    For instance, if 'outlier_filter' is 2, the highest 2% of distances will be remove from analysis.
-
-                min_elts (int): the minimum number of elements allowed in a cluster. If a cluster contains less elements than 'min_elts', 
-                    these elements are removed from the input, and the analysis starts again.
-
-                nn (int): the number of nearest neighbours to use in the kernel for computing the affinity matrix.
-
-                perplexity (int): the value of the tsne perplexity. Controls how "spread" the final visualization is.
-            """
-            perplexity = min(3*perplexity, len(self.series))
-
-            _, _, idx, V, _ = self.clustering(cluster_num, nn)
-
-            #projecting onto eigenvectors of S matrix
-            warped_ts = V[:, :cluster_num]
-            cluster_idx = idx
-            titlestring = "Dimensionality reduction \n after projection onto EV"
-          
-            reduced_dim_data = TSNE(n_components = 3, learning_rate='auto', init='random', perplexity= perplexity).fit_transform(warped_ts) 
-
-            fig = plt.figure()
-            ax = fig.add_subplot(projection='3d')  
-            ax.scatter(reduced_dim_data[:, 0], reduced_dim_data[:, 1], reduced_dim_data[:, 2], s = 20, c = [plt.cm.Dark2(i) for i in cluster_idx])
-            plt.show()
 
 
 

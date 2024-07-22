@@ -36,12 +36,6 @@ class SpectralClustWindow(tk.Toplevel):
         # self.dirpath = dirpath
         self.path_to_file = path_to_file
         self.clusterer = None
-        self.isAffinity = tk.BooleanVar()
-        if self.app.edge_type == "affinity":
-            self.isAffinity.set(True)
-        else:
-            self.isAffinity.set(False)
-
         self.idx = None
         self.nn = 7
         self.cluster_num = 2
@@ -62,40 +56,6 @@ class SpectralClustWindow(tk.Toplevel):
         self.clustering_btn_frame = tk.Frame(self, bg = "gray", height=50)
         self.clustering_btn_frame.pack(side="bottom", fill="both")
         
-        ## buttons ##
-        # selecting the graph for clustering
-        # self.graph_selector=tk.Menubutton(selection_btn_frame, text = "Select graph file(s)")
-        # # filling the values of the graph selection menu for clustering
-        # menu = tk.Menu(self.graph_selector, tearoff=False)
-        # self.active_path_list = [] # storing selected paths here
-        # self.path_variable_list = []
-        # self.path_label_list = []
-        # path_list = os.listdir(self.dirpath)
-        # for i in range(0, len(path_list)):
-        #     globals()['var'+str(i)] = tk.StringVar() # Creating variables to store paths dynamically
-        # for i in range(0, len(path_list)): # Adding values to the actual Menubutton
-        #     self.path_variable_list.append(globals()['var'+str(i)])
-        #     self.path_label_list.append(path_list[i])
-        #     menu.add_checkbutton(label = self.path_label_list[i], variable = self.path_variable_list[i], command=self.get_checked)
-        # self.graph_selector.configure(menu=menu)
-        # self.graph_selector.pack(side="left", fill="x", padx = 5)
-                
-        # ## static buttons functions ##  
-        # def get_checked(self):
-        #     lst = []
-        #     for i, item in enumerate(self.path_variable_list):
-        #         if item.get() == "1":
-        #             lst.append(self.path_label_list[i])
-        #     self.active_path_list = lst
-        #     self.path_to_file = [self.dirpath + "/" + self.active_path_list[i] for i in range(len(self.active_path_list))]
-        
-        # graph type
-        # tk.Label(selection_btn_frame, text="Type of graph").pack(side = "left")
-        # self.affinity_button = tk.Radiobutton(selection_btn_frame, text="Affinity", variable=self.isAffinity, value=True)
-        # self.affinity_button.pack(side="left")
-        # self.distance_button = tk.Radiobutton(selection_btn_frame,text="Distance", variable=self.isAffinity, value = False)
-        # self.distance_button.pack(side="left")
-        
         # selecting the graph combination for clustering
         tk.Label(self.selection_btn_frame, text="Laplacian combination").pack(side = "left")
         self.laplacian_selector=ttk.Combobox(self.selection_btn_frame, state = "readonly")
@@ -106,11 +66,9 @@ class SpectralClustWindow(tk.Toplevel):
 
         self.hyperparams_buttons_fc() # setting up hyperparams button on start
         self.clustering_buttons_fc() # setting up clustering buttons on start
-        # self.affinity_button["command"] = self.similarity_changed #commands need to be added after laplacian selector is created
-        # self.distance_button["command"] = self.similarity_changed
         
         D = read_graph(self.path_to_file)
-        self.clusterer = graphClusterer(D, self.isAffinity.get(), self.laplacian_selector.get())
+        self.clusterer = graphClusterer(D, self.app.edge_type == "affinity", self.laplacian_selector.get())
          
     ## dynamic buttons displaying ##    
     def laplacian_changed(self, event): # if laplacian changed due to different graph connectivity, adapt buttons
@@ -124,19 +82,6 @@ class SpectralClustWindow(tk.Toplevel):
         elif self.laplacian_selector.get() == "epsilon neighbourhood":
             self.hyperparams_buttons_epsilon()
             self.clustering_buttons_epsilon()
-            
-    def similarity_changed(self): # if similarity (aff. or diff.) radiobutton was changed, adapt buttons
-        self.clusterer.isAffinity = self.isAffinity.get()
-        if self.laplacian_selector.get() == "fully connected":
-            self.hyperparams_buttons_fc()
-            self.clustering_buttons_fc()
-        elif self.laplacian_selector.get() == "nearest neighbours":
-            self.hyperparams_buttons_nn()
-            self.clustering_buttons_nn()
-        elif self.laplacian_selector.get() == "epsilon neighbourhood":
-            self.hyperparams_buttons_epsilon()
-            self.clustering_buttons_epsilon()
-            self.clusterer.connectivity_type
     
     def clustering_buttons_fc(self):
         for fm in self.clustering_btn_frame.winfo_children():
@@ -148,7 +93,7 @@ class SpectralClustWindow(tk.Toplevel):
         self.cluster_number_field["justify"] = "center"
         self.cluster_number_field.pack(side = "left")
         self.cluster_number_field.insert(-1, 2)
-        if not(self.isAffinity.get()):
+        if not(self.app.edge_type == "affinity"):
             # selecting the number of nn
             tk.Label(self.clustering_btn_frame, text="Sigma").pack(side = "left", padx = 5)
             self.nn_field = tk.Entry(self.clustering_btn_frame, width = 5)
@@ -178,7 +123,7 @@ class SpectralClustWindow(tk.Toplevel):
         self.cluster_number_field["justify"] = "center"
         self.cluster_number_field.pack(side = "left")
         self.cluster_number_field.insert(-1, 2)
-        if not(self.isAffinity.get()):
+        if not(self.app.edge_type == "affinity"):
             # selecting the number of nn
             tk.Label(self.clustering_btn_frame, text="Sigma").pack(side = "left", padx = 5)
             self.nn_field = tk.Entry(self.clustering_btn_frame, width = 5)
@@ -214,7 +159,7 @@ class SpectralClustWindow(tk.Toplevel):
         self.cluster_number_field["justify"] = "center"
         self.cluster_number_field.pack(side = "left")
         self.cluster_number_field.insert(-1, 2)
-        if not(self.isAffinity.get()):
+        if not(self.app.edge_type == "affinity"):
             # selecting the number of nn
             tk.Label(self.clustering_btn_frame, text="Sigma").pack(side = "left", padx = 5)
             self.nn_field = tk.Entry(self.clustering_btn_frame, width = 5)
@@ -251,7 +196,7 @@ class SpectralClustWindow(tk.Toplevel):
         cluster_num_button.pack(side="left", fill="x", padx = 5)
         cluster_num_button["command"] = self.plot_clusNum_stats
         # nn button
-        if not(self.isAffinity.get()): # if input graph is distance, needs to be converted to affinity with nn parameter
+        if not(self.app.edge_type == "affinity"): # if input graph is distance, needs to be converted to affinity with nn parameter
             nn_button= tk.Button(self.hyperparam_btn_frame)
             nn_button["justify"] = "center"
             nn_button["text"] = "Sigma"
@@ -268,7 +213,7 @@ class SpectralClustWindow(tk.Toplevel):
         cluster_num_button["text"] = "Cluster number"
         cluster_num_button.pack(side="left", fill="x", padx = 5)
         cluster_num_button["command"] = self.plot_clusNum_stats
-        if not(self.isAffinity.get()): # if input graph is distance, needs to be converted to affinity with nn parameter
+        if not(self.app.edge_type == "affinity"): # if input graph is distance, needs to be converted to affinity with nn parameter
             nn_button= tk.Button(self.hyperparam_btn_frame)
             nn_button["justify"] = "center"
             nn_button["text"] = "Sigma"
@@ -290,7 +235,7 @@ class SpectralClustWindow(tk.Toplevel):
         cluster_num_button["text"] = "Cluster number"
         cluster_num_button.pack(side="left", fill="x", padx = 5)
         cluster_num_button["command"] = self.plot_clusNum_stats
-        if not(self.isAffinity.get()): # if input graph is distance, needs to be converted to affinity with nn parameter
+        if not(self.app.edge_type == "affinity"): # if input graph is distance, needs to be converted to affinity with nn parameter
             self.nn_button= tk.Button(self.hyperparam_btn_frame)
             nn_button["justify"] = "center"
             nn_button["text"] = "Sigma"
@@ -304,17 +249,14 @@ class SpectralClustWindow(tk.Toplevel):
     
     def cluster_graphs(self):
         cluster_num = int(self.cluster_number_field.get())
-        if not(self.isAffinity.get()):
-            nn = int(self.nn_field.get())
-        else:
-            nn = None
+        nn = int(self.nn_field.get())
         if self.laplacian_selector.get() == "fully connected":
             connectivity_param = None
         elif self.laplacian_selector.get() == "nearest neighbours":
             connectivity_param = int(self.mnn_field.get())
         elif self.laplacian_selector.get() == "epsilon neighbourhood":
             connectivity_param = int(self.epsilon_field.get())
-        _, self.app.idx, _, _ = self.clusterer.clustering(cluster_num, self.isAffinity.get(), nn, connectivity_param)
+        _, self.app.idx, _, _ = self.clusterer.clustering(cluster_num, self.app.edge_type == "affinity", nn, connectivity_param)
         self.app.cluster_num = cluster_num
         self.app.plot_in_frame(layout_style = self.app.layout_style, node_metric = self.app.node_metric, \
                                percentage_threshold=self.app.percentage_threshold, mnn = self.app.mnn_number, deg = self.app.degree)
@@ -354,7 +296,7 @@ class SpectralClustWindow(tk.Toplevel):
         px = 1/plt.rcParams['figure.dpi']  # pixel in inches
         f = Figure(figsize=(800*px,300*px), dpi = 100)
         a = f.add_subplot(111)
-        if not(self.isAffinity.get()):
+        if not(self.app.edge_type == "affinity"):
             self.clusterer.mnn_grid_search(a, 10, int(self.cluster_number_field.get()), int(self.nn_field.get()))
         else:
             self.clusterer.mnn_grid_search(a, 10, int(self.cluster_number_field.get()), None)
@@ -370,7 +312,7 @@ class SpectralClustWindow(tk.Toplevel):
         px = 1/plt.rcParams['figure.dpi']  # pixel in inches
         f = Figure(figsize=(800*px,300*px), dpi = 100)
         a = f.add_subplot(111)
-        if not(self.isAffinity.get()):
+        if not(self.app.edge_type == "affinity"):
             self.clusterer.epsilon_grid_search(a, 30, int(self.cluster_number_field.get()), int(self.nn_field.get()))
         else:
             self.clusterer.epsilon_grid_search(a, 30, int(self.cluster_number_field.get()), None)
@@ -387,18 +329,16 @@ class SpectralClustWindow(tk.Toplevel):
         f = Figure(figsize=(750*px,450*px))
         
         cluster_num = int(self.cluster_number_field.get())
-        if not(self.isAffinity.get()):
-            nn = int(self.nn_field.get())
-        else:
-            nn = None
+        nn = int(self.mnn_field.get())
+
         if self.laplacian_selector.get() == "fully connected":
             connectivity_param = None
         elif self.laplacian_selector.get() == "nearest neighbours":
             connectivity_param = int(self.mnn_field.get())
         elif self.laplacian_selector.get() == "epsilon neighbourhood":
             connectivity_param = int(self.epsilon_field.get())
-        S, _, _, _ = self.clusterer.clustering(cluster_num, self.isAffinity.get(), nn, connectivity_param)
-        S_layout, _, _, _ = self.clusterer.clustering(cluster_num, self.isAffinity.get(), None, None)
+        S, _, _, _ = self.clusterer.clustering(cluster_num, self.app.edge_type == "affinity", connectivity_param, self.laplacian_selector.get())
+        S_layout, _, _, _ = self.clusterer.clustering(cluster_num, self.app.edge_type == "affinity", None, None)
 
         if len(S) > 1: #3d plot
             a = f.add_subplot(111, projection='3d')
@@ -419,6 +359,7 @@ class SpectralClustWindow(tk.Toplevel):
             # layout = g.layout(layout_style)
             visual_style = {}
             visual_style["edge_width"] = rescale(np.array([w['weight'] for w in g.es]))
+
             ig.plot(g, target=a, **visual_style)
         
         
