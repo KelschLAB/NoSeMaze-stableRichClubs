@@ -64,6 +64,7 @@ class LayeredNetworkGraph(object):
         self.graphs = [g.to_networkx() for g in graphs]
         self.data = [data for data in graphs_data]
         self.edge_width = []
+        self.alphas = []
         self.node_edge_colors = node_edge_colors
         self.layer_labels = layer_labels
         self.symmetry = [] # to store whether or not graphs are directed
@@ -71,6 +72,7 @@ class LayeredNetworkGraph(object):
         for g in self.graphs:
             weights = nx.get_edge_attributes(g, "weight").values()
             self.edge_width.extend(self.rescale(np.array([w for w in weights]), scale_factor))
+            self.alphas.extend(self.rescale(np.array([w for w in weights]), 0.5)+0.5)
         for graph_index, d in enumerate(self.data):
             self.symmetry.extend([self.isSymmetric(d) for i in range(len(self.graphs[graph_index].edges))])
                 
@@ -194,7 +196,7 @@ class LayeredNetworkGraph(object):
                 x, y, z = self.node_positions[source]
                 u, v, w = self.node_positions[target]
                 # self.ax.plot([x, u], [y, v], [z, w])
-                arrow_prop_dict = dict(mutation_scale=20, arrowstyle=style, shrinkA=10, shrinkB=5, alpha = a, linestyle = ls, color = c, lw = lw)
+                arrow_prop_dict = dict(mutation_scale=20, arrowstyle=style, shrinkA=10, shrinkB=5, alpha = self.alphas[counter], linestyle = ls, color = c, lw = lw)
                 a = Arrow3D([x, u], [y, v], [z, w], **arrow_prop_dict)
                 self.ax.add_artist(a)
             counter += 1
@@ -224,7 +226,7 @@ class LayeredNetworkGraph(object):
                 self.ax.text(*self.node_positions[(node, z)], node_labels[node], *args, **kwargs)
 
     def draw(self):
-        self.draw_edges(self.edges_within_layers, arrow = True, alpha=1, linestyle='-', zorder=2
+        self.draw_edges(self.edges_within_layers, arrow = True, alpha=0.7, linestyle='-', zorder=2
                         , linewidths=self.edge_width, facecolor=self.edge_colors,  colors=self.edge_colors)
         self.draw_edges(self.edges_between_layers, arrow = False, color='k', alpha=0.2, linestyle='--', zorder=2, lw = 1)
         cmap_list = [cm.Reds, cm.Blues, cm.Greens, cm.Oranges, cm.Purples]*self.total_layers
