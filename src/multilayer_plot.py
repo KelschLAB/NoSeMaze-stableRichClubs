@@ -251,7 +251,7 @@ class LayeredNetworkGraph(object):
 
 if __name__ == '__main__':
 
-    path = "C:\\Users\\Corentin offline\\Documents\\GitHub\\clusterGUI\\data\\social network matrices 3days\\G1\\"
+    path = "..\\data\\social network matrices 3days\\G1\\"
     # files = [path+"chasing_resD1_1.csv", path+"chasing_resD1_3.csv"]
     files = [path+"interactions_resD3_1.csv", path+"interactions_resD3_2.csv"]
 

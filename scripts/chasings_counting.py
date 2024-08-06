@@ -9,9 +9,9 @@ from weighted_rc import weighted_rich_club
 sys.path.append('..\\src\\')
 from read_graph import read_graph
 
-datapath = "C:\\Users\\Corentin offline\\Documents\\GitHub\\clusterGUI\\data\\chasing\\single\\"
+datapath = "..\\data\\chasing\\single\\"
 
-def histogram_chasings(graph):
+def histogram_chasings(graph, rc_idx):
     # plt.rcParams["figure.figsize"] = [7.00, 3.50]
     # plt.rcParams["figure.autolayout"] = True
     # plt.rcParams.update({
@@ -34,9 +34,15 @@ def histogram_chasings(graph):
     tot30.append(np.sum(data_30[:]> 0.5))
     tot50.append(np.sum(data_50[:]> 0.5))
     
-    arr10.append(np.sum(data_10[0,:]> 0.5)+np.sum(data_10[6,:]> 0.5))
-    arr30.append(np.sum(data_30[0,:]> 0.5)+np.sum(data_30[6,:]> 0.5))
-    arr50.append(np.sum(data_50[0,:]> 0.5)+np.sum(data_50[6,:]> 0.5))
+    sum10, sum30, sum50 = 0,0,0
+    for rc in rc_idx:
+        sum10 += np.sum(data_10[rc,:]> 0.5)
+        sum30 += np.sum(data_30[rc,:]> 0.5)
+        sum50 += np.sum(data_50[rc,:]> 0.5)
+        
+    arr10.append(sum10)
+    arr30.append(sum30)
+    arr50.append(sum50)
     
     tot10, tot30, tot50 = np.array(tot10), np.array(tot30), np.array(tot50)
     ar10, arr30, arr50 = np.array(arr10), np.array(arr30), np.array(arr50)
@@ -53,9 +59,9 @@ def histogram_chasings(graph):
     # colors = ['#e0ecf4','#9ebcda','#8856a7'] # purples
     # colors = ['#a1dab4','#41b6c4','#225ea8'] # veridis dark
     
-    rects1 = ax.bar(x - width, 100*(arr10/tot10), 2*width/3, label='10\%', align = 'edge', color = colors[0]) 
-    rects2 = ax.bar(x - width/3, 100*(arr30/tot30), 2*width/3, label='30\%', align = 'edge', color = colors[1])
-    rects3 = ax.bar(x + width/3, 100*(arr50/tot50), 2*width/3, label='50\%', align = 'edge', color = colors[2]) 
+    rects1 = ax.bar(x - width, 100*(arr10/tot10), 2*width/3, label="10%", align = 'edge', color = colors[0]) 
+    rects2 = ax.bar(x - width/3, 100*(arr30/tot30), 2*width/3, label='30%', align = 'edge', color = colors[1])
+    rects3 = ax.bar(x + width/3, 100*(arr50/tot50), 2*width/3, label='50%', align = 'edge', color = colors[2]) 
 
     ax.spines[['right', 'top']].set_visible(False)
     ax.set_ylabel('Total chasings fraction (\%)')
@@ -70,4 +76,35 @@ def histogram_chasings(graph):
     # plt.savefig("C:\\Users\\Agarwal Lab\\Corentin\\Python\\clusterGUI\\plots\\chasings_vs_RC.png", dpi = 150)
     plt.show()
     
-histogram_chasings("G1_single_chasing.csv")
+def persistence_chasings(graph, rc_idx):
+    
+    arr = []
+    total = []
+    for i in range(1, 101):
+        data = read_graph([datapath+graph], percentage_threshold = i)[0]
+        total.append(np.sum(data[:] > 0.5))
+        sum_rc = 0
+        for rc in rc_idx:
+            sum_rc += np.sum(data[rc,:]> 0.5)
+        arr.append(sum_rc)
+    arr = np.array(arr)
+    total = np.array(total)
+
+    fig, ax = plt.subplots()
+    
+    ax.spines[['right', 'top']].set_visible(False)
+    ax.set_ylabel("Total chasings fraction (%)")
+    ax.set_xlabel("Threshold (%)")
+    ax.set_title('Rich-club members chasings')
+    plt.plot(range(1, 101), arr/total, c = 'k')
+    # ax.hlines(25, x[0] - width, x[-1] + width, linestyle = "--", color = "k", alpha = 0.5)  # 25 because there are 2 to 3 members of stable rich club
+    # ax.annotate('Random chance', xy=(4.5, 25), xytext=(4 + width/10, 70), ha = 'left',      # 25 because there are 2 to 3 members of stable rich club
+    #         arrowprops=dict(facecolor='black', shrink=0.05, width = 0.5, headwidth = 5), textcoords='data', xycoords='data')
+    plt.show()
+
+if __name__ == "__main__":
+    # histogram_chasings("G1_single_chasing.csv", [0, 6])
+    # persistence_chasings("G1_single_chasing.csv", [0, 6])
+    # persistence_chasings("G3_single_chasing.csv", [3,4,8])
+    # persistence_chasings("G5_single_chasing.csv", [5, 6])
+    # persistence_chasings("G7_single_chasing.csv", [3, 4, 6])
