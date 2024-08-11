@@ -240,68 +240,73 @@ def littermates_in_club():
     
 def reshuffled_RC():
     number_of_hits = []
-    mutants = np.array([1, 2])
     arr = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
     
-    for i in tqdm(range(1000)):
+    for i in tqdm(range(500)):
         hits = 0
         for j in range(1):
             shuffled_arr = np.random.permutation(arr)
-            hits += np.any(np.isin(mutants, shuffled_arr[:2]))
+            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
         for j in range(1):
             shuffled_arr = np.random.permutation(arr)
-            hits += np.any(np.isin(mutants, shuffled_arr[:2]))
+            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
             
         for j in range(1):
             shuffled_arr = np.random.permutation(arr)
-            hits += np.any(np.isin(mutants, shuffled_arr[:2]))
+            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
+            
         for j in range(4):
             shuffled_arr = np.random.permutation(arr)
-            hits += np.any(np.isin(mutants, shuffled_arr[:2]))
-        for j in range(3):
-            shuffled_arr = np.random.permutation(arr)
-            hits += np.any(np.isin(mutants, shuffled_arr[:2]))
+            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
             
         for j in range(3):
             shuffled_arr = np.random.permutation(arr)
-            hits += np.any(np.isin(mutants, shuffled_arr[:2]))
+            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
+            
+        for j in range(3):
+            shuffled_arr = np.random.permutation(arr)
+            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
         for j in range(2):
             shuffled_arr = np.random.permutation(arr)
-            hits += np.any(np.isin(mutants, shuffled_arr[:2]))
+            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
         for j in range(1):
             shuffled_arr = np.random.permutation(arr)
-            hits += np.any(np.isin(mutants, shuffled_arr[:2]))
+            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
             
         for j in range(1):
             shuffled_arr = np.random.permutation(arr)
-            hits += np.any(np.isin(mutants, shuffled_arr[:2]))
+            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
+            
         for j in range(2):
             shuffled_arr = np.random.permutation(arr)
-            hits += np.any(np.isin(mutants, shuffled_arr[:2]))
+            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
             
         for j in range(1):
             shuffled_arr = np.random.permutation(arr)
-            hits += np.any(np.isin(mutants, shuffled_arr[:2]))
+            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
+            
         for j in range(2):
             shuffled_arr = np.random.permutation(arr)
-            hits += np.any(np.isin(mutants, shuffled_arr[:2]))
+            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
             
         for j in range(1):
             np.random.permutation(shuffled_arr)
-            hits += np.any(np.isin(mutants, shuffled_arr[:2]))
+            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
+            
         for j in range(1):
             np.random.permutation(shuffled_arr)
-            hits += np.any(np.isin(mutants, shuffled_arr[:2]))
+            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
 
         number_of_hits.append(hits)
         
-    h = plt.hist(number_of_hits, bins = np.arange(23), density = True, align = 'left', label = "Expected by random chance")
+    h = plt.hist(number_of_hits, bins = np.arange(14), density = True, align = 'left', label = "Expected by random chance")
     plt.title("Random chance of being shuffled back in rich-club\n 1st cohort")
     plt.xlabel("Number of 'conserved' RC members", fontsize=15)
     plt.ylabel("Probability", fontsize=15)
     plt.axvline(np.percentile(number_of_hits, 5), ls = "--", color = 'k')
     plt.axvline(np.percentile(number_of_hits, 95), ls = "--", color = 'k', label = "95% CI")
     plt.axvline(6, color = 'red', label = "Experimentally observed")
+    plt.xlim([0, 11])
     plt.legend()
 
 reshuffled_RC()
