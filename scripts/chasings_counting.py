@@ -9,8 +9,8 @@ from weighted_rc import weighted_rich_club
 sys.path.append('..\\src\\')
 from read_graph import read_graph
 
-# datapath = "..\\data\\chasing\\single\\"
-datapath = "..\\data\\averaged\\"
+datapath = "..\\data\\chasing\\single\\"
+# datapath = "..\\data\\averaged\\"
 
 
 def histogram_chasings(graph, rc_idx):
@@ -107,7 +107,7 @@ def persistence_chasings(graph, rc_idx):
 def histogram_chasing_new():
     all_rc = [[0,6], [3,8,9], [3,4, 8],[5,6],[0, 1], [3,4,6], [3, 5, 7, 8], [6, 7, 8]]
     labels = ["G1", "G2", "G3","G5", "G6", "G7", "G8","G10"]
-    random_chances = [0.2, 0.33, 0.33, 0.2, 0.2, 0.33, 0.33, 0.2]
+    random_chances = [20, 33, 33, 20, 20, 33, 33, 20]
     
     tot10 = [] # total chasing from RC for thres 10%
     tot30 = [] # total chasing from RC for thres 30%
@@ -122,15 +122,15 @@ def histogram_chasing_new():
         data_30 = read_graph([datapath+g+"_single_chasing.csv"], percentage_threshold = 30)[0]
         data_50 = read_graph([datapath+g+"_single_chasing.csv"], percentage_threshold = 50)[0]
         
-        tot10.append(np.sum(data_10[:] > 0.5))
-        tot30.append(np.sum(data_30[:]> 0.5))
-        tot50.append(np.sum(data_50[:]> 0.5))
+        tot10.append(np.sum(np.sum(data_10, axis = 1)))
+        tot30.append(np.sum(np.sum(data_30, axis = 1)))
+        tot50.append(np.sum(np.sum(data_50, axis = 1)))
         
-        sum10, sum30, sum50 = 0,0,0
+        sum10, sum30, sum50 = 0, 0, 0
         for rc in all_rc[idx]:
-            sum10 += np.sum(data_10[rc,:]> 0.5)
-            sum30 += np.sum(data_30[rc,:]> 0.5)
-            sum50 += np.sum(data_50[rc,:]> 0.5)
+            sum10 += np.sum(data_10[rc,:])
+            sum30 += np.sum(data_30[rc,:])
+            sum50 += np.sum(data_50[rc,:])
             
         arr10.append(sum10)
         arr30.append(sum30)
@@ -171,6 +171,74 @@ def histogram_chasing_new():
     # plt.savefig("C:\\Users\\Agarwal Lab\\Corentin\\Python\\clusterGUI\\plots\\chasings_vs_RC.png", dpi = 150)
     plt.show()
     
+def histogram_shared_passages():
+    all_rc = [[0,6], [3,8,9], [3,4, 8], [5,6], [0, 1], [3,4,6], [3, 5, 7, 8], [6, 7, 8]]
+    labels = ["G1", "G2", "G3","G5", "G6", "G7", "G8","G10"]
+    random_chances = [20, 33, 33, 20, 20, 33, 33, 20]
+    
+    tot10 = [] # total chasing from RC for thres 10%
+    tot30 = [] # total chasing from RC for thres 30%
+    tot50 = [] # chasing from RC for thres 50%
+    
+    arr10 = [] # total chasing from RC for thres 10%
+    arr30 = [] # total chasing from RC for thres 30%
+    arr50 = [] # chasing from RC for thres 50%
+
+    for idx, g in enumerate(labels):
+        data_10 = read_graph([datapath+g+"_single_chasing.csv"], percentage_threshold = 10)[0]
+        data_30 = read_graph([datapath+g+"_single_chasing.csv"], percentage_threshold = 30)[0]
+        data_50 = read_graph([datapath+g+"_single_chasing.csv"], percentage_threshold = 50)[0]
+        
+        tot10.append(np.sum(np.sum(data_10, axis = 0)) + np.sum(np.sum(data_10, axis = 1)))
+        tot30.append(np.sum(np.sum(data_30, axis = 0)) + np.sum(np.sum(data_30, axis = 1)))
+        tot50.append(np.sum(np.sum(data_50, axis = 0)) + np.sum(np.sum(data_50, axis = 1)))
+        
+        sum10, sum30, sum50 = 0, 0, 0
+        for rc in all_rc[idx]:
+            sum10 += np.sum(data_10[rc,:]) + np.sum(data_10[:, rc])
+            sum30 += np.sum(data_30[rc,:]) + np.sum(data_30[:, rc]) 
+            sum50 += np.sum(data_50[rc,:]) + np.sum(data_50[:, rc])
+            
+        arr10.append(sum10)
+        arr30.append(sum30)
+        arr50.append(sum50)
+    
+    tot10, tot30, tot50 = np.array(tot10), np.array(tot30), np.array(tot50)
+    arr10, arr30, arr50 = np.array(arr10), np.array(arr30), np.array(arr50)
+    
+    plt.rcParams["figure.figsize"] = [7.00, 3.50]
+    plt.rcParams["figure.autolayout"] = True
+    plt.rcParams.update({
+    "text.usetex": True,
+    "font.family": "Helvetica"
+    })
+
+    x = np.arange(len(labels))*1
+    width = 0.35
+    fig, ax = plt.subplots()
+    
+    # colors = ["#ffeda0", "#feb24c", "#f03b20"] # reds
+    colors = ["#edf8b1", "#7fcdbb", "#2c7fb8"] # veridis
+    # colors = ['#f0f0f0','#bdbdbd','#636363'] # grays
+    # colors = ['#e0ecf4','#9ebcda','#8856a7'] # purples
+    # colors = ['#a1dab4','#41b6c4','#225ea8'] # veridis dark
+    
+    rects1 = ax.bar(x - width, 100*arr10/tot10, 2*width/3, label='10\%', align = 'edge', color = colors[0]) 
+    rects2 = ax.bar(x - width/3, 100*arr30/tot30, 2*width/3, label='30\%', align = 'edge', color = colors[1])
+    rects3 = ax.bar(x + width/3, 100*arr50/tot50, 2*width/3, label='50\%', align = 'edge', color = colors[2]) 
+
+    ax.spines[['right', 'top']].set_visible(False)
+    ax.set_ylabel('Total shared passages fraction (\%)')
+    ax.set_xlabel('Cohort')
+    ax.set_title('Rich-club members shared passages')
+    ax.set_xticks(x)
+    ax.set_xticklabels(labels)
+    ax.legend(title="Threshold:")
+    ax.vlines([0,1,2,3,4,5,6,7], [0,0,0,0,0,0,0,0], random_chances, color = "k", label = "Random chance")  # 25 because there are 2 to 3 members of stable rich club
+    # plt.savefig("C:\\Users\\Agarwal Lab\\Corentin\\Python\\clusterGUI\\plots\\chasings_vs_RC.png", dpi = 150)
+    plt.show()
+    
+    
 def histogram_approaches():
     all_rc =  [[0,6], [3, 8, 9], [2, 3, 6], [1, 6], [0, 1], [3, 4, 6], [3, 5, 7, 8], [7, 8]]
     labels = ["G1", "G2", "G3","G5", "G6", "G7", "G8", "G10"]
@@ -189,15 +257,15 @@ def histogram_approaches():
         data_30 = read_graph([datapath+g+"\\approaches_resD7_1.csv"], percentage_threshold = 30)[0] + read_graph([datapath+g+"\\approaches_resD7_2.csv"], percentage_threshold = 30)[0]
         data_50 = read_graph([datapath+g+"\\approaches_resD7_1.csv"], percentage_threshold = 50)[0] + read_graph([datapath+g+"\\approaches_resD7_2.csv"], percentage_threshold = 50)[0]
         
-        tot10.append(np.sum(data_10[:] > 0.5))
-        tot30.append(np.sum(data_30[:]> 0.5))
-        tot50.append(np.sum(data_50[:]> 0.5))
+        tot10.append(np.sum(np.sum(data_10, axis = 1)))
+        tot30.append(np.sum(np.sum(data_30, axis = 1)))
+        tot50.append(np.sum(np.sum(data_50, axis = 1)))
         
-        sum10, sum30, sum50 = 0,0,0
+        sum10, sum30, sum50 = 0, 0, 0
         for rc in all_rc[idx]:
-            sum10 += np.sum(data_10[rc,:]> 0.5)
-            sum30 += np.sum(data_30[rc,:]> 0.5)
-            sum50 += np.sum(data_50[rc,:]> 0.5)
+            sum10 += np.sum(data_10[rc,:])
+            sum30 += np.sum(data_30[rc,:])
+            sum50 += np.sum(data_50[rc,:])
             
         arr10.append(sum10)
         arr30.append(sum30)
@@ -318,6 +386,8 @@ if __name__ == "__main__":
     # persistence_chasings("G5_single_chasing.csv", [5, 6])!
     # persistence_chasings("G7_single_chasing.csv", [3, 4, 6])
     # histogram_chasing_new()
+    histogram_shared_passages()
     # rank_by_outgoing_chasings()
     # rank_by_outgoing_approaches()
-    histogram_approaches()
+    
+    # histogram_approaches()
