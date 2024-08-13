@@ -9,8 +9,8 @@ from weighted_rc import weighted_rich_club
 sys.path.append('..\\src\\')
 from read_graph import read_graph
 
-datapath = "..\\data\\chasing\\single\\"
-# datapath = "..\\data\\averaged\\"
+# datapath = "..\\data\\chasing\\single\\"
+datapath = "..\\data\\averaged\\"
 
 
 def histogram_chasings(graph, rc_idx):
@@ -386,8 +386,8 @@ if __name__ == "__main__":
     # persistence_chasings("G5_single_chasing.csv", [5, 6])!
     # persistence_chasings("G7_single_chasing.csv", [3, 4, 6])
     # histogram_chasing_new()
-    histogram_shared_passages()
+    # histogram_shared_passages()
     # rank_by_outgoing_chasings()
-    # rank_by_outgoing_approaches()
+    rank_by_outgoing_approaches()
     
     # histogram_approaches()

@@ -171,7 +171,7 @@ def littermates_in_club():
     shuffled_arr17 = np.array([10, 13, 19, 20, 21, 21, 22, 23, 23, 23])
 
 
-    for i in tqdm(range(1000)):
+    for i in tqdm(range(500)):
         hits = 0
         # expID 1
         np.random.shuffle(shuffled_arr1)
@@ -232,8 +232,9 @@ def littermates_in_club():
     plt.title("Random chance of litter mates in rich club")
     plt.xlabel("Groups with litter mates in rich club", fontsize=15)
     plt.ylabel("Probability", fontsize=15)
-    plt.axvline(np.percentile(number_of_hits, 2.5), ls = "--", color = 'k')
-    plt.axvline(np.percentile(number_of_hits, 98), ls = "--", color = 'k', label = "95% CI")
+    # plt.axvline(np.percentile(number_of_hits, 2.5), ls = "--", color = 'k')
+    plt.axvline(np.percentile(number_of_hits, 96), ls = "--", color = 'k', label = "95% CI")
+    print(np.cumsum(h[0]))
     plt.axvline(3, color = 'red', label = "Experimentally observed")
     plt.legend()
     
@@ -242,7 +243,7 @@ def reshuffled_RC():
     number_of_hits = []
     arr = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
     
-    for i in tqdm(range(500)):
+    for i in tqdm(range(5000)):
         hits = 0
         for j in range(1):
             shuffled_arr = np.random.permutation(arr)
@@ -299,11 +300,11 @@ def reshuffled_RC():
 
         number_of_hits.append(hits)
         
-    h = plt.hist(number_of_hits, bins = np.arange(14), density = True, align = 'left', label = "Expected by random chance")
+    h = plt.hist(number_of_hits, bins = np.arange(14), density = True, align = 'left', label = "Expected by random chance", rwidth = 0.97)
     plt.title("Random chance of being shuffled back in rich-club\n 1st cohort")
     plt.xlabel("Number of 'conserved' RC members", fontsize=15)
     plt.ylabel("Probability", fontsize=15)
-    plt.axvline(np.percentile(number_of_hits, 5), ls = "--", color = 'k')
+    # plt.axvline(np.percentile(number_of_hits, 5), ls = "--", color = 'k')
     plt.axvline(np.percentile(number_of_hits, 95), ls = "--", color = 'k', label = "95% CI")
     plt.axvline(6, color = 'red', label = "Experimentally observed")
     plt.xlim([0, 11])
