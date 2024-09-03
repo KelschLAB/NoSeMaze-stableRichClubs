@@ -9,7 +9,7 @@ from weighted_rc import weighted_rich_club
 sys.path.append('..\\src\\')
 from read_graph import read_graph
 
-# datapath = "..\\data\\chasing\\single\\"
+datapath = "..\\data\\chasing\\single\\"
 datapath = "..\\data\\averaged\\"
 
 
@@ -105,9 +105,9 @@ def persistence_chasings(graph, rc_idx):
     plt.show()
     
 def histogram_chasing_new():
-    all_rc = [[0,6], [3,8,9], [3,4, 8],[5,6],[0, 1], [3,4,6], [3, 5, 7, 8], [6, 7, 8]]
-    labels = ["G1", "G2", "G3","G5", "G6", "G7", "G8","G10"]
-    random_chances = [20, 33, 33, 20, 20, 33, 33, 20]
+    all_rc = [[0,6], [3, 8, 9], [3, 4, 8], [5,6], [0, 1], [3,4,6], [3, 5, 7, 8], [6, 7, 8], [5, 8], [0, 2], [2, 8, 9]]
+    labels = ["G1", "G2", "G3","G5", "G6", "G7", "G8","G10", "G11", "G12", "G15"]
+    random_chances = [20, 33, 33, 20, 20, 33, 33, 20, 20, 20, 33]
     
     tot10 = [] # total chasing from RC for thres 10%
     tot30 = [] # total chasing from RC for thres 30%
@@ -162,19 +162,19 @@ def histogram_chasing_new():
 
     ax.spines[['right', 'top']].set_visible(False)
     ax.set_ylabel('Total chasings fraction (\%)')
-    ax.set_xlabel('Cohort')
+    ax.set_xlabel('Both cohorts')
     ax.set_title('Rich-club members chasings')
     ax.set_xticks(x)
     ax.set_xticklabels(labels)
     ax.legend(title="Threshold:")
-    ax.vlines([0,1,2,3,4,5,6,7], [0,0,0,0,0,0,0,0], random_chances, color = "k", label = "Random chance")  # 25 because there are 2 to 3 members of stable rich club
+    ax.vlines([0,1,2,3,4,5,6,7,8,9,10], [0,0,0,0,0,0,0,0,0,0,0], random_chances, color = "k", label = "Random chance")  # 25 because there are 2 to 3 members of stable rich club
     # plt.savefig("C:\\Users\\Agarwal Lab\\Corentin\\Python\\clusterGUI\\plots\\chasings_vs_RC.png", dpi = 150)
     plt.show()
     
 def histogram_shared_passages():
-    all_rc = [[0,6], [3,8,9], [3,4, 8], [5,6], [0, 1], [3,4,6], [3, 5, 7, 8], [6, 7, 8]]
-    labels = ["G1", "G2", "G3","G5", "G6", "G7", "G8","G10"]
-    random_chances = [20, 33, 33, 20, 20, 33, 33, 20]
+    all_rc = [[0,6], [3,8,9], [3,4, 8], [5,6], [0, 1], [3,4,6], [3, 5, 7, 8], [6, 7, 8], [5, 8], [0, 2], [2, 8, 9]]
+    labels = ["G1", "G2", "G3","G5", "G6", "G7", "G8","G10", "G11", "G12", "G15"]
+    random_chances = [20, 33, 33, 20, 20, 33, 33, 20, 20, 20, 33]
     
     tot10 = [] # total chasing from RC for thres 10%
     tot30 = [] # total chasing from RC for thres 30%
@@ -229,20 +229,21 @@ def histogram_shared_passages():
 
     ax.spines[['right', 'top']].set_visible(False)
     ax.set_ylabel('Total shared passages fraction (\%)')
-    ax.set_xlabel('Cohort')
+    ax.set_xlabel('Both cohorts')
     ax.set_title('Rich-club members shared passages')
     ax.set_xticks(x)
     ax.set_xticklabels(labels)
     ax.legend(title="Threshold:")
-    ax.vlines([0,1,2,3,4,5,6,7], [0,0,0,0,0,0,0,0], random_chances, color = "k", label = "Random chance")  # 25 because there are 2 to 3 members of stable rich club
+    ax.vlines([0,1,2,3,4,5,6,7,8,9,10], [0,0,0,0,0,0,0,0,0,0,0], random_chances, color = "k", label = "Random chance")  # 25 because there are 2 to 3 members of stable rich club
     # plt.savefig("C:\\Users\\Agarwal Lab\\Corentin\\Python\\clusterGUI\\plots\\chasings_vs_RC.png", dpi = 150)
     plt.show()
     
     
 def histogram_approaches():
-    all_rc =  [[0,6], [3, 8, 9], [2, 3, 6], [1, 6], [0, 1], [3, 4, 6], [3, 5, 7, 8], [7, 8]]
-    labels = ["G1", "G2", "G3","G5", "G6", "G7", "G8", "G10"]
-    random_chances = [20, 33, 33, 20, 20, 33, 33, 20]
+    all_rc =  [[0,6], [3, 8, 9], [2, 3, 6], [1, 6], [0, 1], [3, 4, 6], [3, 5, 7, 8], [7, 8], [5, 8], [0, 2], [2, 8, 9]]
+    labels = ["G1", "G2", "G3", "G5", "G6", "G7", "G8", "G10", "G11", "G12", "G15"]
+    random_chances = [20, 33, 33, 20, 20, 33, 33, 20, 20, 20, 33]
+    
     
     tot10 = [] # total chasing from RC for thres 10%
     tot30 = [] # total chasing from RC for thres 30%
@@ -297,20 +298,20 @@ def histogram_approaches():
 
     ax.spines[['right', 'top']].set_visible(False)
     ax.set_ylabel('Total approaches fraction (\%)')
-    ax.set_xlabel('Cohort')
+    ax.set_xlabel('Both cohorts')
     ax.set_title('Rich-club members approaches')
     ax.set_xticks(x)
     ax.set_xticklabels(labels)
     ax.legend(title="Threshold:")
-    ax.vlines([0,1,2,3,4,5,6,7], [0,0,0,0,0,0,0,0], random_chances, color = "k", label = "Random chance")  # 25 because there are 2 to 3 members of stable rich club
+    ax.vlines([0,1,2,3,4,5,6,7,8,9,10], [0,0,0,0,0,0,0,0,0,0,0], random_chances, color = "k", label = "Random chance")  # 25 because there are 2 to 3 members of stable rich club
     # plt.savefig("C:\\Users\\Agarwal Lab\\Corentin\\Python\\clusterGUI\\plots\\chasings_vs_RC.png", dpi = 150)
     plt.show()
     
 def rank_by_outgoing_chasings():
     # plots the rank of RC members, ranking each mice of each group by the total number of outgoing chases it 
     # performed
-    all_rc = [[0,6], [3,8,9], [3,4, 8],[5,6],[0, 1], [3,4,6], [5, 7, 8], [6, 7, 8]]
-    labels = ["G1", "G2", "G3","G5", "G6", "G7", "G8","G10"]
+    all_rc = [[0,6], [3, 8, 9], [3, 4, 8], [5, 6], [0, 1], [3, 4, 6], [5, 7], [7, 8], [5, 8], [0, 2], [2, 8, 9]]
+    labels = ["G1", "G2", "G3","G5", "G6", "G7", "G8","G10", "G11", "G12", "G15"]
     
     all_ranks = [] # total chasing from RC for thres 10%
 
@@ -340,8 +341,8 @@ def rank_by_outgoing_chasings():
 def rank_by_outgoing_approaches(outgoing = True):
     # plots the rank of RC members, ranking each mice of each group by the total number of outgoing chases it 
     # performed
-    all_rc = [[0,6], [3, 8], [2, 3, 6], [1, 6], [0, 1], [4], [3, 5, 7, 8], [7, 8]]
-    labels = ["G1", "G2", "G3","G5", "G6", "G7", "G8", "G10"]
+    all_rc = [[0,6], [3, 8, 9], [2, 3, 6], [1, 6], [0, 1], [3, 4, 6], [5, 7], [7, 8], [5, 8], [0, 2], [2, 8, 9]]
+    labels = ["G1", "G2", "G3", "G5", "G6", "G7", "G8", "G10", "G11", "G12", "G15"]
     
     all_ranks = [] # total chasing from RC for thres 10%
 
@@ -386,8 +387,8 @@ if __name__ == "__main__":
     # persistence_chasings("G5_single_chasing.csv", [5, 6])!
     # persistence_chasings("G7_single_chasing.csv", [3, 4, 6])
     # histogram_chasing_new()
+    # histogram_approaches()
     # histogram_shared_passages()
     # rank_by_outgoing_chasings()
     rank_by_outgoing_approaches()
     
-    # histogram_approaches()

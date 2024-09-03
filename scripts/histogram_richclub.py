@@ -4,8 +4,18 @@ import igraph as ig
 import networkx as nx
 import os
 from weighted_rc import weighted_rich_club
+import pandas as pd
 
 plt.rcParams.update({"text.usetex": True})
+
+# indices of rc and mutants in excel sheet for cohort 1
+rc_index_in_excel1 = np.array([7, 12, 14, 15, 25, 26, 31, 34, 35, 45, 53, 59, 67, 69, 70, 76, 78, 95, 98]) - 2 # RC
+mutants_index_in_excel1 = np.array([6, 9, 13, 21, 27, 28, 33, 41, 51, 54, 58, 65, 66, 73, 75, 92, 94]) - 2 # Mutants
+other_index_in_excel1 = np.arange(99)[~np.isin(np.arange(99), np.concatenate((rc_index_in_excel1, mutants_index_in_excel1)))] # Others
+# indices of rc and mutants in excel sheet for cohort 1
+rc_index_in_excel2 = np.array([9, 11, 12, 14, 50, 51]) - 2
+mutants_index_in_excel2 = np.array([3, 5, 6, 7, 17, 19, 22, 28, 29, 34, 40, 43, 46]) - 2
+other_index_in_excel2 = np.arange(109)[~np.isin(np.arange(109), np.concatenate((rc_index_in_excel2, mutants_index_in_excel2)))] # Others
 
 def rich_club_piechart():
     fig, ax = plt.subplots(1, 2)
@@ -135,11 +145,17 @@ def total_chasings_cohort():
     ax.bar(np.nan, np.nan, color = "red", alpha = 0.4, label = r"Validation cohort")
     ax.legend()
 
-
 def tuberank_vs_rc():
     """Plots the tube rank of rich clulb members for both cohorts"""
-    arr = np.array([2, 4, 2, 3, 8, 2, 10, 1, 8, 2, 6, 5, 3, 1, 2, 5, 1, 2, 6, 2, 4, 2, 3, 1, 2, 1, 4, 2, 3, 1, 2]) # tube rank
-    plt.hist(arr, bins = [i for i in range(1, 11)], align = 'mid', rwidth = 0.95, color = "gray") 
+    arr = np.array([2,4, 2,3,8, 10,2,1, 6,1,5,3,1,5,2,1,2,6,4,3,1,2,1,2,4,8]) # tube rank
+    tuberank_rc1 = pd.read_excel(r"C:\Users\Agarwal Lab\Corentin\Python\NoSeMaze\data\reduced_data.xlsx", 
+                                        sheet_name = 0).to_numpy()[:, 1:][rc_index_in_excel1, 9].astype(float)
+    tuberank_rc2 = pd.read_excel(r"C:\Users\Agarwal Lab\Corentin\Python\NoSeMaze\data\meta-data_validation.xlsx", 
+                                        sheet_name = 0).to_numpy()[:, 1:][rc_index_in_excel1, 9].astype(float)
+    arr = np.concatenate((tuberank_rc1, tuberank_rc2))
+    # arr = tuberank_rc1
+    plt.figure()
+    plt.hist(arr, bins = [i for i in range(1, 12)], align = 'mid', rwidth = 0.95, color = "gray") 
     plt.xlabel("Tube rank")
     plt.ylabel("Number of observations"); 
     ticklabels = [i for i in range(1, 11)]
@@ -148,7 +164,7 @@ def tuberank_vs_rc():
     
 def chasingrank_vs_rc():
     """Plots the chasing rank of rich clulb members for both cohorts"""
-    arr = np.array([2, 3, 5, 1, 2, 4, 1, 7, 4, 2, 2, 1, 1, 6, 4, 6, 5, 1, 2, 3, 2, 3, 10, 1, 2, 5, 4, 1, 2, 6, 3, 2,7 ,1 ,3,4]) # chasing rank
+    arr = np.array([2,3, 1,5,10, 1,2,4, 2, 4, 1, 2, 1,4,6,5,6,1,2,2,3,1,2,2,3,6]) # chasing rank
     plt.hist(arr, bins = [i for i in range(1, 11)], align = 'mid', rwidth = 0.95, color = "gray") 
     plt.xlabel("Chasing rank") 
     plt.xlabel("Tube rank")
@@ -156,6 +172,36 @@ def chasingrank_vs_rc():
     ticklabels = [i for i in range(1, 11)]
     plt.xticks([i + 0.5 for i in range(1, 11)], ticklabels)
     plt.title("Chasing rank of the rich-club members")
+    
+def tuberank_vs_nonrc():
+    """Plots the tube rank of rich clulb members for both cohorts"""
+    tuberank_others1 = pd.read_excel(r"C:\Users\Agarwal Lab\Corentin\Python\NoSeMaze\data\reduced_data.xlsx", 
+                                       sheet_name = 0).to_numpy()[:, 1:][other_index_in_excel1, 9].astype(float)
+    tuberank_others2 = pd.read_excel(r"C:\Users\Agarwal Lab\Corentin\Python\NoSeMaze\data\meta-data_validation.xlsx", 
+                                       sheet_name = 0).to_numpy()[:, 1:][other_index_in_excel1, 9].astype(float)
+    arr = np.concatenate((tuberank_others1, tuberank_others2))
+    plt.figure()
+    plt.hist(arr, bins = [i for i in range(1, 12)], align = 'mid', rwidth = 0.95, color = "gray") 
+    plt.xlabel("Tube rank", fontsize = 15)
+    plt.ylabel("Number of observations", fontsize = 15); 
+    ticklabels = [i for i in range(1, 12)]
+    plt.xticks([i + 0.5 for i in range(1, 12)], ticklabels)
+    plt.title("Tube rank of non rich-club members")
+    
+def chasingrank_vs_nonrc():
+    """Plots the chasing rank of rich clulb members for both cohorts"""
+    chasingrank_others1 = pd.read_excel(r"C:\Users\Agarwal Lab\Corentin\Python\NoSeMaze\data\reduced_data.xlsx", 
+                                       sheet_name = 0).to_numpy()[:, 1:][other_index_in_excel1, 11].astype(float)
+    chasingrank_others2 = pd.read_excel(r"C:\Users\Agarwal Lab\Corentin\Python\NoSeMaze\data\meta-data_validation.xlsx", 
+                                       sheet_name = 0).to_numpy()[:, 1:][other_index_in_excel1, 11].astype(float)
+    arr = np.concatenate((chasingrank_others1, chasingrank_others2))
+    plt.figure()
+    plt.hist(arr, bins = [i for i in range(1, 12)], align = 'mid', rwidth = 0.95, color = "gray") 
+    plt.xlabel("Chasing rank", fontsize = 15) 
+    plt.ylabel("Number of observations", fontsize = 15); 
+    ticklabels = [i for i in range(1, 12)]
+    plt.xticks([i + 0.5 for i in range(1, 12)], ticklabels)
+    plt.title("Chasing rank of non rich-club members")
     
 def chasings_vs_rc():
     tot10 = np.array([4, 24, 17, 24, 29, 30, 10]) # total chasing from RC for thres 10%
@@ -254,7 +300,8 @@ if __name__ == "__main__":
     # rc_coefficient_histogram(4, 3)
     # chasings_vs_rc()
     # tuberank_vs_rc()
-    chasingrank_vs_rc()
+    chasingrank_vs_nonrc()
+    tuberank_vs_nonrc()
 # chasings_vs_rc_validation()
 # total_chasings_cohort()
 

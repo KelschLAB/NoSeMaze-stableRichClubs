@@ -8,7 +8,7 @@ sys.path.append('..\\src\\')
 from read_graph import read_graph
 
 
-# datapath = "..\\data\\chasing\\single\\"
+datapath = "..\\data\\chasing\\single\\"
 datapath = "..\\data\\averaged\\"
 
 
@@ -73,9 +73,10 @@ def mutants_tube_rank(yaxis = "Chasing rank", dataset = "both", hue = True):
             sns.catplot(data=first_df, x="Gene deletion", y=yaxis, kind = 'bar', color = 'gray')
             
 def histogram_chasing_mutants():
-    all_rc = [[4, 6], [2, 6], [2, 6], [0, 5], [2, 4], [7, 9], [0, 5], [2, 3], [2, 3]]
-    labels = ["G1", "G2", "G3", "G4","G5", "G6", "G7", "G8","G10"]
-    random_chances = [20, 20, 20, 20, 20, 20, 20, 20, 20]
+    # all_rc = [[4, 6], [2, 6], [2, 6], [0, 5], [2, 4], [7, 9], [0, 5], [2, 3], [2, 3]]
+    all_rc = [[6], [2], [6], [5], [2, 4], [7], [0, 5], [3], [2], [0,2,3], [5,7], [2,3,9], [3,9], [0,2,3], [2,3,8,9]] #took out mutants with weak histology
+    labels = ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G10", "G11", "G12", "G13", "G14", "G15", "G16"]
+    random_chances = [10, 10, 10, 20, 20, 10, 20, 10, 10, 33, 20, 33, 20, 33, 40]
     
     tot10 = [] # total chasing from RC for thres 10%
     tot30 = [] # total chasing from RC for thres 30%
@@ -130,20 +131,22 @@ def histogram_chasing_mutants():
 
     ax.spines[['right', 'top']].set_visible(False)
     ax.set_ylabel('Total chasings fraction (\%)')
-    ax.set_xlabel('First cohort')
+    ax.set_xlabel('Both cohorts')
     ax.set_title('Mutants chasings')
     ax.set_xticks(x)
     ax.set_xticklabels(labels)
     ax.legend(title="Threshold:")
-    ax.vlines([0,1,2,3,4,5,6,7,8], [0,0,0,0,0,0,0,0,0], random_chances, color = "k", label = "Random chance")  # 25 because there are 2 to 3 members of stable rich club
+    ax.vlines([0,1,2,3,4,5,6,7,8,9,10,11,12,13,14], [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], random_chances, color = "k", label = "Random chance")  # 25 because there are 2 to 3 members of stable rich club
     # plt.savefig("C:\\Users\\Agarwal Lab\\Corentin\\Python\\clusterGUI\\plots\\chasings_vs_RC.png", dpi = 150)
-    plt.ylim([0, 40])
+    plt.ylim([0, 50])
     plt.show()
     
 def histogram_approaches_mutants():
-    all_rc = [[4, 6], [2, 6], [6], [0, 5], [3, 5], [7, 9], [0, 5], [2, 3], [2, 3]]
-    labels = ["G1", "G2", "G3", "G4","G5", "G6", "G7", "G8","G10"]
-    random_chances = [20, 20, 20, 20, 20, 20, 20, 20, 20]
+    # all_rc = [[4, 6], [2, 6], [4], [0, 5], [3, 5], [7, 9], [0, 5], [2, 3], [2, 3], [0,2,3], [5,7], [0,2,3], [3, 9]] 
+    all_rc = [[6], [2], [4], [5], [3, 5], [7], [0, 5], [3], [2], [0,2,3], [5,7], [2,3,9], [3,9], [0,2,3], [2,3,8,9]] #took out mutants with weak histology
+
+    labels = ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G10", "G11", "G12", "G13", "G14", "G15", "G16"]
+    random_chances = [10, 10, 10, 20, 20, 10, 20, 10, 10, 33, 20, 33, 20, 33, 40]
     
     tot10 = [] # total chasing from RC for thres 10%
     tot30 = [] # total chasing from RC for thres 30%
@@ -198,14 +201,14 @@ def histogram_approaches_mutants():
 
     ax.spines[['right', 'top']].set_visible(False)
     ax.set_ylabel('Total approaches fraction (\%)')
-    ax.set_xlabel('First cohort')
+    ax.set_xlabel('Both cohort')
     ax.set_title('Mutants approaches')
     ax.set_xticks(x)
     ax.set_xticklabels(labels)
     ax.legend(title="Threshold:")
-    ax.vlines([0,1,2,3,4,5,6,7,8], [0,0,0,0,0,0,0,0,0], random_chances, color = "k", label = "Random chance")  # 25 because there are 2 to 3 members of stable rich club
+    ax.vlines([0,1,2,3,4,5,6,7,8,9,10,11,12,13,14], [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], random_chances, color = "k", label = "Random chance")  # 25 because there are 2 to 3 members of stable rich club
     # plt.savefig("C:\\Users\\Agarwal Lab\\Corentin\\Python\\clusterGUI\\plots\\chasings_vs_RC.png", dpi = 150)
-    plt.ylim([0, 40])
+    plt.ylim([0, 70])
     plt.show()
             
 if __name__ == "__main__":

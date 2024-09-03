@@ -107,10 +107,11 @@ def mutants_in_both():
             
         number_of_hits.append(hits)
         
-    plt.hist(number_of_hits, bins = np.arange(15), density = True, align = 'left', label = "Expected by random chance")
-    plt.axvline(np.percentile(number_of_hits, 5), ls = "--", color = 'k')
-    plt.axvline(np.percentile(number_of_hits, 95), ls = "--", color = 'k', label = "95% CI")
+    h = plt.hist(number_of_hits, bins = np.arange(15), density = True, align = 'left', label = "Expected by random chance")
+    plt.axvline(np.percentile(number_of_hits, 5), ls = "--", color = 'k', label = "95% CI")
+    # plt.axvline(np.percentile(number_of_hits, 95), ls = "--", color = 'k', label = "95% CI")
     plt.axvline(2, color = 'red', label = "Experimentally observed")
+    plt.annotate("p-value = "+str(h[0][1]), (1.5, 0.2), bbox=dict(facecolor='white', edgecolor='none', pad=1.0), ha='center')
     plt.title("Random chance of mutant in rich-club\n both cohorts")
     plt.xlabel("Groups with at least 1 mutants in RC", fontsize=15)
     plt.ylabel("Probability", fontsize=15)
@@ -229,7 +230,7 @@ def littermates_in_club():
         number_of_hits.append(hits)
         
     h = plt.hist(number_of_hits, bins = np.arange(10), density = True, align = 'left', label = "Expected by random chance", rwidth = 0.95, color = 'gray')
-    plt.title("Random chance of litter mates in rich club")
+    plt.title("Random chance of litter mates in rich club\n both cohorts")
     plt.xlabel("Groups with litter mates in rich club", fontsize=15)
     plt.ylabel("Probability", fontsize=15)
     # plt.axvline(np.percentile(number_of_hits, 2.5), ls = "--", color = 'k')
@@ -301,7 +302,7 @@ def reshuffled_RC():
         number_of_hits.append(hits)
         
     h = plt.hist(number_of_hits, bins = np.arange(14), density = True, align = 'left', label = "Expected by random chance", rwidth = 0.97)
-    plt.title("Random chance of being shuffled back in rich-club\n 1st cohort")
+    plt.title("Random chance of being shuffled back in rich-club\n both cohorts")
     plt.xlabel("Number of 'conserved' RC members", fontsize=15)
     plt.ylabel("Probability", fontsize=15)
     # plt.axvline(np.percentile(number_of_hits, 5), ls = "--", color = 'k')
@@ -310,9 +311,9 @@ def reshuffled_RC():
     plt.xlim([0, 11])
     plt.legend()
 
-reshuffled_RC()
-# littermates_in_club()
-# mutant_in_cohort()
+# reshuffled_RC()
+littermates_in_club()
+# mutants_in_both()
 # for i in range(1):
     # plt.figure()
     # mutant_in_cohort()
