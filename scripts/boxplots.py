@@ -6,6 +6,8 @@ import os
 import sys
 import seaborn as sns
 from weighted_rc import weighted_rich_club
+from scipy import stats
+
 
 sys.path.append('..\\src\\')
 from read_graph import read_graph
@@ -23,6 +25,47 @@ def format_plot(ax, bp):
     for patch, color in zip(bp['boxes'], colors): # set colors
         patch.set_facecolor(color)
     plt.setp(bp['medians'], color='k')
+    
+def add_significance(data, ax, bp):
+    """Computes and adds p-value significance to input ax and boxplot"""
+    # Initialise a list of combinations of groups that are significantly different
+    significant_combinations = []
+    # Check from the outside pairs of boxes inwards
+    ls = list(range(1, len(data) + 1))
+    combinations = [(ls[x], ls[x + y]) for y in reversed(ls) for x in range((len(ls) - y))]
+    for combination in combinations:
+        data1 = data[combination[0] - 1]
+        data2 = data[combination[1] - 1]
+        # Significance
+        U, p = stats.mannwhitneyu(data1, data2, alternative='two-sided')
+        if p < 0.05:
+            significant_combinations.append([combination, p])
+    for i, significant_combination in enumerate(significant_combinations):
+        # Columns corresponding to the datasets of interest
+        x1 = significant_combination[0][0]
+        x2 = significant_combination[0][1]
+        # What level is this bar among the bars above the plot?
+        level = len(significant_combinations) - i
+        # Plot the bar
+        # Get the y-axis limits
+        bottom, top = ax.get_ylim()
+        y_range = top - bottom
+        bar_height = (y_range * 0.07 * level) + top
+        bar_tips = bar_height - (y_range * 0.02)
+        plt.plot(
+            [x1, x1, x2, x2],
+            [bar_tips, bar_height, bar_height, bar_tips], lw=1, c='k'
+        )
+        # Significance level
+        p = significant_combination[1]
+        if p < 0.001:
+            sig_symbol = '***'
+        elif p < 0.01:
+            sig_symbol = '**'
+        elif p < 0.05:
+            sig_symbol = '*'
+        text_height = bar_height + (y_range * 0.01)
+        plt.text((x1 + x2) * 0.5, text_height, sig_symbol, ha='center', va='bottom', c='k')
 
 def boxplot_chasing():
     """
@@ -47,6 +90,7 @@ def boxplot_chasing():
     bp = ax.boxplot(data, widths=0.6, patch_artist=True)
     ax.set_ylabel("Outgoing chasings", fontsize = 20)
     format_plot(ax, bp) # set x_axis, and colors of each bar
+    add_significance(data, ax, bp)
     # bottom, top = ax.get_ylim()
     plt.show()
     
@@ -77,6 +121,7 @@ def boxplot_approaches():
     bp = ax.boxplot(data, widths=0.6, patch_artist=True)
     ax.set_ylabel("Outgoing approaches", fontsize = 20)
     format_plot(ax, bp) # set x_axis, and colors of each bar
+    add_significance(data, ax, bp)
     # bottom, top = ax.get_ylim()
     # ax.set_title("Week 1", fontsize = 25, weight='bold')
     plt.show()
@@ -107,11 +152,12 @@ def boxplot_interactions():
     bp = ax.boxplot(data, widths=0.6, patch_artist=True)
     ax.set_ylabel("Total interactions", fontsize = 20)
     format_plot(ax, bp) # set x_axis, and colors of each bar
+    add_significance(data, ax, bp)
     # bottom, top = ax.get_ylim()
     plt.show()
     
 if __name__ == "__main__":
-    # boxplot_chasing()
+    boxplot_chasing()
     # boxplot_approaches() 
-    boxplot_interactions()
+    # boxplot_interactions()
     
