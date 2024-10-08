@@ -299,7 +299,7 @@ if __name__ == "__main__":
     # mutants_RC_hist()
     # rc_coefficient_histogram(4, 3)
     # chasings_vs_rc()
-    tuberank_vs_rc()
+    # tuberank_vs_rc()
     # chasingrank_vs_nonrc()
     # tuberank_vs_nonrc()
 # chasings_vs_rc_validation()

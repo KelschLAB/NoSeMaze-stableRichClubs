@@ -11,7 +11,7 @@ sys.path.append('..\\src\\')
 from read_graph import read_graph
 
 datapath = "..\\data\\chasing\\single\\"
-datapath = "..\\data\\averaged\\"
+# datapath = "..\\data\\averaged\\"
 
 
 def histogram_chasings(graph, rc_idx):
@@ -105,7 +105,10 @@ def persistence_chasings(graph, rc_idx):
     #         arrowprops=dict(facecolor='black', shrink=0.05, width = 0.5, headwidth = 5), textcoords='data', xycoords='data')
     plt.show()
     
-def histogram_chasing_new():
+def histogram_chasing_new(out = True):
+    """
+    out determines if we track outgoing or ingoing chasings
+    """
     all_rc = [[0,6], [3, 8, 9], [3, 4, 8], [5,6], [0, 1], [3,4,6], [3, 5, 7, 8], [6, 7, 8], [5, 8], [0, 2], [2, 8, 9]]
     labels = ["G1", "G2", "G3","G5", "G6", "G7", "G8","G10", "G11", "G12", "G15"]
     random_chances = [20, 33, 33, 20, 20, 33, 33, 20, 20, 20, 33]
@@ -123,15 +126,25 @@ def histogram_chasing_new():
         data_30 = read_graph([datapath+g+"_single_chasing.csv"], percentage_threshold = 30)[0]
         data_50 = read_graph([datapath+g+"_single_chasing.csv"], percentage_threshold = 50)[0]
         
-        tot10.append(np.sum(np.sum(data_10, axis = 1)))
-        tot30.append(np.sum(np.sum(data_30, axis = 1)))
-        tot50.append(np.sum(np.sum(data_50, axis = 1)))
-        
+        if out:
+            tot10.append(np.sum(np.sum(data_10, axis = 1)))
+            tot30.append(np.sum(np.sum(data_30, axis = 1)))
+            tot50.append(np.sum(np.sum(data_50, axis = 1)))
+        else:
+            tot10.append(np.sum(np.sum(data_10, axis = 0)))
+            tot30.append(np.sum(np.sum(data_30, axis = 0)))
+            tot50.append(np.sum(np.sum(data_50, axis = 0)))
+            
         sum10, sum30, sum50 = 0, 0, 0
         for rc in all_rc[idx]:
-            sum10 += np.sum(data_10[rc,:])
-            sum30 += np.sum(data_30[rc,:])
-            sum50 += np.sum(data_50[rc,:])
+            if out:
+                sum10 += np.sum(data_10[rc,:])
+                sum30 += np.sum(data_30[rc,:])
+                sum50 += np.sum(data_50[rc,:])
+            else:
+                sum10 += np.sum(data_10[:, rc])
+                sum30 += np.sum(data_30[:, rc])
+                sum50 += np.sum(data_50[:, rc])
             
         arr10.append(sum10)
         arr30.append(sum30)
@@ -162,7 +175,11 @@ def histogram_chasing_new():
     rects3 = ax.bar(x + width/3, 100*arr50/tot50, 2*width/3, label='50\%', align = 'edge', color = colors[2]) 
 
     ax.spines[['right', 'top']].set_visible(False)
-    ax.set_ylabel('Total chasings fraction (\%)')
+    if out:
+        ax.set_ylabel('Total outgoing chasings fraction (\%)')
+    else:
+        ax.set_ylabel('Total ingoing chasings fraction (\%)')
+
     ax.set_xlabel('Both cohorts')
     ax.set_title('Rich-club members chasings')
     ax.set_xticks(x)
@@ -310,7 +327,10 @@ def histogram_approaches():
     # plt.savefig("C:\\Users\\Agarwal Lab\\Corentin\\Python\\clusterGUI\\plots\\chasings_vs_RC.png", dpi = 150)
     plt.show()
     
-def rank_by_outgoing_chasings():
+def rank_by_chasings(both = False):
+    """
+    if both, naimals are ranked by outgoing+ingoing chasings. else, they are ranked by outgoing chasings.
+    """
     # plots the rank of RC members, ranking each mice of each group by the total number of outgoing chases it 
     # performed
     all_rc = [[0,6], [3, 8, 9], [3, 4, 8], [5, 6], [0, 1], [3, 4, 6], [5, 7], [7, 8], [5, 8], [0, 2], [2, 8, 9]]
@@ -321,7 +341,10 @@ def rank_by_outgoing_chasings():
     for idx, g in enumerate(labels):
         data = read_graph([datapath+g+"_single_chasing.csv"])[0]
         # data[data <= 1.00e-02] = 0
-        rank = np.argsort(-np.sum(data, axis = 1))
+        if both:
+            rank = np.argsort(-np.sum(data, axis = 0) - np.sum(data, axis = 1))
+        else:
+            rank = np.argsort(-np.sum(data, axis = 1))
         all_ranks.extend(rank[all_rc[idx]])
     
     all_ranks = np.array(all_ranks)
@@ -335,7 +358,10 @@ def rank_by_outgoing_chasings():
     plt.xticks([0, 1,2,3,4,5,6,7,8,9], labels = [1,2,3,4,5,6,7,8,9,10])#)["10", "9", "8","7", "6","5", "4", "3", "2", "1"])
     plt.yticks([0,1,2,3,4,5])
     plt.xlim([-1,10])
-    plt.xlabel("Rank of RC members by total number of outgoing chasings", fontsize = 12)
+    if both:
+        plt.xlabel("Rank of RC members by total number of ingoing + outgoing chasings", fontsize = 12)
+    else:
+        plt.xlabel("Rank of RC members by total number of outgoing chasings", fontsize = 12)
     plt.ylabel("Count", fontsize = 12)
 
     plt.hist(all_ranks, bins = np.arange(10), align = "left", rwidth = 0.95, color = 'gray')
@@ -389,10 +415,10 @@ if __name__ == "__main__":
     # persistence_chasings("G3_single_chasing.csv", [3,4,8])
     # persistence_chasings("G5_single_chasing.csv", [5, 6])!
     # persistence_chasings("G7_single_chasing.csv", [3, 4, 6])
-    # histogram_chasing_new()
-    histogram_approaches()
+    # histogram_chasing_new(out= False)
+    # histogram_approaches()
     # histogram_shared_passages()
-    # rank_by_outgoing_chasings()
+    rank_by_chasings()
 
     # rank_by_outgoing_approaches()
     

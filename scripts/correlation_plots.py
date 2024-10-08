@@ -12,6 +12,7 @@ from weighted_rc import weighted_rich_club
 sys.path.append('..\\src\\')
 from read_graph import read_graph
 from collections import Counter
+from scipy import stats
 
 
 plt.rcParams.update({
@@ -56,7 +57,7 @@ def chasingRank_david_vs_sortingRC(datapath = "..\\data\\chasing\\single\\"):
     plt.ylabel("Chasing score (David)", fontsize = 15)
     plt.show()
     
-def chasingRank_david_vs_sortingALL(datapath = "..\\data\\chasing\\single\\"):
+def chasingRank_david_vs_sortingALL(datapath = "..\\data\\chasing\\single\\", both = False):
     """plots the chasing rank of all members vs their corresponding rank if we rank them by ho much chasing they do w.r.t to other mice."""
     chasingrank1 = pd.read_excel(r"C:\Users\Agarwal Lab\Corentin\Python\NoSeMaze\data\reduced_data.xlsx", 
                                         sheet_name = 0).to_numpy()[:, 1:][:, 11].astype(float)
@@ -74,7 +75,10 @@ def chasingRank_david_vs_sortingALL(datapath = "..\\data\\chasing\\single\\"):
     for idx, g in enumerate(labels):
         data = read_graph([datapath+g+"_single_chasing.csv"])[0]
         group_names = np.loadtxt("..\\data\\chasing\\single\\"+g+"_single_chasing.csv", delimiter=",", dtype=str)[0, :][1:]
-        rank = np.argsort(-np.sum(data, axis = 1))
+        if both:
+            rank = np.argsort(-np.sum(data, axis = 1) - np.sum(data, axis = 0))
+        else:
+            rank = np.argsort(-np.sum(data, axis = 1))
         sorting_ranks.extend(rank)
         names_csv.extend(group_names)
         
@@ -95,12 +99,19 @@ def chasingRank_david_vs_sortingALL(datapath = "..\\data\\chasing\\single\\"):
     points = list(zip(sorting_ranks, david_ranks))
     counts = Counter(points)
     sizes = [counts[(xi, yi)] * 80 for xi, yi in points]  # Scale size
-    correlation_matrix = np.corrcoef(sorting_ranks, david_ranks)
-    pearson_coefficient = correlation_matrix[0, 1]
+    # correlation_matrix = np.corrcoef(sorting_ranks, david_ranks)
+    # pearson_coefficient = correlation_matrix[0, 1]
+    p = stats.pearsonr(sorting_ranks, david_ranks)
+    print(p)
+    rng = np.random.default_rng()
+    print(p.confidence_interval(95))
 
     plt.figure()
-    plt.scatter(sorting_ranks, david_ranks, c = "k", s = sizes, alpha = 0.4, edgecolors='none', label = "Pearson = "+str(np.round(pearson_coefficient, 2)))
-    plt.xlabel(r"Chasing order (rank by total chasings)", fontsize = 15)
+    plt.scatter(sorting_ranks, david_ranks, c = "k", s = sizes, alpha = 0.4, edgecolors='none', label = "Pearson = "+str(np.round(p.statistic, 2)))
+    if both:
+        plt.xlabel(r"Chasing order (rank by total chasings)", fontsize = 15)
+    else:
+        plt.xlabel(r"Chasing order (rank by total outgoing chasings)", fontsize = 15)
     plt.ylabel(r"Chasing score (David)", fontsize = 15)
     plt.legend(loc = "upper left")
     plt.show()
@@ -123,4 +134,4 @@ def time_in_arena_correlation():
     plt.title("Both cohorts", fontsize = 20)
     
 # chasingRank_david_vs_sortingRC()
-chasingRank_david_vs_sortingALL()
+chasingRank_david_vs_sortingALL(both = True)

@@ -66,7 +66,7 @@ def add_significance(data, ax, bp):
         text_height = bar_height + (y_range * 0.01)
         plt.text((x1 + x2) * 0.5, text_height, sig_symbol, ha='center', va='bottom', c='k')
 
-def boxplot_chasing():
+def boxplot_chasing(out = True):
     """
     Compares the number of chasings made by RC members, mutants and others.
     """
@@ -74,20 +74,35 @@ def boxplot_chasing():
     all_mutants = [[6], [2], [6], [5], [2, 4], [7], [0, 5], [3], [2], [0,2,3], [5,7], [2,3,9], [3,9], [0,2,3], [2,3,8,9]] #took out mutants with weak histology
     labels = ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G10", "G11", "G12", "G13", "G14", "G15", "G16"]
     
+    
     chasings_rc, chasings_mutants, chasings_others = [], [], [] 
     for idx, g in enumerate(labels):
         data = read_graph(["..\\data\\chasing\\single\\"+g+"_single_chasing.csv"], percentage_threshold = 0)[0]
-        for rc in all_rc[idx]:
-            chasings_rc.append(np.sum(data[rc, :]))
-        for mutant in all_mutants[idx]:
-            chasings_mutants.append(np.sum(data[mutant, :]))
-        others = np.arange(10)[np.logical_and(~np.isin(np.arange(10), all_rc[idx]), ~np.isin(np.arange(10), all_mutants[idx]))]
-        for other in others:
-            chasings_others.append(np.sum(data[other, :]))
+        if out:
+            for rc in all_rc[idx]:
+                chasings_rc.append(np.sum(data[rc, :]))
+            for mutant in all_mutants[idx]:
+                chasings_mutants.append(np.sum(data[mutant, :]))
+            others = np.arange(10)[np.logical_and(~np.isin(np.arange(10), all_rc[idx]), ~np.isin(np.arange(10), all_mutants[idx]))]
+            for other in others:
+                chasings_others.append(np.sum(data[other, :]))
+        else:
+            for rc in all_rc[idx]:
+                chasings_rc.append(np.sum(data[:, rc]))
+            for mutant in all_mutants[idx]:
+                chasings_mutants.append(np.sum(data[:, mutant]))
+            others = np.arange(10)[np.logical_and(~np.isin(np.arange(10), all_rc[idx]), ~np.isin(np.arange(10), all_mutants[idx]))]
+            for other in others:
+                chasings_others.append(np.sum(data[:, other]))
+            
     data = [chasings_rc, chasings_mutants, chasings_others]
     ax = plt.axes()
     bp = ax.boxplot(data, widths=0.6, patch_artist=True)
-    ax.set_ylabel("Outgoing chasings", fontsize = 20)
+    if out:
+        ax.set_ylabel("Outgoing chasings", fontsize = 20)
+    else:
+        ax.set_ylabel("Ingoing chasings", fontsize = 20)
+
     format_plot(ax, bp) # set x_axis, and colors of each bar
     add_significance(data, ax, bp)
     # bottom, top = ax.get_ylim()
@@ -156,7 +171,7 @@ def boxplot_interactions():
     plt.show()
     
 if __name__ == "__main__":
-    boxplot_chasing()
+    boxplot_chasing(False)
     # boxplot_approaches() 
     # boxplot_interactions()
     
