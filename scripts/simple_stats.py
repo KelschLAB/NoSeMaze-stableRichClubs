@@ -110,6 +110,9 @@ def time_in_arena(plot_both_cohorts = False):
         sample_size = len(dataset)
         ax.text(i + 1, 15000, fr'$n = {sample_size}$', ha='center', size='x-small')
         
+
+
+        
     
 
-time_in_arena(True)
+# time_in_arena(True)

@@ -8,7 +8,6 @@ import seaborn as sns
 from weighted_rc import weighted_rich_club
 from scipy import stats
 
-
 sys.path.append('..\\src\\')
 from read_graph import read_graph
 

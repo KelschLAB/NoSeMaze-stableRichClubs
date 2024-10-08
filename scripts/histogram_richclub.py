@@ -151,7 +151,7 @@ def tuberank_vs_rc():
     tuberank_rc1 = pd.read_excel(r"C:\Users\Agarwal Lab\Corentin\Python\NoSeMaze\data\reduced_data.xlsx", 
                                         sheet_name = 0).to_numpy()[:, 1:][rc_index_in_excel1, 9].astype(float)
     tuberank_rc2 = pd.read_excel(r"C:\Users\Agarwal Lab\Corentin\Python\NoSeMaze\data\meta-data_validation.xlsx", 
-                                        sheet_name = 0).to_numpy()[:, 1:][rc_index_in_excel1, 9].astype(float)
+                                        sheet_name = 0).to_numpy()[:, 1:][rc_index_in_excel2, 9].astype(float)
     arr = np.concatenate((tuberank_rc1, tuberank_rc2))
     # arr = tuberank_rc1
     plt.figure()
@@ -174,11 +174,11 @@ def chasingrank_vs_rc():
     plt.title("Chasing rank of the rich-club members")
     
 def tuberank_vs_nonrc():
-    """Plots the tube rank of rich clulb members for both cohorts"""
+    """Plots the tube rank of nonrich clulb members for both cohorts"""
     tuberank_others1 = pd.read_excel(r"C:\Users\Agarwal Lab\Corentin\Python\NoSeMaze\data\reduced_data.xlsx", 
                                        sheet_name = 0).to_numpy()[:, 1:][other_index_in_excel1, 9].astype(float)
     tuberank_others2 = pd.read_excel(r"C:\Users\Agarwal Lab\Corentin\Python\NoSeMaze\data\meta-data_validation.xlsx", 
-                                       sheet_name = 0).to_numpy()[:, 1:][other_index_in_excel1, 9].astype(float)
+                                       sheet_name = 0).to_numpy()[:, 1:][other_index_in_excel2, 9].astype(float)
     arr = np.concatenate((tuberank_others1, tuberank_others2))
     plt.figure()
     plt.hist(arr, bins = [i for i in range(1, 12)], align = 'mid', rwidth = 0.95, color = "gray") 
@@ -189,11 +189,11 @@ def tuberank_vs_nonrc():
     plt.title("Tube rank of non rich-club members")
     
 def chasingrank_vs_nonrc():
-    """Plots the chasing rank of rich clulb members for both cohorts"""
+    """Plots the chasing rank of nonrich club members for both cohorts"""
     chasingrank_others1 = pd.read_excel(r"C:\Users\Agarwal Lab\Corentin\Python\NoSeMaze\data\reduced_data.xlsx", 
                                        sheet_name = 0).to_numpy()[:, 1:][other_index_in_excel1, 11].astype(float)
     chasingrank_others2 = pd.read_excel(r"C:\Users\Agarwal Lab\Corentin\Python\NoSeMaze\data\meta-data_validation.xlsx", 
-                                       sheet_name = 0).to_numpy()[:, 1:][other_index_in_excel1, 11].astype(float)
+                                       sheet_name = 0).to_numpy()[:, 1:][other_index_in_excel2, 11].astype(float)
     arr = np.concatenate((chasingrank_others1, chasingrank_others2))
     plt.figure()
     plt.hist(arr, bins = [i for i in range(1, 12)], align = 'mid', rwidth = 0.95, color = "gray") 
@@ -299,9 +299,9 @@ if __name__ == "__main__":
     # mutants_RC_hist()
     # rc_coefficient_histogram(4, 3)
     # chasings_vs_rc()
-    # tuberank_vs_rc()
-    chasingrank_vs_nonrc()
-    tuberank_vs_nonrc()
+    tuberank_vs_rc()
+    # chasingrank_vs_nonrc()
+    # tuberank_vs_nonrc()
 # chasings_vs_rc_validation()
 # total_chasings_cohort()
 
