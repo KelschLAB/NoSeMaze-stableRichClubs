@@ -192,5 +192,5 @@ def plot_reshuffled_chasingRank_corr(both=False):
 
 # plot_reshuffled_inchasing_corr()
 # plot_reshuffled_outchasing_corr()
-# plot_reshuffled_chasingRank_corr()
+plot_reshuffled_chasingRank_corr(True)
 # plot_reshuffled_outapproach_corr()

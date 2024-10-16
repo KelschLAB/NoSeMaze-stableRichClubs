@@ -18,6 +18,8 @@ from read_graph import *
 from clustering_window import *
 
 #To-do: 
+#       - what does it mean to be neighbors in terms of chasing?? (directed interaction). Rich club coloring does not seem to work
+#           properly in these cases. It only colors nodes that have outgoing edges.
 #       - fix overlapping small white link between nodes that make visualization hard
 #       - remove colorbar from 3D view
 #       - figure out why -1 in nn for mnn
@@ -69,7 +71,6 @@ class App:
         self.color2 = "#FFF7E3"
         self. color3 = "#FFE8E3"
         self.color_display_btn = "#FFD7CF"
-    
     
         # Frames
         menu_frame = tk.Frame(root, bg = self.color1, highlightbackground="gray", highlightthickness=1)

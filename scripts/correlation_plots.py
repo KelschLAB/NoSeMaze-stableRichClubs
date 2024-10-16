@@ -84,7 +84,7 @@ def chasingRank_david_vs_sortingALL(datapath = "..\\data\\chasing\\single\\", bo
         
     filter_xlsx = np.isin(names_xlsx, names_csv)
     filter_csv = np.isin(names_csv, names_xlsx)
-    names_csv, names_xlsx = np.array(names_csv)[filter_csv], np.array(names_xlsx)[filter_csv]
+    names_csv, names_xlsx = np.array(names_csv)[filter_csv], np.array(names_xlsx)[filter_xlsx]
     sorting_indices_xlsx, sorting_indices_csv, counter = [], [], 0
     for i, name_csv in enumerate(names_csv):
         for j, name_xlsx in enumerate(names_xlsx[counter:]):
@@ -116,6 +116,60 @@ def chasingRank_david_vs_sortingALL(datapath = "..\\data\\chasing\\single\\", bo
     plt.legend(loc = "upper left")
     plt.show()
     
+def chasingRank_david_vs_approachesALL(datapath = "..\\data\\averaged\\", both = False):
+    """plots the chasing rank of all members vs their corresponding rank if we rank them by ho much approach they do w.r.t to other mice."""
+    chasingrank1 = pd.read_excel(r"C:\Users\Agarwal Lab\Corentin\Python\NoSeMaze\data\reduced_data.xlsx", 
+                                        sheet_name = 0).to_numpy()[:, 1:][:, 11].astype(float)
+    names1 = pd.read_excel(r"C:\Users\Agarwal Lab\Corentin\Python\NoSeMaze\data\reduced_data.xlsx", 
+                                        sheet_name = 0).to_numpy()[:, :1]
+    chasingrank2 = pd.read_excel(r"C:\Users\Agarwal Lab\Corentin\Python\NoSeMaze\data\meta-data_validation.xlsx", 
+                                        sheet_name = 0).to_numpy()[:, 1:][:71, 11].astype(float) #Indexing until 71 because the excel files contains groups that are not part of the camera tracked study (beyond G17)
+    names2 = pd.read_excel(r"C:\Users\Agarwal Lab\Corentin\Python\NoSeMaze\data\meta-data_validation.xlsx", 
+                                        sheet_name = 0).to_numpy()[:71, :1]
+    david_ranks, names_xlsx = np.concatenate((chasingrank1, chasingrank2)), np.concatenate((names1[:, 0], names2[:, 0]))      
+    
+    labels = ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G9", "G10", "G11", "G12", "G13", "G14", "G15", "G16", "G17"]
+    
+    sorting_ranks, names_csv = [], [] # total chasing from RC (obtained by sorting them according to how much chasing they do)
+    for idx, g in enumerate(labels):
+        data = read_graph([datapath+g+"\\approaches_resD7_1.csv"])[0] + read_graph([datapath+g+"\\approaches_resD7_2.csv"])[0]
+        group_names = np.loadtxt(datapath+g+"\\approaches_resD7_1.csv", delimiter=",", dtype=str)[0, :][1:]
+        if both:
+            rank = np.argsort(-np.sum(data, axis = 1) - np.sum(data, axis = 0))
+        else:
+            rank = np.argsort(-np.sum(data, axis = 1))
+        sorting_ranks.extend(rank)
+        names_csv.extend(group_names)
+        
+    filter_xlsx = np.isin(names_xlsx, names_csv)
+    filter_csv = np.isin(names_csv, names_xlsx)
+    names_csv, names_xlsx = np.array(names_csv)[filter_csv], np.array(names_xlsx)[filter_xlsx]
+    sorting_indices_xlsx, sorting_indices_csv, counter = [], [], 0
+    for i, name_csv in enumerate(names_csv):
+        for j, name_xlsx in enumerate(names_xlsx[counter:]):
+            if name_csv == name_xlsx:
+                sorting_indices_xlsx.append(j+counter)
+                sorting_indices_csv.append(i)
+                break
+        counter += 1
+    
+    sorting_ranks, david_ranks = np.array(sorting_ranks), np.array(david_ranks)
+    sorting_ranks, david_ranks = sorting_ranks[filter_csv][sorting_indices_csv], david_ranks[filter_xlsx][sorting_indices_xlsx]
+    points = list(zip(sorting_ranks, david_ranks))
+    counts = Counter(points)
+    sizes = [counts[(xi, yi)] * 80 for xi, yi in points]  # Scale size
+    p = stats.pearsonr(sorting_ranks, david_ranks)
+
+    plt.figure()
+    plt.scatter(sorting_ranks, david_ranks, c = "k", s = sizes, alpha = 0.4, edgecolors='none', label = "Pearson = "+str(np.round(p.statistic, 2)))
+    if both:
+        plt.xlabel(r"Approach order (rank by total approaches)", fontsize = 15)
+    else:
+        plt.xlabel(r"Appraoch order (rank by total outgoing approaches)", fontsize = 15)
+    plt.ylabel(r"Chasing score (David)", fontsize = 15)
+    plt.legend(loc = "upper left")
+    plt.show()
+    
 
 def time_in_arena_correlation():
     path_to_first_cohort = "C:\\Users\\Agarwal Lab\\Corentin\\Python\\NoSeMaze\\data\\reduced_data.xlsx"
@@ -134,4 +188,6 @@ def time_in_arena_correlation():
     plt.title("Both cohorts", fontsize = 20)
     
 # chasingRank_david_vs_sortingRC()
-chasingRank_david_vs_sortingALL(both = True)
+# chasingRank_david_vs_sortingALL(both = True)
+# chasingRank_david_vs_approachesALL(both = True)
+# chasingRank_david_vs_approachesALL()
