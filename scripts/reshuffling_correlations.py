@@ -15,7 +15,7 @@ from collections import Counter
 plt.rc('text', usetex=True)
 plt.rc('font', family='serif')
     
-def plot_reshuffled_outchasing_corr():
+def plot_reshuffled_outchasing_corr(fraction = False):
     
     datapath = "..\\data\\chasing\\single\\"
     chasings_first, chasings_second = [], []
@@ -27,6 +27,8 @@ def plot_reshuffled_outchasing_corr():
         names = np.loadtxt("..\\data\\chasing\\single\\"+g+"_single_chasing.csv", delimiter=",", dtype=str)[0, :][1:]
         data = read_graph(["..\\data\\chasing\\single\\"+g+"_single_chasing.csv"], percentage_threshold = 0)[0]
         chasings = np.sum(data, axis = 1)
+        if fraction:
+            chasings = chasings/np.sum(np.sum(data))
         for c in range(len(chasings)):
             if names[c] not in already_seen_first:
                 chasings_first.append(chasings[c])
@@ -47,6 +49,9 @@ def plot_reshuffled_outchasing_corr():
     plt.scatter(chasings_first[filter_names], chasings_second, c = 'k')
     plt.xlabel("Total outgoing chasings, round 1", fontsize = 17)
     plt.ylabel("Total outgoing chasings, round 2", fontsize = 17)
+    if fraction:
+        plt.xlabel("Normalized outgoing chasings, round 1", fontsize = 17)
+        plt.ylabel("Normalized outgoing chasings, round 2", fontsize = 17)
     slope, intercept = np.polyfit(chasings_first[filter_names], chasings_second, 1)
     x = np.arange(np.min(chasings_first), np.max(chasings_first))
     correlation_matrix = np.corrcoef(chasings_first[filter_names], chasings_second)
@@ -56,7 +61,7 @@ def plot_reshuffled_outchasing_corr():
     plt.tight_layout()
     plt.show()
     
-def plot_reshuffled_inchasing_corr():
+def plot_reshuffled_inchasing_corr(fraction = False):
     
     datapath = "..\\data\\chasing\\single\\"
     chasings_first, chasings_second = [], []
@@ -68,6 +73,8 @@ def plot_reshuffled_inchasing_corr():
         names = np.loadtxt("..\\data\\chasing\\single\\"+g+"_single_chasing.csv", delimiter=",", dtype=str)[0, :][1:]
         data = read_graph(["..\\data\\chasing\\single\\"+g+"_single_chasing.csv"], percentage_threshold = 0)[0]
         chasings = np.sum(data, axis = 0)
+        if fraction:
+            chasings = chasings/np.sum(np.sum(data))
         for c in range(len(chasings)):
             if names[c] not in already_seen_first:
                 chasings_first.append(chasings[c])
@@ -88,6 +95,9 @@ def plot_reshuffled_inchasing_corr():
     plt.scatter(chasings_first[filter_names], chasings_second, c = 'k')
     plt.xlabel("Total ingoing chasings, round 1", fontsize = 17)
     plt.ylabel("Total ingoing chasings, round 2", fontsize = 17)
+    if fraction:
+        plt.xlabel("Normalized ingoing chasings, round 1", fontsize = 17)
+        plt.ylabel("Normalized ingoing chasings, round 2", fontsize = 17)
     slope, intercept = np.polyfit(chasings_first[filter_names], chasings_second, 1)  # 1 means linear
     x = np.arange(np.min(chasings_first), np.max(chasings_first))
     correlation_matrix = np.corrcoef(chasings_first[filter_names], chasings_second)
@@ -190,7 +200,7 @@ def plot_reshuffled_chasingRank_corr(both=False):
     plt.tight_layout()
     plt.show()
 
-# plot_reshuffled_inchasing_corr()
-# plot_reshuffled_outchasing_corr()
-plot_reshuffled_chasingRank_corr(True)
+plot_reshuffled_inchasing_corr(True)
+plot_reshuffled_outchasing_corr(True)
+# plot_reshuffled_chasingRank_corr(True)
 # plot_reshuffled_outapproach_corr()
