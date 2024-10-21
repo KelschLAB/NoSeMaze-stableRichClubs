@@ -10,8 +10,8 @@ from weighted_rc import weighted_rich_club
 sys.path.append('..\\src\\')
 from read_graph import read_graph
 
-# datapath = "..\\data\\chasing\\single\\"
-datapath = "..\\data\\averaged\\"
+datapath = "..\\data\\chasing\\single\\"
+# datapath = "..\\data\\averaged\\"
 
 def histogram_chasings(graph, rc_idx):
     # plt.rcParams["figure.figsize"] = [7.00, 3.50]
@@ -339,7 +339,7 @@ def histogram_approaches(out = True):
     # plt.savefig("C:\\Users\\Agarwal Lab\\Corentin\\Python\\clusterGUI\\plots\\chasings_vs_RC.png", dpi = 150)
     plt.show()
     
-def rank_by_chasings(both = False):
+def rank_by_chasings(out = True, both = False):
     """
     if both, naimals are ranked by outgoing+ingoing chasings. else, they are ranked by outgoing chasings.
     """
@@ -355,8 +355,10 @@ def rank_by_chasings(both = False):
         # data[data <= 1.00e-02] = 0
         if both:
             rank = np.argsort(-np.sum(data, axis = 0) - np.sum(data, axis = 1))
-        else:
+        elif out:
             rank = np.argsort(-np.sum(data, axis = 1))
+        else:
+            rank = np.argsort(-np.sum(data, axis = 0))
         all_ranks.extend(rank[all_rc[idx]])
     
     all_ranks = np.array(all_ranks)
@@ -372,11 +374,14 @@ def rank_by_chasings(both = False):
     plt.xlim([-1,10])
     if both:
         plt.xlabel("Rank of RC members by total number of ingoing + outgoing chasings", fontsize = 12)
-    else:
+    elif out:
         plt.xlabel("Rank of RC members by total number of outgoing chasings", fontsize = 12)
+    else:
+        plt.xlabel("Rank of RC members by total number of ingoing chasings", fontsize = 12)
+
     plt.ylabel("Count", fontsize = 12)
 
-    plt.hist(all_ranks, bins = np.arange(10), align = "left", rwidth = 0.95, color = 'gray')
+    plt.hist(all_ranks, bins = np.arange(11), align = "left", rwidth = 0.95, color = 'gray')
     plt.show()
     
 def rank_by_outgoing_approaches(outgoing = True):
@@ -461,10 +466,10 @@ if __name__ == "__main__":
     # persistence_chasings("G7_single_chasing.csv", [3, 4, 6])
     # histogram_chasing_new(out= False)
     # histogram_approaches(out= False)
-    rank_by_shared_approaches()
+    # rank_by_shared_approaches()
     # rank_by_outgoing_approaches(outgoing = True)
     # histogram_shared_passages()
-    # rank_by_chasings(True)
+    rank_by_chasings(False, False)
 
     # rank_by_outgoing_approaches()
     
