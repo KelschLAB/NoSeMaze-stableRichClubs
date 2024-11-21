@@ -187,7 +187,36 @@ def time_in_arena_correlation():
     plt.ylabel("Social time", fontsize = 20)
     plt.title("Both cohorts", fontsize = 20)
     
+def interaction_vs_social_rank_correlation():
+    path_to_first_cohort = "C:\\Users\\Corentin offline\\Documents\\GitHub\\clusterGUI\\data\\reduced_data.xlsx"
+    path_to_second_cohort = "C:\\Users\\Corentin offline\\Documents\\GitHub\\clusterGUI\\data\\meta-data_full.xlsx"
+    df1 = pd.read_excel(path_to_first_cohort)
+    tube_rank1 = np.array(df1.rank_by_tube.values)
+    chasing_rank1 = np.array(df1.rank_by_tube.values)
+    time_in_arena1 = np.array(df1.time_in_arena_average.values)
+    social_time1 = np.array(df1.ratio_social_to_total_time_average.values)*time_in_arena1
+    
+    df2 = pd.read_excel(path_to_second_cohort)
+    tube_rank2 = np.array(df2.rank_by_tube.values)
+    chasing_rank2 = np.array(df2.rank_by_tube.values)
+    time_in_arena2 = np.array(df2.time_in_arena_average.values)
+    social_time2 = np.array(df2.ratio_social_to_total_time_average.values)*time_in_arena2
+    tube_rank = np.concatenate((tube_rank1, tube_rank2))
+    chasing_rank = np.concatenate((chasing_rank1, chasing_rank2))
+    social_time = np.concatenate((social_time1, social_time2))
+    filt = ~np.isnan(social_time)
+    plt.scatter(social_time[filt], tube_rank[filt], c = 'b', alpha = 0.8, label = "Tube rank", s = 55)
+    plt.scatter(social_time[filt], chasing_rank[filt], c = 'r', alpha = 0.8, label = "Chasing rank", s = 55)
+    # plt.yscale('log')
+    plt.legend()
+    plt.ylabel("Ranking", fontsize = 20)
+    plt.xlabel("Social time", fontsize = 20)
+    plt.title("Both cohorts", fontsize = 20)
+    plt.tight_layout()
+    plt.show()
+    
 # chasingRank_david_vs_sortingRC()
 # chasingRank_david_vs_sortingALL(both = True)
 # chasingRank_david_vs_approachesALL(both = True)
 # chasingRank_david_vs_approachesALL()
+interaction_vs_social_rank_correlation()
