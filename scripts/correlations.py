@@ -20,6 +20,23 @@ plt.rcParams.update({
 "font.family": "Helvetica"
 })
 
+def tube_rank_vs_chasing_rank():
+    path_cohort1 = "C:\\Users\\Agarwal Lab\\Corentin\\Python\\NoSeMaze\\data\\reduced_data.xlsx"
+    # first cohort
+    df1 = pd.read_excel(path_cohort1)
+    tube_ranks = df1.loc[:, "rank_by_tube"].to_numpy()
+    chasing_ranks = df1.loc[:, "rank_by_chasing"].to_numpy()
+    points = list(zip(tube_ranks, chasing_ranks))
+    counts = Counter(points)
+    sizes = [counts[(xi, yi)] * 80 for xi, yi in points]  # Scale size
+    plt.scatter(tube_ranks, chasing_ranks, alpha = 0.5, c = 'k', s = sizes, label = "Pearson coeff = "+str(np.round(np.corrcoef(tube_ranks, chasing_ranks)[0,1], 2)))
+    plt.xlabel("Tube rank", fontsize = 15)
+    plt.ylabel("Chasing rank", fontsize = 15)
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+
+
 rc_index_in_excel1 = np.array([7, 12, 14, 15, 25, 26, 31, 34, 35, 45, 53, 59, 67, 69, 70, 76, 78, 95, 98]) - 2 # RC
 rc_index_in_excel2 = np.array([9, 11, 12, 14, 50, 51]) - 2
 def chasingRank_david_vs_sortingRC(datapath = "..\\data\\chasing\\single\\"):
@@ -219,4 +236,5 @@ def interaction_vs_social_rank_correlation():
 # chasingRank_david_vs_sortingALL(both = True)
 # chasingRank_david_vs_approachesALL(both = True)
 # chasingRank_david_vs_approachesALL()
-interaction_vs_social_rank_correlation()
+# interaction_vs_social_rank_correlation()
+tube_rank_vs_chasing_rank()

@@ -7,8 +7,9 @@ import sys
 import seaborn as sns
 from weighted_rc import weighted_rich_club
 from scipy import stats
+import pandas as pd
 sys.path.append('..\\src\\')
-from read_graph import read_graph
+# from read_graph import read_graph
 from collections import Counter
 
 
@@ -147,7 +148,7 @@ def plot_reshuffled_outapproach_corr():
     plt.tight_layout()
     plt.show()
     
-def plot_reshuffled_chasingRank_corr(both=False):
+def plot_reshuffled_chasingOrder_corr(both=False):
     
     datapath = "..\\data\\chasing\\single\\"
     chasings_first, chasings_second = [], []
@@ -200,7 +201,34 @@ def plot_reshuffled_chasingRank_corr(both=False):
     plt.tight_layout()
     plt.show()
 
-plot_reshuffled_inchasing_corr(True)
-plot_reshuffled_outchasing_corr(True)
+def plot_reshuffled_chasingRank_corr():
+    path_cohort1 = "C:\\Users\\Agarwal Lab\\Corentin\\Python\\NoSeMaze\\data\\reduced_data.xlsx"
+    df1 = pd.read_excel(path_cohort1)
+    # tube_ranks = df1.loc[:, "rank_by_tube"].to_numpy()
+    chasing_ranks = df1.loc[:, "rank_by_chasing"].to_numpy()
+    RFIDs1 = df1.loc[:, "Mouse_RFID"].to_numpy()
+
+    chasings_first, chasings_second = [], []
+    for idx, name in enumerate(RFIDs1):
+        if np.sum(RFIDs1[idx+1:] == name) >= 1:
+            next_idx = np.where(RFIDs1[idx+1:] == name)[0][0] + idx + 1
+            chasings_first.append(chasing_ranks[idx])
+            chasings_second.append(chasing_ranks[next_idx])
+    plt.figure()
+    plt.xlabel("Chasing rank, round 1", fontsize = 17)
+    plt.ylabel("Chasing rank, round 2", fontsize = 17)
+    correlation_matrix = np.corrcoef(chasings_first, chasings_second)
+    pearson_corr = correlation_matrix[0, 1] 
+    points = list(zip(chasings_first, chasings_second))
+    counts = Counter(points)
+    sizes = [counts[(xi, yi)] * 80 for xi, yi in points]  # Scale size
+    plt.scatter(chasings_first, chasings_second, c = 'k', s = sizes, alpha = 0.5, label = "Pearson = "+str(np.round(pearson_corr, 2)))
+    plt.legend(loc = "upper left")
+    plt.tight_layout()
+    plt.show()
+
+# plot_reshuffled_inchasing_corr(True)
+# plot_reshuffled_outchasing_corr(True)
 # plot_reshuffled_chasingRank_corr(True)
 # plot_reshuffled_outapproach_corr()
+plot_reshuffled_chasingRank_corr()
