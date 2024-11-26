@@ -9,8 +9,10 @@ import pandas as pd
 import seaborn as sns
 from scipy.stats import ttest_ind
 from weighted_rc import weighted_rich_club
+from HierarchiaPy import Hierarchia
+
 sys.path.append('..\\src\\')
-from read_graph import read_graph
+# from read_graph import read_graph
 from collections import Counter
 from scipy import stats
 
@@ -32,6 +34,186 @@ def tube_rank_vs_chasing_rank():
     plt.scatter(tube_ranks, chasing_ranks, alpha = 0.5, c = 'k', s = sizes, label = "Pearson coeff = "+str(np.round(np.corrcoef(tube_ranks, chasing_ranks)[0,1], 2)))
     plt.xlabel("Tube rank", fontsize = 15)
     plt.ylabel("Chasing rank", fontsize = 15)
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+
+def tube_rank_vs_chasing_order(out = True):
+    path_cohort1 = "C:\\Users\\Agarwal Lab\\Corentin\\Python\\NoSeMaze\\data\\reduced_data.xlsx"
+    chasing_dir = "C:\\Users\\Agarwal Lab\\Corentin\\Python\\NoSeMaze\\data\\chasing\\single\\"
+
+    # first cohort
+    df1 = pd.read_excel(path_cohort1)
+    tube_ranks = df1.loc[:, "rank_by_tube"].to_numpy()
+    groups = df1.loc[:, "group"].to_numpy()
+    RFIDs = df1.loc[:, "Mouse_RFID"].to_numpy()
+    ranks, orders = [], []
+    for group_idx in range(1, np.max(groups)+1): #iterate over groups
+        mouse_indices = np.where(groups == group_idx) # find out indices of mice from current group
+        current_ranks = tube_ranks[mouse_indices]
+        chasing_matrix = np.loadtxt(chasing_dir+"G"+str(group_idx)+"_single_chasing.csv",
+                                    delimiter = ",", dtype=str)[1:, 1:].astype(np.int16)
+        names_in_chasing_matrix =  np.loadtxt(chasing_dir+"G"+str(group_idx)+"_single_chasing.csv",
+                                            delimiter=",", dtype=str)[0, :][1:]
+        outchasings = np.sum(chasing_matrix, axis = 1)
+        inchasings = np.sum(chasing_matrix, axis = 0)
+        if out:
+            current_orders = np.argsort(-outchasings)
+        else:
+            current_orders = np.argsort(-inchasings)
+        for idx, mouse_name in enumerate(RFIDs[mouse_indices]):
+            # testing if mouse_a is found in chasing matrix
+            if ~np.any(names_in_chasing_matrix == mouse_name):
+                continue
+            else:
+                where_mouse = np.where(names_in_chasing_matrix == mouse_name)
+                ranks.append(current_ranks[idx])
+                orders.append(current_orders[where_mouse][0])
+
+    points = list(zip(ranks, orders))
+    counts = Counter(points)
+    sizes = [counts[(xi, yi)] * 80 for xi, yi in points]  # Scale size
+    plt.scatter(ranks, orders, alpha = 0.5, c = 'k', s = sizes, label = "Pearson coeff = "+str(np.round(np.corrcoef(ranks, orders)[0,1], 2)))
+    plt.xlabel("Tube rank", fontsize = 15)
+    plt.ylabel("Chasing order", fontsize = 15)
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+
+def ChasingRank_vs_approachRank():
+    """This function computes the correlation between the chasing rank (david's score based)
+    and the approach rank (also david's score based). This can give information about the
+    meaning of the chasing behavior. This is based on outgoing interactions only.
+    """
+    path_cohort1 = "C:\\Users\\Agarwal Lab\\Corentin\\Python\\NoSeMaze\\data\\reduced_data.xlsx"
+    approach_dir = "C:\\Users\\Agarwal Lab\\Corentin\\Python\\NoSeMaze\data\\averaged\\"
+
+    # first cohort
+    df1 = pd.read_excel(path_cohort1)
+    chasing_ranks = df1.loc[:, "rank_by_chasing"].to_numpy()
+    groups1 = df1.loc[:, "group"].to_numpy()
+    RFIDs = df1.loc[:, "Mouse_RFID"].to_numpy()
+    ranks, orders = [], []
+    for group_idx in range(1, np.max(groups1)+1): #iterate over groups
+        mouse_indices = np.where(groups1 == group_idx) # find out indices of mice from current group
+        current_ranks = chasing_ranks[mouse_indices]
+        approach_matrix = np.loadtxt(approach_dir+"G"+str(group_idx)+"\\approaches_resD7_1.csv",
+                                    delimiter = ",", dtype=str)[1:, 1:].astype(np.int16) + np.loadtxt(approach_dir+"G"+str(group_idx)+"\\approaches_resD7_2.csv",
+                                    delimiter = ",", dtype=str)[1:, 1:].astype(np.int16)
+        names_in_approach_matrix =  np.loadtxt(approach_dir+"G"+str(group_idx)+"\\approaches_resD7_1.csv",
+                                            delimiter=",", dtype=str)[0, :][1:]
+        hier_mat = Hierarchia(approach_matrix, name_seq=names_in_approach_matrix)
+        approach_david_score = list(hier_mat.davids_score().values())
+        approach_rank = np.argsort(-np.array(approach_david_score))
+        for idx, mouse_name in enumerate(RFIDs[mouse_indices]):
+            # testing if mouse_a is found in chasing matrix
+            if ~np.any(names_in_approach_matrix == mouse_name):
+                continue
+            else:
+                where_mouse = np.where(np.array(list(hier_mat.davids_score().keys())) == mouse_name)
+                ranks.append(current_ranks[idx])
+                orders.append(approach_rank[where_mouse][0])
+
+    path_cohort2 = "C:\\Users\\Agarwal Lab\\Corentin\\Python\\NoSeMaze\\data\\validation_cohort.xlsx"
+    df2 = pd.read_excel(path_cohort2)
+    chasing_ranks2 = df2.loc[:, "rank_by_chasing"].to_numpy()
+    groups2 = df2.loc[:, "Group_ID"].to_numpy()
+    RFIDs2 = df2.loc[:, "Mouse_RFID"].to_numpy()
+    for group_idx in range(np.max(groups1)+1, 18): #iterate over groups
+        mouse_indices = np.where(groups2 == group_idx) # find out indices of mice from current group
+        current_ranks = chasing_ranks2[mouse_indices]
+        approach_matrix = np.loadtxt(approach_dir+"G"+str(group_idx)+"\\approaches_resD7_1.csv",
+                                    delimiter = ",", dtype=str)[1:, 1:].astype(np.int16) + np.loadtxt(approach_dir+"G"+str(group_idx)+"\\approaches_resD7_2.csv",
+                                    delimiter = ",", dtype=str)[1:, 1:].astype(np.int16)
+        names_in_approach_matrix =  np.loadtxt(approach_dir+"G"+str(group_idx)+"\\approaches_resD7_1.csv",
+                                            delimiter=",", dtype=str)[0, :][1:]
+        hier_mat = Hierarchia(approach_matrix, name_seq=names_in_approach_matrix)
+        approach_david_score = list(hier_mat.davids_score().values())
+        approach_rank = np.argsort(-np.array(approach_david_score))
+        for idx, mouse_name in enumerate(RFIDs2[mouse_indices]):
+            # testing if mouse_a is found in chasing matrix
+            if ~np.any(names_in_approach_matrix == mouse_name):
+                continue
+            else:
+                where_mouse = np.where(np.array(list(hier_mat.davids_score().keys())) == mouse_name)
+                ranks.append(current_ranks[idx])
+                orders.append(approach_rank[where_mouse][0])
+
+    points = list(zip(ranks, orders))
+    counts = Counter(points)
+    sizes = [counts[(xi, yi)] * 80 for xi, yi in points]  # Scale size
+    plt.scatter(ranks, orders, alpha = 0.4, c = 'k', s = sizes, label = "Pearson coeff = "+str(np.round(np.corrcoef(ranks, orders)[0,1], 2)))
+    plt.xlabel("Chasing rank", fontsize = 15)
+    plt.ylabel("Approach rank", fontsize = 15)
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+
+def TubeRank_vs_approachRank():
+    """This function computes the correlation between the Tube rank (david's score based)
+    and the approach rank (also david's score based). This can give information about the
+    meaning of the chasing behavior. This is based on outgoing interactions only.
+    """
+    path_cohort1 = "C:\\Users\\Agarwal Lab\\Corentin\\Python\\NoSeMaze\\data\\reduced_data.xlsx"
+    approach_dir = "C:\\Users\\Agarwal Lab\\Corentin\\Python\\NoSeMaze\data\\averaged\\"
+
+    # first cohort
+    df1 = pd.read_excel(path_cohort1)
+    chasing_ranks = df1.loc[:, "rank_by_tube"].to_numpy()
+    groups1 = df1.loc[:, "group"].to_numpy()
+    RFIDs = df1.loc[:, "Mouse_RFID"].to_numpy()
+    ranks, orders = [], []
+    for group_idx in range(1, np.max(groups1)+1): #iterate over groups
+        mouse_indices = np.where(groups1 == group_idx) # find out indices of mice from current group
+        current_ranks = chasing_ranks[mouse_indices]
+        approach_matrix = np.loadtxt(approach_dir+"G"+str(group_idx)+"\\approaches_resD7_1.csv",
+                                    delimiter = ",", dtype=str)[1:, 1:].astype(np.int16) + np.loadtxt(approach_dir+"G"+str(group_idx)+"\\approaches_resD7_2.csv",
+                                    delimiter = ",", dtype=str)[1:, 1:].astype(np.int16)
+        names_in_approach_matrix =  np.loadtxt(approach_dir+"G"+str(group_idx)+"\\approaches_resD7_1.csv",
+                                            delimiter=",", dtype=str)[0, :][1:]
+        hier_mat = Hierarchia(approach_matrix, name_seq=names_in_approach_matrix)
+        approach_david_score = list(hier_mat.davids_score().values())
+        approach_rank = np.argsort(-np.array(approach_david_score))
+        for idx, mouse_name in enumerate(RFIDs[mouse_indices]):
+            # testing if mouse_a is found in chasing matrix
+            if ~np.any(names_in_approach_matrix == mouse_name):
+                continue
+            else:
+                where_mouse = np.where(np.array(list(hier_mat.davids_score().keys())) == mouse_name)
+                ranks.append(current_ranks[idx])
+                orders.append(approach_rank[where_mouse][0])
+
+    path_cohort2 = "C:\\Users\\Agarwal Lab\\Corentin\\Python\\NoSeMaze\\data\\validation_cohort.xlsx"
+    df2 = pd.read_excel(path_cohort2)
+    chasing_ranks2 = df2.loc[:, "rank_by_tube"].to_numpy()
+    groups2 = df2.loc[:, "Group_ID"].to_numpy()
+    RFIDs2 = df2.loc[:, "Mouse_RFID"].to_numpy()
+    for group_idx in range(np.max(groups1)+1, 18): #iterate over groups
+        mouse_indices = np.where(groups2 == group_idx) # find out indices of mice from current group
+        current_ranks = chasing_ranks2[mouse_indices]
+        approach_matrix = np.loadtxt(approach_dir+"G"+str(group_idx)+"\\approaches_resD7_1.csv",
+                                    delimiter = ",", dtype=str)[1:, 1:].astype(np.int16) + np.loadtxt(approach_dir+"G"+str(group_idx)+"\\approaches_resD7_2.csv",
+                                    delimiter = ",", dtype=str)[1:, 1:].astype(np.int16)
+        names_in_approach_matrix =  np.loadtxt(approach_dir+"G"+str(group_idx)+"\\approaches_resD7_1.csv",
+                                            delimiter=",", dtype=str)[0, :][1:]
+        hier_mat = Hierarchia(approach_matrix, name_seq=names_in_approach_matrix)
+        approach_david_score = list(hier_mat.davids_score().values())
+        approach_rank = np.argsort(-np.array(approach_david_score))
+        for idx, mouse_name in enumerate(RFIDs2[mouse_indices]):
+            # testing if mouse_a is found in chasing matrix
+            if ~np.any(names_in_approach_matrix == mouse_name):
+                continue
+            else:
+                where_mouse = np.where(np.array(list(hier_mat.davids_score().keys())) == mouse_name)
+                ranks.append(current_ranks[idx])
+                orders.append(approach_rank[where_mouse][0])
+
+    points = list(zip(ranks, orders))
+    counts = Counter(points)
+    sizes = [counts[(xi, yi)] * 80 for xi, yi in points]  # Scale size
+    plt.scatter(ranks, orders, alpha = 0.4, c = 'k', s = sizes, label = "Pearson coeff = "+str(np.round(np.corrcoef(ranks, orders)[0,1], 2)))
+    plt.xlabel("Tube rank", fontsize = 15)
+    plt.ylabel("Approach rank", fontsize = 15)
     plt.legend()
     plt.tight_layout()
     plt.show()
@@ -76,43 +258,97 @@ def chasingRank_david_vs_sortingRC(datapath = "..\\data\\chasing\\single\\"):
     
 def chasingRank_david_vs_sortingALL(datapath = "..\\data\\chasing\\single\\", both = False):
     """plots the chasing rank of all members vs their corresponding rank if we rank them by ho much chasing they do w.r.t to other mice."""
-    chasingrank1 = pd.read_excel(r"C:\Users\Agarwal Lab\Corentin\Python\NoSeMaze\data\reduced_data.xlsx", 
-                                        sheet_name = 0).to_numpy()[:, 1:][:, 11].astype(float)
-    names1 = pd.read_excel(r"C:\Users\Agarwal Lab\Corentin\Python\NoSeMaze\data\reduced_data.xlsx", 
-                                        sheet_name = 0).to_numpy()[:, :1]
-    chasingrank2 = pd.read_excel(r"C:\Users\Agarwal Lab\Corentin\Python\NoSeMaze\data\meta-data_validation.xlsx", 
-                                        sheet_name = 0).to_numpy()[:, 1:][:71, 11].astype(float) #Indexing until 71 because the excel files contains groups that are not part of the camera tracked study (beyond G17)
-    names2 = pd.read_excel(r"C:\Users\Agarwal Lab\Corentin\Python\NoSeMaze\data\meta-data_validation.xlsx", 
-                                        sheet_name = 0).to_numpy()[:71, :1]
-    david_ranks, names_xlsx = np.concatenate((chasingrank1, chasingrank2)), np.concatenate((names1[:, 0], names2[:, 0]))      
+    # chasingrank1 = pd.read_excel(r"C:\Users\Agarwal Lab\Corentin\Python\NoSeMaze\data\reduced_data.xlsx", 
+    #                                     sheet_name = 0).to_numpy()[:, 1:][:, 11].astype(float)
+    # names1 = pd.read_excel(r"C:\Users\Agarwal Lab\Corentin\Python\NoSeMaze\data\reduced_data.xlsx", 
+    #                                     sheet_name = 0).to_numpy()[:, :1]
+    # chasingrank2 = pd.read_excel(r"C:\Users\Agarwal Lab\Corentin\Python\NoSeMaze\data\meta-data_validation.xlsx", 
+    #                                     sheet_name = 0).to_numpy()[:, 1:][:71, 11].astype(float) #Indexing until 71 because the excel files contains groups that are not part of the camera tracked study (beyond G17)
+    # names2 = pd.read_excel(r"C:\Users\Agarwal Lab\Corentin\Python\NoSeMaze\data\meta-data_validation.xlsx", 
+    #                                     sheet_name = 0).to_numpy()[:71, :1]
+    # david_ranks, names_xlsx = np.concatenate((chasingrank1, chasingrank2)), np.concatenate((names1[:, 0], names2[:, 0]))      
     
-    labels = ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G9", "G10", "G11", "G12", "G13", "G14", "G15", "G16", "G17"]
+    # labels = ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G9", "G10", "G11", "G12", "G13", "G14", "G15", "G16", "G17"]
     
-    sorting_ranks, names_csv = [], [] # total chasing from RC (obtained by sorting them according to how much chasing they do)
-    for idx, g in enumerate(labels):
-        data = read_graph([datapath+g+"_single_chasing.csv"])[0]
-        group_names = np.loadtxt("..\\data\\chasing\\single\\"+g+"_single_chasing.csv", delimiter=",", dtype=str)[0, :][1:]
-        if both:
-            rank = np.argsort(-np.sum(data, axis = 1) - np.sum(data, axis = 0))
-        else:
-            rank = np.argsort(-np.sum(data, axis = 1))
-        sorting_ranks.extend(rank)
-        names_csv.extend(group_names)
+    # sorting_ranks, names_csv = [], [] # total chasing from RC (obtained by sorting them according to how much chasing they do)
+    # for idx, g in enumerate(labels):
+    #     data = read_graph([datapath+g+"_single_chasing.csv"])[0]
+    #     group_names = np.loadtxt("..\\data\\chasing\\single\\"+g+"_single_chasing.csv", delimiter=",", dtype=str)[0, :][1:]
+    #     if both:
+    #         rank = np.argsort(-np.sum(data, axis = 1) - np.sum(data, axis = 0))
+    #     else:
+    #         rank = np.argsort(-np.sum(data, axis = 1))
+    #     sorting_ranks.extend(rank)
+    #     names_csv.extend(group_names)
         
-    filter_xlsx = np.isin(names_xlsx, names_csv)
-    filter_csv = np.isin(names_csv, names_xlsx)
-    names_csv, names_xlsx = np.array(names_csv)[filter_csv], np.array(names_xlsx)[filter_xlsx]
-    sorting_indices_xlsx, sorting_indices_csv, counter = [], [], 0
-    for i, name_csv in enumerate(names_csv):
-        for j, name_xlsx in enumerate(names_xlsx[counter:]):
-            if name_csv == name_xlsx:
-                sorting_indices_xlsx.append(j+counter)
-                sorting_indices_csv.append(i)
-                break
-        counter += 1
-    
-    sorting_ranks, david_ranks = np.array(sorting_ranks), np.array(david_ranks)
-    sorting_ranks, david_ranks = sorting_ranks[filter_csv][sorting_indices_csv], david_ranks[filter_xlsx][sorting_indices_xlsx]
+    # filter_xlsx = np.isin(names_xlsx, names_csv)
+    # filter_csv = np.isin(names_csv, names_xlsx)
+    # names_csv, names_xlsx = np.array(names_csv)[filter_csv], np.array(names_xlsx)[filter_xlsx]
+    # sorting_indices_xlsx, sorting_indices_csv, counter = [], [], 0
+    # for i, name_csv in enumerate(names_csv):
+    #     for j, name_xlsx in enumerate(names_xlsx[counter:]):
+    #         if name_csv == name_xlsx:
+    #             sorting_indices_xlsx.append(j+counter)
+    #             sorting_indices_csv.append(i)
+    #             break
+    #     counter += 1
+
+    path_cohort1 = "C:\\Users\\Agarwal Lab\\Corentin\\Python\\NoSeMaze\\data\\reduced_data.xlsx"
+    chasing_dir = "C:\\Users\\Agarwal Lab\\Corentin\\Python\\NoSeMaze\\data\\chasing\\single\\"
+    path_cohort2 = "C:\\Users\\Agarwal Lab\\Corentin\\Python\\NoSeMaze\\data\\validation_cohort.xlsx"
+
+
+    sorting_ranks, david_ranks = [], []
+    # first cohort
+    df1 = pd.read_excel(path_cohort1)
+    groups1 = df1.loc[:, "group"].to_numpy()
+    ranks1 = df1.loc[:, "rank_by_chasing"].to_numpy()
+    RFIDs1 = df1.loc[:, "Mouse_RFID"].to_numpy()
+    # store whether the one with the higher rank chases more the one with the lower rank in diadic interaction
+
+    for group_idx in range(1, np.max(groups1)+1): #iterate over groups
+        mouse_indices = np.where(groups1 == group_idx) # find out indices of mice from current group
+        chasing_matrix = np.loadtxt(chasing_dir+"G"+str(group_idx)+"_single_chasing.csv",
+                                    delimiter = ",", dtype=str)[1:, 1:].astype(np.int16)
+        outchasings = np.sum(chasing_matrix, axis = 1)
+        current_orders = np.argsort(-outchasings)
+        current_ranks = ranks1[mouse_indices]
+        names_in_chasing_matrix =  np.loadtxt(chasing_dir+"G"+str(group_idx)+"_single_chasing.csv",
+                                            delimiter=",", dtype=str)[0, :][1:]
+        for idx_a, mouse_a in enumerate(RFIDs1[mouse_indices]):
+            # testing if mouse_a is found in chasing matrix
+            if ~np.any(names_in_chasing_matrix == mouse_a):
+                continue
+            else:
+                where_a = np.where(names_in_chasing_matrix == mouse_a)
+                david_ranks.append(current_ranks[idx_a])
+                sorting_ranks.append(current_orders[where_a][0])
+
+    df2 = pd.read_excel(path_cohort2)
+    groups2 = df2.loc[:, "Group_ID"].to_numpy()
+    ranks2 = df2.loc[:, "rank_by_chasing"].to_numpy()
+    RFIDs2 = df2.loc[:, "Mouse_RFID"].to_numpy()
+
+    for group_idx in range(11, 18): #iterate over groups
+        mouse_indices = np.where(groups2 == group_idx) # find out indices of mice from current group
+        chasing_matrix = np.loadtxt(chasing_dir+"G"+str(group_idx)+"_single_chasing.csv",
+                                    delimiter = ",", dtype=str)[1:, 1:].astype(np.int16)
+        outchasings = np.sum(chasing_matrix, axis = 1)
+        current_orders = np.argsort(-outchasings)
+        current_ranks = ranks2[mouse_indices]
+        names_in_chasing_matrix =  np.loadtxt(chasing_dir+"G"+str(group_idx)+"_single_chasing.csv",
+                                            delimiter=",", dtype=str)[0, :][1:]
+        for idx_a, mouse_a in enumerate(RFIDs2[mouse_indices]):
+            # testing if mouse_a is found in chasing matrix
+            if ~np.any(names_in_chasing_matrix == mouse_a):
+                continue
+            else:
+                where_a = np.where(names_in_chasing_matrix == mouse_a)
+                david_ranks.append(current_ranks[idx_a])
+                sorting_ranks.append(current_orders[where_a][0])
+            
+    # sorting_ranks, david_ranks = np.array(sorting_ranks), np.array(david_ranks)
+    # sorting_ranks, david_ranks = sorting_ranks[filter_csv][sorting_indices_csv], david_ranks[filter_xlsx][sorting_indices_xlsx]
     points = list(zip(sorting_ranks, david_ranks))
     counts = Counter(points)
     sizes = [counts[(xi, yi)] * 80 for xi, yi in points]  # Scale size
@@ -128,7 +364,7 @@ def chasingRank_david_vs_sortingALL(datapath = "..\\data\\chasing\\single\\", bo
     if both:
         plt.xlabel(r"Chasing order (rank by total chasings)", fontsize = 15)
     else:
-        plt.xlabel(r"Chasing order (rank by total outgoing chasings)", fontsize = 15)
+        plt.xlabel(r"Chasing order (by outgoing chasings)", fontsize = 15)
     plt.ylabel(r"Chasing score (David)", fontsize = 15)
     plt.legend(loc = "upper left")
     plt.show()
@@ -233,8 +469,11 @@ def interaction_vs_social_rank_correlation():
     plt.show()
     
 # chasingRank_david_vs_sortingRC()
-# chasingRank_david_vs_sortingALL(both = True)
-# chasingRank_david_vs_approachesALL(both = True)
+# chasingRank_david_vs_sortingALL()
+# chasingRank_david_vs_approachesALL()
 # chasingRank_david_vs_approachesALL()
 # interaction_vs_social_rank_correlation()
-tube_rank_vs_chasing_rank()
+# tube_rank_vs_chasing_rank()
+# tube_rank_vs_chasing_order()
+ChasingRank_vs_approachRank()
+# TubeRank_vs_approachRank()

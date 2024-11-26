@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
+from HierarchiaPy import Hierarchia
 
 
 def chasing_asymmetry_by_tube():
@@ -209,14 +210,14 @@ def chasing_asymmetry_by_chasingOrder(out=True):
                 else:
                     where_b = np.where(names_in_chasing_matrix == mouse_b)
                 # testing which chases most and has higher rank
-                if current_orders[where_a] < current_orders[where_b] and current_ranks[idx_a] < current_ranks[idx_b]:
+                if current_orders[where_a] < current_orders[where_b] and chasing_matrix[where_a, where_b] > chasing_matrix[where_b, where_a]:
                     direction.append(1)
                     # print("Strong -> Weak")
                     # print("Name_a: "+mouse_a+" rank: "+str(current_ranks[idx_a])+" chases "+str(chasing_matrix[where_a, where_b])+\
                     #       " Name_b: "+mouse_b+" rank: "+str(current_ranks[idx_b])+" chases "+str(chasing_matrix[where_b, where_a])+"\n")
                 elif current_ranks[idx_a] == current_ranks[idx_b]: # ignore self-interaction
                     continue
-                elif current_orders[where_a] > current_orders[where_b] and current_ranks[idx_a] > current_ranks[idx_b]:
+                elif current_orders[where_a] > current_orders[where_b] and chasing_matrix[where_a, where_b] < chasing_matrix[where_b, where_a]:
                     direction.append(1)
                     # print("Strong -> Weak")
                     # print("Name_a: "+mouse_a+" rank: "+str(current_ranks[idx_a])+" chases "+str(chasing_matrix[where_a, where_b])+\
@@ -239,11 +240,7 @@ def chasing_asymmetry_by_chasingOrder(out=True):
         chasing_matrix = np.loadtxt(chasing_dir+"G"+str(group_idx)+"_single_chasing.csv",
                                     delimiter = ",", dtype=str)[1:, 1:].astype(np.int16)
         outchasings = np.sum(chasing_matrix, axis = 1)
-        inchasings = np.sum(chasing_matrix, axis = 0)
-        if out:
-            current_orders = np.argsort(-outchasings)
-        else:
-            current_orders = np.argsort(-inchasings)
+        current_orders = np.argsort(-outchasings)
         current_ranks = ranks2[mouse_indices]
         names_in_chasing_matrix =  np.loadtxt(chasing_dir+"G"+str(group_idx)+"_single_chasing.csv",
                                             delimiter=",", dtype=str)[0, :][1:]
@@ -262,14 +259,14 @@ def chasing_asymmetry_by_chasingOrder(out=True):
                 else:
                     where_b = np.where(names_in_chasing_matrix == mouse_b)
                 # testing which chases most and has higher rank
-                if current_orders[where_a] < current_orders[where_b] and current_ranks[idx_a] < current_ranks[idx_b]:
+                if current_orders[where_a] < current_orders[where_b] and chasing_matrix[where_a, where_b] > chasing_matrix[where_b, where_a]:
                     direction.append(1)
                     # print("Strong -> Weak")
                     # print("Name_a: "+mouse_a+" rank: "+str(current_ranks[idx_a])+" chases "+str(chasing_matrix[where_a, where_b])+\
                     #       " Name_b: "+mouse_b+" rank: "+str(current_ranks[idx_b])+" chases "+str(chasing_matrix[where_b, where_a])+"\n")
                 elif current_ranks[idx_a] == current_ranks[idx_b]: # ignore self-interaction
                     continue
-                elif current_orders[where_a] > current_orders[where_b] and current_ranks[idx_a] > current_ranks[idx_b]:
+                elif current_orders[where_a] > current_orders[where_b] and chasing_matrix[where_a, where_b] < chasing_matrix[where_b, where_a]:
                     direction.append(1)
                     # print("Strong -> Weak")
                     # print("Name_a: "+mouse_a+" rank: "+str(current_ranks[idx_a])+" chases "+str(chasing_matrix[where_a, where_b])+\
@@ -282,10 +279,62 @@ def chasing_asymmetry_by_chasingOrder(out=True):
                     
     direction = np.array(direction)
     print(np.sum(direction)/len(direction))
+
+def chasing_asymmetry_by_approachRank():
+    """Computes whether or not the approach rank (i.e. david score based on approach matrix) is a predictor for the asymmetry in chasing, 
+    i.e. if an animal is higher in approach hierarchy, will it tend to chase more animals that are lower in the hierarchy? 
+    This is done by (binarily) counting the number of time an animal with a higher rank chased more an animal with a lower rank that it interacted with, 
+    and divide by the total number of diadic interactions.
+    """
+    chasing_dir = "C:\\Users\\Agarwal Lab\\Corentin\\Python\\NoSeMaze\\data\\chasing\\single\\"
+    approach_dir = "C:\\Users\\Agarwal Lab\\Corentin\\Python\\NoSeMaze\data\\averaged\\"
+    # first cohort
+    direction = []  # 1 for yes 0 and for no
+
+    for group_idx in range(1, 18): #iterate over groups
+        approach_matrix = np.loadtxt(approach_dir+"G"+str(group_idx)+"\\approaches_resD7_1.csv",
+                                    delimiter = ",", dtype=str)[1:, 1:].astype(np.int16) + np.loadtxt(approach_dir+"G"+str(group_idx)+"\\approaches_resD7_2.csv",
+                                    delimiter = ",", dtype=str)[1:, 1:].astype(np.int16)
+        chasing_matrix = np.loadtxt(chasing_dir+"G"+str(group_idx)+"_single_chasing.csv",
+                                    delimiter = ",", dtype=str)[1:, 1:].astype(np.int16)
+        names_in_approach_matrix =  np.loadtxt(approach_dir+"G"+str(group_idx)+"\\approaches_resD7_1.csv",
+                                            delimiter=",", dtype=str)[0, :][1:]
+        names_in_chasing_matrix =  np.loadtxt(chasing_dir+"G"+str(group_idx)+"_single_chasing.csv",
+                                            delimiter=",", dtype=str)[0, :][1:]
+        hier_mat = Hierarchia(approach_matrix, name_seq=names_in_approach_matrix)
+        approach_david_score = hier_mat.davids_score()
+        hier_mat = Hierarchia(chasing_matrix, name_seq=names_in_chasing_matrix)
+        chasing_david_score = hier_mat.davids_score()
+        for mouse_a in names_in_approach_matrix:
+            # testing if mouse_a is found in chasing matrix
+            if ~np.any(names_in_chasing_matrix == mouse_a):
+                continue
+            else:
+                where_a = np.where(names_in_chasing_matrix == mouse_a)
+            for mouse_b in names_in_approach_matrix:
+                # testing if mouse_b is also found in chasing matrix
+                if ~np.any(names_in_chasing_matrix == mouse_b):
+                    continue
+                else:
+                    where_b = np.where(names_in_chasing_matrix == mouse_b)
+                # testing which chases most and has higher rank
+                if approach_david_score[mouse_a] > approach_david_score[mouse_b] and chasing_matrix[where_a, where_b] > chasing_matrix[where_b, where_a]:
+                    direction.append(1)
+                elif mouse_a == mouse_b: # ignore self-interaction
+                    continue
+                elif approach_david_score[mouse_a] < approach_david_score[mouse_b] and chasing_david_score[mouse_a] < chasing_david_score[mouse_b]:
+                    direction.append(1)
+                else:
+                    direction.append(0)
+                   
+    direction = np.array(direction)
+    print(np.sum(direction)/len(direction))
+
                 
 # chasing_asymmetry_by_tube()
 # chasing_asymmetry_by_chasing()
 chasing_asymmetry_by_chasingOrder(out=True)
+# chasing_asymmetry_by_approachRank()
 
 
 
