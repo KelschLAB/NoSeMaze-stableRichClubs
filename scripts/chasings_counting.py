@@ -5,13 +5,15 @@ import networkx as nx
 import os
 import sys
 import seaborn as sns
-from weighted_rc import weighted_rich_club
-
-sys.path.append('..\\src\\')
+abspath = os.path.abspath(__file__)
+dname = os.path.dirname(abspath)
+os.chdir(dname)
+os.chdir('..\\src\\')
+sys.path.append(os.getcwd())
 from read_graph import read_graph
 
-datapath = "..\\data\\chasing\\single\\"
-# datapath = "..\\data\\averaged\\"
+# datapath = "..\\data\\chasing\\single\\"
+datapath = "C:\\Users\\Agarwal Lab\\Corentin\\Python\\NoSeMaze\data\\averaged\\"
 
 def histogram_chasings(graph, rc_idx):
     # plt.rcParams["figure.figsize"] = [7.00, 3.50]
@@ -339,123 +341,10 @@ def histogram_approaches(out = True):
     # plt.savefig("C:\\Users\\Agarwal Lab\\Corentin\\Python\\clusterGUI\\plots\\chasings_vs_RC.png", dpi = 150)
     plt.show()
     
-def rank_by_chasings(out = True, both = False):
-    """
-    if both, naimals are ranked by outgoing+ingoing chasings. else, they are ranked by outgoing chasings.
-    """
-    # plots the rank of RC members, ranking each mice of each group by the total number of outgoing chases it 
-    # performed
-    all_rc = [[0,6], [3, 8, 9], [3, 4, 8], [5, 6], [0, 1], [3, 4, 6], [5, 7], [7, 8], [5, 8], [0, 2], [2, 8, 9]]
-    labels = ["G1", "G2", "G3","G5", "G6", "G7", "G8","G10", "G11", "G12", "G15"]
-    
-    all_ranks = [] # total chasing from RC for thres 10%
 
-    for idx, g in enumerate(labels):
-        data = read_graph([datapath+g+"_single_chasing.csv"])[0]
-        # data[data <= 1.00e-02] = 0
-        if both:
-            rank = np.argsort(-np.sum(data, axis = 0) - np.sum(data, axis = 1))
-        elif out:
-            rank = np.argsort(-np.sum(data, axis = 1))
-        else:
-            rank = np.argsort(-np.sum(data, axis = 0))
-        all_ranks.extend(rank[all_rc[idx]])
     
-    all_ranks = np.array(all_ranks)
-    
-    plt.rcParams["figure.figsize"] = [7.00, 3.50]
-    plt.rcParams["figure.autolayout"] = True
-    plt.rcParams.update({
-    "text.usetex": True,
-    "font.family": "Helvetica"
-    })
-    plt.xticks([0, 1,2,3,4,5,6,7,8,9], labels = [1,2,3,4,5,6,7,8,9,10])#)["10", "9", "8","7", "6","5", "4", "3", "2", "1"])
-    plt.yticks([0,1,2,3,4,5])
-    plt.xlim([-1,10])
-    if both:
-        plt.xlabel("Rank of RC members by total number of ingoing + outgoing chasings", fontsize = 12)
-    elif out:
-        plt.xlabel("Rank of RC members by total number of outgoing chasings", fontsize = 12)
-    else:
-        plt.xlabel("Rank of RC members by total number of ingoing chasings", fontsize = 12)
 
-    plt.ylabel("Count", fontsize = 12)
 
-    plt.hist(all_ranks, bins = np.arange(11), align = "left", rwidth = 0.95, color = 'gray')
-    plt.show()
-    
-def rank_by_outgoing_approaches(outgoing = True):
-    # plots the rank of RC members, ranking each mice of each group by the total number of outgoing chases it 
-    # performed
-    all_rc = [[0,6], [3, 8, 9], [2, 3, 6], [1, 6], [0, 1], [3, 4, 6], [5, 7], [7, 8], [5, 8], [0, 2], [2, 8, 9]]
-    labels = ["G1", "G2", "G3", "G5", "G6", "G7", "G8", "G10", "G11", "G12", "G15"]
-    
-    all_ranks = [] # total chasing from RC for thres 10%
-
-    for idx, g in enumerate(labels):
-        data1 = read_graph([datapath+g+"\\approaches_resD7_1.csv"])[0]
-        data2 = read_graph([datapath+g+"\\approaches_resD7_2.csv"])[0]
-        data = data1 + data2
-        # data[data <= 1.00e-02] = 0
-        if outgoing:
-            rank = np.argsort(np.sum(-data, axis = 1))
-        else:
-            rank = np.argsort(np.sum(-data, axis = 0))
-
-        all_ranks.extend(rank[all_rc[idx]])
-    
-    all_ranks = np.array(all_ranks)
-    
-    plt.rcParams["figure.figsize"] = [7.00, 3.50]
-    plt.rcParams["figure.autolayout"] = True
-    plt.rcParams.update({
-    "text.usetex": True,
-    "font.family": "Helvetica"
-    })
-    plt.xticks([0,1,2,3,4,5,6,7,8,9], labels = [1,2,3,4,5,6,7,8,9,10])#["10", "9", "8","7", "6","5", "4", "3", "2", "1"])
-    # plt.yticks([0,1,2,3,4,5])
-    # plt.xlim([8.9,-1])
-    if outgoing:
-        plt.xlabel("Rank of RC members by total number of outgoing approaches", fontsize = 12)
-    else:
-        plt.xlabel("Rank of RC members by total number of incoming approaches", fontsize = 12)
-
-    plt.ylabel("Count", fontsize = 12)
-
-    plt.hist(all_ranks, bins = np.arange(11), align = "left", rwidth = 0.95, color = 'gray')
-    plt.show()
-    
-def rank_by_shared_approaches():
-    # plots the rank of RC members, ranking each mice of each group by the total number of outgoing chases it 
-    # performed
-    all_rc = [[0,6], [3, 8, 9], [2, 3, 6], [1, 6], [0, 1], [3, 4, 6], [5, 7], [7, 8], [5, 8], [0, 2], [2, 8, 9]]
-    labels = ["G1", "G2", "G3", "G5", "G6", "G7", "G8", "G10", "G11", "G12", "G15"]
-    
-    all_ranks = [] # total chasing from RC for thres 10%
-
-    for idx, g in enumerate(labels):
-        data1 = read_graph([datapath+g+"\\approaches_resD7_1.csv"])[0]
-        data2 = read_graph([datapath+g+"\\approaches_resD7_2.csv"])[0]
-        data = data1 + data2
-        # data[data <= 1.00e-02] = 0
-        rank = np.argsort(np.sum(-data, axis = 1) + np.sum(-data, axis = 0))
-        all_ranks.extend(rank[all_rc[idx]])
-    
-    all_ranks = np.array(all_ranks)
-    
-    plt.rcParams["figure.figsize"] = [7.00, 3.50]
-    plt.rcParams["figure.autolayout"] = True
-    plt.rcParams.update({
-    "text.usetex": True,
-    "font.family": "Helvetica"
-    })
-    plt.xticks([0,1,2,3,4,5,6,7,8,9], labels = [1,2,3,4,5,6,7,8,9,10])#["10", "9", "8","7", "6","5", "4", "3", "2", "1"])
-    # plt.yticks([0,1,2,3,4,5])
-    # plt.xlim([8.9,-1])
-    plt.xlabel("Rank of RC members by total of shared approaches", fontsize = 12)
-    plt.ylabel("Count", fontsize = 12)
-    plt.hist(all_ranks, bins = np.arange(12), align = "left", rwidth = 0.95, color = 'gray')
-    plt.show()
     
 
 if __name__ == "__main__":
@@ -466,10 +355,7 @@ if __name__ == "__main__":
     # persistence_chasings("G7_single_chasing.csv", [3, 4, 6])
     # histogram_chasing_new(out= False)
     # histogram_approaches(out= False)
-    # rank_by_shared_approaches()
     # rank_by_outgoing_approaches(outgoing = True)
     # histogram_shared_passages()
-    rank_by_chasings(False, False)
 
-    # rank_by_outgoing_approaches()
     

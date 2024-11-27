@@ -68,7 +68,7 @@ def tube_rank_vs_chasing_order(out = True):
             else:
                 where_mouse = np.where(names_in_chasing_matrix == mouse_name)
                 ranks.append(current_ranks[idx])
-                orders.append(current_orders[where_mouse][0])
+                orders.append(list(current_orders).index([where_mouse][0]))
 
     points = list(zip(ranks, orders))
     counts = Counter(points)
@@ -258,40 +258,6 @@ def chasingRank_david_vs_sortingRC(datapath = "..\\data\\chasing\\single\\"):
     
 def chasingRank_david_vs_sortingALL(datapath = "..\\data\\chasing\\single\\", both = False):
     """plots the chasing rank of all members vs their corresponding rank if we rank them by ho much chasing they do w.r.t to other mice."""
-    # chasingrank1 = pd.read_excel(r"C:\Users\Agarwal Lab\Corentin\Python\NoSeMaze\data\reduced_data.xlsx", 
-    #                                     sheet_name = 0).to_numpy()[:, 1:][:, 11].astype(float)
-    # names1 = pd.read_excel(r"C:\Users\Agarwal Lab\Corentin\Python\NoSeMaze\data\reduced_data.xlsx", 
-    #                                     sheet_name = 0).to_numpy()[:, :1]
-    # chasingrank2 = pd.read_excel(r"C:\Users\Agarwal Lab\Corentin\Python\NoSeMaze\data\meta-data_validation.xlsx", 
-    #                                     sheet_name = 0).to_numpy()[:, 1:][:71, 11].astype(float) #Indexing until 71 because the excel files contains groups that are not part of the camera tracked study (beyond G17)
-    # names2 = pd.read_excel(r"C:\Users\Agarwal Lab\Corentin\Python\NoSeMaze\data\meta-data_validation.xlsx", 
-    #                                     sheet_name = 0).to_numpy()[:71, :1]
-    # david_ranks, names_xlsx = np.concatenate((chasingrank1, chasingrank2)), np.concatenate((names1[:, 0], names2[:, 0]))      
-    
-    # labels = ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G9", "G10", "G11", "G12", "G13", "G14", "G15", "G16", "G17"]
-    
-    # sorting_ranks, names_csv = [], [] # total chasing from RC (obtained by sorting them according to how much chasing they do)
-    # for idx, g in enumerate(labels):
-    #     data = read_graph([datapath+g+"_single_chasing.csv"])[0]
-    #     group_names = np.loadtxt("..\\data\\chasing\\single\\"+g+"_single_chasing.csv", delimiter=",", dtype=str)[0, :][1:]
-    #     if both:
-    #         rank = np.argsort(-np.sum(data, axis = 1) - np.sum(data, axis = 0))
-    #     else:
-    #         rank = np.argsort(-np.sum(data, axis = 1))
-    #     sorting_ranks.extend(rank)
-    #     names_csv.extend(group_names)
-        
-    # filter_xlsx = np.isin(names_xlsx, names_csv)
-    # filter_csv = np.isin(names_csv, names_xlsx)
-    # names_csv, names_xlsx = np.array(names_csv)[filter_csv], np.array(names_xlsx)[filter_xlsx]
-    # sorting_indices_xlsx, sorting_indices_csv, counter = [], [], 0
-    # for i, name_csv in enumerate(names_csv):
-    #     for j, name_xlsx in enumerate(names_xlsx[counter:]):
-    #         if name_csv == name_xlsx:
-    #             sorting_indices_xlsx.append(j+counter)
-    #             sorting_indices_csv.append(i)
-    #             break
-    #     counter += 1
 
     path_cohort1 = "C:\\Users\\Agarwal Lab\\Corentin\\Python\\NoSeMaze\\data\\reduced_data.xlsx"
     chasing_dir = "C:\\Users\\Agarwal Lab\\Corentin\\Python\\NoSeMaze\\data\\chasing\\single\\"
@@ -322,7 +288,7 @@ def chasingRank_david_vs_sortingALL(datapath = "..\\data\\chasing\\single\\", bo
             else:
                 where_a = np.where(names_in_chasing_matrix == mouse_a)
                 david_ranks.append(current_ranks[idx_a])
-                sorting_ranks.append(current_orders[where_a][0])
+                sorting_ranks.append(list(current_orders).index([where_a][0]))
 
     df2 = pd.read_excel(path_cohort2)
     groups2 = df2.loc[:, "Group_ID"].to_numpy()
@@ -345,7 +311,7 @@ def chasingRank_david_vs_sortingALL(datapath = "..\\data\\chasing\\single\\", bo
             else:
                 where_a = np.where(names_in_chasing_matrix == mouse_a)
                 david_ranks.append(current_ranks[idx_a])
-                sorting_ranks.append(current_orders[where_a][0])
+                sorting_ranks.append(list(current_orders).index([where_a][0]))
             
     # sorting_ranks, david_ranks = np.array(sorting_ranks), np.array(david_ranks)
     # sorting_ranks, david_ranks = sorting_ranks[filter_csv][sorting_indices_csv], david_ranks[filter_xlsx][sorting_indices_xlsx]
@@ -475,5 +441,6 @@ def interaction_vs_social_rank_correlation():
 # interaction_vs_social_rank_correlation()
 # tube_rank_vs_chasing_rank()
 # tube_rank_vs_chasing_order()
-ChasingRank_vs_approachRank()
+# chasingRank_david_vs_sortingALL()
+# ChasingRank_vs_approachRank()
 # TubeRank_vs_approachRank()

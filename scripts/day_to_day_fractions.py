@@ -6,6 +6,9 @@ import os
 import sys
 from weighted_rc import weighted_rich_club
 
+abspath = os.path.abspath(__file__)
+dname = os.path.dirname(abspath)
+os.chdir(dname)
 sys.path.append('..\\src\\')
 from read_graph import read_graph
 
@@ -13,8 +16,7 @@ datapath = "..\\data\\chasing matrices\\"
 datapath = "..\\data\\social network matrices 1day\\"
 
 def day_to_day_approaches(outgoing = True):
-    # plots the rank of RC members, ranking each mice of each group by the total number of outgoing chases it 
-    # performed
+    # plots the fraction of total approaches made by RC members as a function of day 
     all_rc = [[0,6], [3, 8], [2, 3, 6], [1, 6], [0, 1], [4], [3, 5, 7, 8], [7, 8]]
     labels = ["G1", "G2", "G3","G5", "G6", "G7", "G8", "G10"]
     
@@ -58,8 +60,7 @@ def day_to_day_approaches(outgoing = True):
     plt.show()
     
 def day_to_day_chasing(outgoing = True):
-    # plots the rank of RC members, ranking each mice of each group by the total number of outgoing chases it 
-    # performed
+    # plots the fraction of total outgoing chasings made by RC members as a function of day 
     all_rc = [[0,6], [3, 8], [2, 3, 6], [1, 6], [0, 1], [4], [3, 5, 7, 8], [7, 8]]
     labels = ["G1", "G2", "G3","G5", "G6", "G7", "G8", "G10"]
     

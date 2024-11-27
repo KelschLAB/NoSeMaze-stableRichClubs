@@ -333,7 +333,7 @@ def chasing_asymmetry_by_approachRank():
                 
 # chasing_asymmetry_by_tube()
 # chasing_asymmetry_by_chasing()
-chasing_asymmetry_by_chasingOrder(out=True)
+# chasing_asymmetry_by_chasingOrder(out=True)
 # chasing_asymmetry_by_approachRank()
 
 
