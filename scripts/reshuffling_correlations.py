@@ -255,6 +255,57 @@ def plot_reshuffled_approachRank_corr(both_cohorts = False):
     plt.tight_layout()
     plt.show()
 
+def plot_reshuffled_approachOrder_corr(both_cohorts = False):
+    path_cohort1 = "C:\\Users\\Agarwal Lab\\Corentin\\Python\\NoSeMaze\\data\\reduced_data.xlsx"
+    approach_dir = "C:\\Users\\Agarwal Lab\\Corentin\\Python\\NoSeMaze\data\\averaged\\"
+
+    df1 = pd.read_excel(path_cohort1)
+    groups1 = df1.loc[:, "group"].to_numpy()
+    if both_cohorts: # where to stop itarating. if both cohorts are considered, this number is 18.
+        stop = 18
+    else:
+        stop = np.max(groups1) + 1
+    names, ranks = [], []
+    for group_idx in range(1, stop): #iterate over groups
+        approach_matrix = np.loadtxt(approach_dir+"G"+str(group_idx)+"\\approaches_resD7_1.csv",
+                                    delimiter = ",", dtype=str)[1:, 1:].astype(np.int16) + np.loadtxt(approach_dir+"G"+str(group_idx)+"\\approaches_resD7_2.csv",
+                                    delimiter = ",", dtype=str)[1:, 1:].astype(np.int16)
+        names_in_approach_matrix =  np.loadtxt(approach_dir+"G"+str(group_idx)+"\\approaches_resD7_1.csv",
+                                            delimiter=",", dtype=str)[0, :][1:]
+        
+        approach_rank = np.argsort(-np.sum(approach_matrix, 1))
+        for idx, mouse_name in enumerate(names_in_approach_matrix ):
+            names.append(mouse_name)
+            ranks.append(list(approach_rank).index(idx))
+
+    names = np.array(names) # to allow numpy operations
+
+    rank_first, rank_second = [], []
+    for idx, name in enumerate(names):
+        if np.sum(names[idx+1:] == name) >= 1:
+            next_idx = np.where(names[idx+1:] == name)[0][0] + idx + 1
+            rank_first.append(ranks[idx])
+            rank_second.append(ranks[next_idx])
+
+    plt.figure()
+    plt.xlabel("Approach order, round 1", fontsize = 17)
+    plt.ylabel("Approach order, round 2", fontsize = 17)
+    if both_cohorts:
+        plt.title("Both cohorts")
+    else:
+        plt.title("First cohort")
+    correlation_matrix = np.corrcoef(rank_first, rank_second)
+    pearson_corr = correlation_matrix[0, 1] 
+    points = list(zip(rank_first, rank_second))
+    counts = Counter(points)
+    sizes = [counts[(xi, yi)] * 80 for xi, yi in points]  # Scale size
+    plt.scatter(rank_first, rank_second, c = 'k', s = sizes, alpha = 0.5, label = "Pearson = "+str(np.round(pearson_corr, 2)))
+    plt.xticks(np.arange(0, 10), labels=["1","2","3","4","5","6","7","8","9","10"]) 
+    plt.yticks(np.arange(0, 10), labels=["1","2","3","4","5","6","7","8","9","10"]) 
+    plt.legend(loc = "upper left")
+    plt.tight_layout()
+    plt.show()
+
 def plot_reshuffled_chasingRank_corr():
     path_cohort1 = "C:\\Users\\Agarwal Lab\\Corentin\\Python\\NoSeMaze\\data\\reduced_data.xlsx"
     df1 = pd.read_excel(path_cohort1)
@@ -286,4 +337,5 @@ def plot_reshuffled_chasingRank_corr():
 # plot_reshuffled_chasingRank_corr(True)
 # plot_reshuffled_outapproach_corr()
 # plot_reshuffled_chasingRank_corr()
-plot_reshuffled_approachRank_corr(True)
+# plot_reshuffled_approachRank_corr(True)
+plot_reshuffled_approachOrder_corr(True)

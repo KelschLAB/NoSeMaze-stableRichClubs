@@ -1,18 +1,18 @@
 import matplotlib.pyplot as plt
 import numpy as np
-import igraph as ig
-import networkx as nx
 import pandas as pd
 import os
 import sys
 import pandas as pd
 import seaborn as sns
 from scipy.stats import ttest_ind
-from weighted_rc import weighted_rich_club
 from HierarchiaPy import Hierarchia
-
-sys.path.append('..\\src\\')
-# from read_graph import read_graph
+abspath = os.path.abspath(__file__)
+dname = os.path.dirname(abspath)
+os.chdir(dname)
+os.chdir('..\\src\\')
+sys.path.append(os.getcwd())
+from read_graph import read_graph
 from collections import Counter
 from scipy import stats
 

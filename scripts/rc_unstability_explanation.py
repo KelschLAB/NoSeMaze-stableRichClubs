@@ -7,19 +7,24 @@ samples = 10000
 val=np.random.multivariate_normal((4, 4), [[5, 3.3],[3.3, 5]], samples)
 draw_1, draw_2 = np.zeros(samples), np.zeros(samples)
 for i in tqdm(range(samples)):
+    # chasing rank
     draw_1[i] = np.argmax(np.random.multinomial(1, [6 / 25, 8/25, 3/25, 3/25, 2/25, 3/25, 0, 0, 0, 0]))  
     draw_2[i] = np.argmax(np.random.multinomial(1, [6 / 25, 8/25, 3/25, 3/25, 2/25, 3/25, 0, 0, 0, 0]))  
+    # approach order
+    # draw_1[i] = np.argmax(np.random.multinomial(1, [7.9 / 27, 7.7/27, 6.9/25, 2.9/27, 1/27, 0, 0, 0, 0, 0]))  
+    # draw_2[i] = np.argmax(np.random.multinomial(1, [7.9 / 27, 7.7/27, 6.9/25, 2.9/27, 1/27, 0, 0, 0, 0, 0]))  
 
-print(np.sum(draw_1 == draw_2)) # 0 20.6% chance, and the chance of RC being reshuffled is equal to 6/29 = 20.7%!!!
 
-rank1 = [1, 7, 4, 2, 4, 3, 2, 7, 4, 2, 7, 3, 2]
-rank2 = [1, 6, 6, 1, 3, 4, 2, 8, 9, 1, 6, 3, 1]
-plt.plot(np.arange(len(rank1)), rank1, "o-", label = "Rank before reshuffling")
-plt.plot(np.arange(len(rank1)), rank2,"o-",  label = "Rank after reshuffling")
-plt.xlabel("Mouse index (at least once in RC)")
-plt.ylabel("Chasing rank")
-plt.legend()
-plt.show()
+print(np.sum(draw_1 == draw_2)) # 26% chance, and chance of RC being reshuffled (observed) is 6/23 = 26% :)
+
+# rank1 = [1, 7, 4, 2, 4, 3, 2, 7, 4, 2, 7, 3, 2] # chasing rank
+# rank2 = [1, 6, 6, 1, 3, 4, 2, 8, 9, 1, 6, 3, 1] # chasing rank
+# plt.plot(np.arange(len(rank1)), rank1, "o-", label = "Rank before reshuffling")
+# plt.plot(np.arange(len(rank1)), rank2,"o-",  label = "Rank after reshuffling")
+# plt.xlabel("Mouse index (at least once in RC)")
+# plt.ylabel("Chasing rank")
+# plt.legend()
+# plt.show()
 
 
 # rc_1 = np.round(val[:, 0]) == draw_1
