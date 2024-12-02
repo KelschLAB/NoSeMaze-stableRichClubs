@@ -10,8 +10,12 @@ from scipy import stats
 import pandas as pd
 from HierarchiaPy import Hierarchia
 
-sys.path.append('..\\src\\')
-# from read_graph import read_graph
+abspath = os.path.abspath(__file__)
+dname = os.path.dirname(abspath)
+os.chdir(dname)
+os.chdir('..\\src\\')
+sys.path.append(os.getcwd())
+from read_graph import read_graph
 from collections import Counter
 
 
@@ -110,7 +114,7 @@ def plot_reshuffled_inchasing_corr(fraction = False):
     plt.tight_layout()
     plt.show()
     
-def plot_reshuffled_outapproach_corr():
+def plot_reshuffled_outapproach_corr(fraction = False):
     datapath = "..\\data\\averaged\\"
     chasings_first, chasings_second = [], []
     labels = ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G10", "G11", "G12", "G13", "G14", "G15", "G16"]
@@ -121,6 +125,8 @@ def plot_reshuffled_outapproach_corr():
         names = np.loadtxt(datapath+g+"\\approaches_resD7_1.csv", delimiter=",", dtype=str)[0, :][1:]
         data = read_graph([datapath+g+"\\approaches_resD7_1.csv"], percentage_threshold = 0)[0] + read_graph([datapath+g+"\\approaches_resD7_2.csv"], percentage_threshold = 0)[0]
         chasings = np.sum(data, axis = 1)
+        if fraction:
+            chasings = chasings/np.sum(np.sum(data))
         for c in range(len(chasings)):
             if names[c] not in already_seen_first:
                 chasings_first.append(chasings[c])
@@ -141,6 +147,9 @@ def plot_reshuffled_outapproach_corr():
     plt.scatter(chasings_first[filter_names], chasings_second, c = 'k')
     plt.xlabel("Total outgoing approaches, round 1", fontsize = 17)
     plt.ylabel("Total outgoing approaches, round 2", fontsize = 17)
+    if fraction:
+        plt.xlabel("Normalized outgoing approaches, round 1", fontsize = 17)
+        plt.ylabel("Normalized outgoing approaches, round 2", fontsize = 17)
     slope, intercept = np.polyfit(chasings_first[filter_names], chasings_second, 1)
     x = np.arange(np.min(chasings_first), np.max(chasings_first))
     correlation_matrix = np.corrcoef(chasings_first[filter_names], chasings_second)
@@ -335,7 +344,7 @@ def plot_reshuffled_chasingRank_corr():
 # plot_reshuffled_inchasing_corr(True)
 # plot_reshuffled_outchasing_corr(True)
 # plot_reshuffled_chasingRank_corr(True)
-# plot_reshuffled_outapproach_corr()
+plot_reshuffled_outapproach_corr(True)
 # plot_reshuffled_chasingRank_corr()
 # plot_reshuffled_approachRank_corr(True)
-plot_reshuffled_approachOrder_corr(True)
+# plot_reshuffled_approachOrder_corr(True)

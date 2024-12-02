@@ -156,31 +156,52 @@ def total_chasings_cohort():
 def tuberank_vs_rc():
     """Plots the tube rank of rich clulb members for both cohorts"""
     arr = np.array([2,4, 2,3,8, 10,2,1, 6,1,5,3,1,5,2,1,2,6,4,3,1,2,1,2,4,8]) # tube rank
-    tuberank_rc1 = pd.read_excel(r"C:\Users\Agarwal Lab\Corentin\Python\NoSeMaze\data\reduced_data.xlsx", 
+    tuberank_rc1 = pd.read_excel(r"..\data\reduced_data.xlsx", 
                                         sheet_name = 0).to_numpy()[:, 1:][rc_index_in_excel1, 9].astype(float)
-    tuberank_rc2 = pd.read_excel(r"C:\Users\Agarwal Lab\Corentin\Python\NoSeMaze\data\meta-data_validation.xlsx", 
+    tuberank_rc2 = pd.read_excel(r"..\data\meta-data_validation.xlsx", 
                                         sheet_name = 0).to_numpy()[:, 1:][rc_index_in_excel2, 9].astype(float)
     arr = np.concatenate((tuberank_rc1, tuberank_rc2))
-    # arr = tuberank_rc1
-    plt.figure()
+    # ranks = []
+    # path_cohort1 = "..\\data\\reduced_data.xlsx"
+    # path_cohort2 = "..\data\\validation_cohort.xlsx"
+
+    # # first cohort
+    # df1 = pd.read_excel(path_cohort1)
+    # RCs1 = df1.loc[:, "RC"].to_numpy()
+    # Ranks1 = df1.loc[:, "rank_by_tube"].to_numpy()
+
+    # df2 = pd.read_excel(path_cohort2)
+    # RCs2 = df2.loc[:, "RC"].to_numpy()
+    # Ranks2 = df2.loc[:, "rank_by_tube"].to_numpy()
+    
+    # arr = np.concatenate((Ranks1[RCs1], Ranks2[RCs2]))
+    # arr = Ranks1[RCs1]
+    
+    plt.figure(figsize=(4, 4))
     plt.hist(arr, bins = [i for i in range(1, 12)], align = 'mid', rwidth = 0.95, color = "gray") 
-    plt.xlabel("Tube rank")
-    plt.ylabel("Number of observations"); 
+    plt.xlabel("Tube rank", fontsize = 15)
+    plt.ylabel("Count", fontsize = 15); 
     ticklabels = [i for i in range(1, 11)]
-    plt.xticks([i + 0.5 for i in range(1, 11)], ticklabels)
-    plt.title("Tube rank of rich-club members")
+    plt.xticks([i + 0.5 for i in range(1, 11)], ticklabels, fontsize = 12)
+    plt.yticks(fontsize = 12)
+
+    # plt.title("Tube rank of rich-club members")
+    plt.tight_layout()
     
 def chasingrank_vs_rc():
     """Plots the chasing rank of rich clulb members for both cohorts"""
     arr = np.array([2,3, 1,5,10, 1,2,4, 2, 4, 1, 2, 1,4,6,5,6,1,2,2,3,1,2,2,3,6]) # chasing rank
+    plt.figure(figsize=(4, 4))
     plt.hist(arr, bins = [i for i in range(1, 11)], align = 'mid', rwidth = 0.95, color = "gray") 
-    plt.xlabel("Chasing rank") 
-    plt.xlabel("Tube rank")
-    plt.ylabel("Number of observations"); 
+    plt.xlabel("Chasing rank", fontsize = 15) 
+    plt.ylabel("Count", fontsize = 15); 
     ticklabels = [i for i in range(1, 11)]
-    plt.xticks([i + 0.5 for i in range(1, 11)], ticklabels)
-    plt.title("Chasing rank of the rich-club members")
+    plt.xticks([i + 0.5 for i in range(1, 11)], ticklabels, fontsize = 12)
+    plt.yticks(fontsize = 12)
+    # plt.title("Chasing rank of the rich-club members")
     plt.show()
+    plt.tight_layout()
+
 
     
 def tuberank_vs_nonrc():
@@ -389,9 +410,9 @@ def approach_order_WT(out = True, both = False):
 def approach_order_RC(out = True, both = False):
     """ Histogram of the approach order for RC members (i.e., if we rank them by according to how much total approaches they perform.)
     """
-    path_cohort1 = "C:\\Users\\Agarwal Lab\\Corentin\\Python\\NoSeMaze\\data\\reduced_data.xlsx"
-    path_cohort2 = "C:\\Users\\Agarwal Lab\\Corentin\\Python\\NoSeMaze\\data\\validation_cohort.xlsx"
-    approach_dir = "C:\\Users\\Agarwal Lab\\Corentin\\Python\\NoSeMaze\data\\averaged\\"
+    path_cohort1 = "C:\\Users\\Corentin offline\\Documents\\GitHub\\clusterGUI\\data\\reduced_data.xlsx"
+    path_cohort2 = "C:\\Users\\Corentin offline\\Documents\\GitHub\\clusterGUI\\data\\validation_cohort.xlsx"
+    approach_dir = "C:\\Users\\Corentin offline\\Documents\\GitHub\\clusterGUI\\data\\averaged\\"
 
     approach_order_out, approach_order_in = [], []
     # first cohort
@@ -453,17 +474,18 @@ def approach_order_RC(out = True, both = False):
     else:
         plt.hist(approach_order_in, bins = np.arange(-0.5, 10.5), rwidth= 0.8, align='mid', color = 'gray', edgecolor='black')
 
-    plt.xticks(np.arange(0, 10), labels=["1","2","3","4","5","6","7","8","9","10"]) 
-    plt.yticks(np.arange(0, 12, 2))  # Ensure ticks are centered on 0 through 9
+    plt.xticks(np.arange(0, 10), labels=["1","2","3","4","5","6","7","8","9","10"], fontsize = 15) 
+    plt.yticks(np.arange(0, 12, 2), fontsize = 15)  # Ensure ticks are centered on 0 through 9
 
     if both:
-        plt.xlabel(r"Approach order", fontsize = 15)
+        plt.xlabel(r"Approach order", fontsize = 19)
     elif out:
-        plt.xlabel(r"Approach order (outgoing)", fontsize = 15)
+        plt.xlabel(r"Approach order (outgoing)", fontsize = 20)
     else:
-        plt.xlabel(r"Approach order (ingoing)", fontsize = 15)
-    plt.ylabel(r"Count", fontsize = 15)
-    plt.title("Approach order of RC members", fontsize = 18)
+        plt.xlabel(r"Approach order (ingoing)", fontsize = 20)
+    plt.ylabel(r"Count", fontsize = 19)
+    # plt.title("Approach order of RC members", fontsize = 18)
+    plt.tight_layout()
     plt.show()
 
 def approachRank_RC():
@@ -522,55 +544,91 @@ def approachRank_RC():
     plt.show()
 
 def chasingOrder_RC(out = True, both = False):
-    """
-    if both, naimals are ranked by outgoing+ingoing chasings. else, they are ranked by outgoing chasings.
-    """
-    # plots the rank of RC members, ranking each mice of each group by the total number of outgoing chases it 
-    # performed
-    all_rc = [[0,6], [3, 8, 9], [3, 4, 8], [5, 6], [0, 1], [3, 4, 6], [5, 7], [7, 8], [5, 8], [0, 2], [2, 8, 9]]
-    labels = ["G1", "G2", "G3","G5", "G6", "G7", "G8","G10", "G11", "G12", "G15"]
-    datapath = "C:\\Users\\Agarwal Lab\\Corentin\\Python\\NoSeMaze\\data\\chasing\\single\\"
-    
-    all_ranks_out, all_ranks_in = [], [] 
 
-    for idx, g in enumerate(labels):
-        data = read_graph([datapath+g+"_single_chasing.csv"])[0]
-        # data[data <= 1.00e-02] = 0
-        rank_out = np.argsort(-np.sum(data, axis = 1))
-        rank_in = np.argsort(-np.sum(data, axis = 0))
-        for rc_member in all_rc[idx]:
-            all_ranks_out.append(list(rank_out).index(rc_member))
-            all_ranks_in.append(list(rank_in).index(rc_member))
+   """ Histogram of the chasing order for RC members (i.e., if we rank them by according to how much total approaches they perform.)
+   """
+   path_cohort1 = "..\\data\\reduced_data.xlsx"
+   path_cohort2 = "..\\data\\validation_cohort.xlsx"
+   chasing_dir = "..\\data\\chasing\\single\\"
 
-    all_ranks_out = np.array(all_ranks_out)
-    all_ranks_in = np.array(all_ranks_in)
+   approach_order_out, approach_order_in = [], []
+   # first cohort
+   df1 = pd.read_excel(path_cohort1)
+   groups1 = df1.loc[:, "group"].to_numpy()
+   RCs1 = df1.loc[:, "RC"].to_numpy()
+   RFIDs1 = df1.loc[:, "Mouse_RFID"].to_numpy()
 
-    plt.figure()
-    if both:
-        plt.hist(all_ranks_in, bins = np.arange(-0.5, 10.5), stacked = True, rwidth= 0.8, align='mid', edgecolor='black', label = "Ingoing", alpha = 0.5)
-        plt.hist(all_ranks_out, bins = np.arange(-0.5, 10.5), stacked = True, rwidth= 0.8, align='mid', edgecolor='black', label = "Outgoing", alpha = 0.5)
-        plt.legend()
-    elif out:
-        plt.hist(all_ranks_out, bins = np.arange(-0.5, 10.5), rwidth= 0.8, align='mid', color = 'gray', edgecolor='black')
-    else:
-        plt.hist(all_ranks_in, bins = np.arange(-0.5, 10.5), rwidth= 0.8, align='mid', color = 'gray', edgecolor='black')
+   for group_idx in range(1, np.max(groups1)+1): #iterate over groups
+       mouse_indices = np.where(groups1 == group_idx) # find out indices of mice from current group
+       mouse_names = RFIDs1[mouse_indices]
+       approach_matrix = np.loadtxt(chasing_dir+"G"+str(group_idx)+"_single_chasing.csv",
+                                    delimiter = ",", dtype=str)[1:, 1:].astype(np.int16)
+       names_in_approach_matrix =  np.loadtxt(chasing_dir+"G"+str(group_idx)+"_single_chasing.csv",
+                                            delimiter=",", dtype=str)[0, :][1:]
 
-    plt.xticks(np.arange(0, 10), labels=["1","2","3","4","5","6","7","8","9","10"]) 
+       approaches_out = np.sum(approach_matrix, axis = 1)
+       approaches_in = np.sum(approach_matrix, axis = 0)
+       current_orders_out = np.argsort(-approaches_out)
+       current_orders_in = np.argsort(-approaches_in)
+       for idx, rc in enumerate(RCs1[mouse_indices]):
+           if np.any(mouse_names[idx] == names_in_approach_matrix):
+               if rc:
+                   rc_idx = np.where(mouse_names[idx] == names_in_approach_matrix)[0][0]
+                   approach_order_out.append(list(current_orders_out).index(rc_idx))
+                   approach_order_in.append(list(current_orders_in).index(rc_idx))
 
-    if both:
-        plt.xlabel(r"Chasing order", fontsize = 15)
-    elif out:
-        plt.xlabel(r"Chasing order (outgoing)", fontsize = 15)
-    else:
-        plt.xlabel(r"Chasing order (ingoing)", fontsize = 15)
-    plt.ylabel("Count", fontsize = 12)
-    plt.show()
+   df2 = pd.read_excel(path_cohort2)
+   groups2 = df2.loc[:, "Group_ID"].to_numpy()
+   RCs2 = df2.loc[:, "RC"].to_numpy()
+   RFIDs2 = df2.loc[:, "Mouse_RFID"].to_numpy()
+
+   for group_idx in range(11, 18): #iterate over groups
+       mouse_indices = np.where(groups2 == group_idx) # find out indices of mice from current group
+       mouse_names = RFIDs2[mouse_indices]
+       approach_matrix = np.loadtxt(chasing_dir+"G"+str(group_idx)+"_single_chasing.csv",
+                                    delimiter = ",", dtype=str)[1:, 1:].astype(np.int16)
+       names_in_approach_matrix =  np.loadtxt(chasing_dir+"G"+str(group_idx)+"_single_chasing.csv",
+                                            delimiter=",", dtype=str)[0, :][1:]
+       approaches_out = np.sum(approach_matrix, axis = 1)
+       approaches_in = np.sum(approach_matrix, axis = 0)
+       current_orders_out = np.argsort(-approaches_out)
+       current_orders_in = np.argsort(-approaches_in)
+       for idx, rc in enumerate(RCs2[mouse_indices]):
+           if np.any(mouse_names[idx] == names_in_approach_matrix):
+               if rc:
+                   rc_idx = np.where(mouse_names[idx] == names_in_approach_matrix)[0][0]
+                   approach_order_out.append(list(current_orders_out).index(rc_idx))
+                   approach_order_in.append(list(current_orders_in).index(rc_idx))
+       
+   plt.figure(figsize=(5,4))
+   if both:
+       plt.hist(approach_order_in, bins = np.arange(-0.5, 10.5), stacked = True, rwidth= 0.8, align='mid', edgecolor='black', label = "Ingoing", alpha = 0.5)
+       plt.hist(approach_order_out, bins = np.arange(-0.5, 10.5), stacked = True, rwidth= 0.8, align='mid', edgecolor='black', label = "Outgoing", alpha = 0.5)
+       plt.legend()
+   elif out:
+       plt.hist(approach_order_out, bins = np.arange(-0.5, 10.5), rwidth= 0.8, align='mid', color = 'gray', edgecolor='black')
+   else:
+       plt.hist(approach_order_in, bins = np.arange(-0.5, 10.5), rwidth= 0.8, align='mid', color = 'gray', edgecolor='black')
+
+   plt.xticks(np.arange(0, 10), labels=["1","2","3","4","5","6","7","8","9","10"], fontsize = 15) 
+   plt.yticks(np.arange(0, 12, 2), fontsize = 15)  # Ensure ticks are centered on 0 through 9
+
+   if both:
+       plt.xlabel(r"Chasing order", fontsize = 19)
+   elif out:
+       plt.xlabel(r"Chasing order (outgoing)", fontsize = 20)
+   else:
+       plt.xlabel(r"Chasing order (ingoing)", fontsize = 20)
+   plt.ylabel(r"Count", fontsize = 19)
+   # plt.title("Approach order of RC members", fontsize = 18)
+   plt.tight_layout()
+   plt.show()
     
 if __name__ == "__main__":
     # rich_club_piechart()
     # mutants_RC_hist()
     # rc_coefficient_histogram(4, 3)
-    # chasings_vs_rc()
+    chasingrank_vs_rc()
     # tuberank_vs_rc()
     # chasingrank_vs_nonrc()
     # tuberank_vs_nonrc()
@@ -578,7 +636,7 @@ if __name__ == "__main__":
     # total_chasings_cohort()
     # chasingOrder_RC(True, True)
     # approach_order_RC(False, True)
-    approach_order_WT(True, True)
+    # approach_order_WT(True, True)
     # approachRank_RC()
 
     
