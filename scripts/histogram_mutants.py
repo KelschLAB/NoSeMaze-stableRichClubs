@@ -53,6 +53,18 @@ both_dict = {'Tube rank':np.concatenate((first_tr, first_tr, validation_tr, vali
             'Brain area': both_brain_area}
 both_df = pd.DataFrame(data=both_dict)
 
+def mutants_in_club_piechart():
+    plt.rcParams.update({"text.usetex": True})
+    fig, ax = plt.subplots(1, 1)
+    plt.style.use('seaborn')
+    sizes = [25/26, 1/26]
+    labels = ["WT", "Mutant"]
+    ax.pie(sizes, labels=labels, autopct='%1.f\%%',
+        wedgeprops={"linewidth" : 2.0, "edgecolor": "white"},
+        textprops={'size': 'xx-large'})
+    plt.tight_layout()
+    plt.show()
+
 def mutants_tube_rank(yaxis = "Chasing rank", dataset = "both", hue = True):
     sns.set(font_scale = 1.5)
     if dataset == "both":
@@ -359,6 +371,7 @@ if __name__ == "__main__":
     # mutants_tube_rank(y, dataset = "both", hue = False)
     # histogram_chasing_mutants()
     # histogram_approaches_mutants()
-    approach_order_mutants(both = True)
+    # approach_order_mutants(both = True)
     # approachRank_mutants()
+    mutants_in_club_piechart()
 

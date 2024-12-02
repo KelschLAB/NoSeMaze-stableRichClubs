@@ -183,21 +183,19 @@ def cumulative_approaches():
     cumulative_chasings_out = []
     cumulative_chasings_in = []
 
-    labels = ["G1", "G2", "G4", "G5", "G6", "G7", "G8", "G10", "G11","G12","G13","G14", "G15", "G16", "G17"]
+    labels = ["G1", "G2", "G4", "G5", "G6", "G8", "G11", "G12","G14", "G15", "G16", "G17"]
 
     for idx, g in enumerate(labels):
-        data = read_graph([datapath+g+"\\approaches_resD7_1.csv"])[0] + read_graph([datapath+g+"\\approaches_resD7_2.csv"])[0]
+        data = read_graph([datapath+g+"\\approaches_resD7_1.csv"])[0] + read_graph([datapath+g+"\\approaches_resD7_1.csv"])[0]
         rank_out = np.argsort(-np.sum(data, axis = 1))
-        summed_chasings_out = np.sum(data, axis = 1) # getting the summed chasing for all animals
         rank_in = np.argsort(-np.sum(data, axis = 0))
-        summed_chasings_in = np.sum(data, axis = 0) # getting the summed chasing for all animals
 
-        normalization_out = np.sum(summed_chasings_out)
-        total_chasings_out = np.sum(data[rank_out, :], axis = 1)/normalization_out
+        summed_chasings = np.sum(data) # getting the summed chasing for all animals, in order to normalize results
+        normalization = np.sum(summed_chasings)
+        total_chasings_out = np.sum(data[rank_out, :], axis = 1)/normalization
         cumulative_sum_out = np.cumsum(total_chasings_out)
         cumulative_chasings_out.append(cumulative_sum_out)
-        normalization_in = np.sum(summed_chasings_in)
-        total_chasings_in = np.sum(data[rank_in, :], axis = 0)/normalization_in
+        total_chasings_in = np.sum(data[rank_in, :], axis = 0)/normalization
         cumulative_sum_in = np.cumsum(total_chasings_in)
         cumulative_chasings_in.append(cumulative_sum_in)
         print(len(cumulative_sum_out))

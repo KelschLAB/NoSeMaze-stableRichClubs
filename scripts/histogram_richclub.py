@@ -25,7 +25,7 @@ rc_index_in_excel2 = np.array([9, 11, 12, 14, 50, 51]) - 2
 mutants_index_in_excel2 = np.array([3, 5, 6, 7, 17, 19, 22, 28, 29, 34, 40, 43, 46]) - 2
 other_index_in_excel2 = np.arange(109)[~np.isin(np.arange(109), np.concatenate((rc_index_in_excel2, mutants_index_in_excel2)))] # Others
 
-def rich_club_piechart():
+def rich_club_piecharts():
     fig, ax = plt.subplots(1, 2)
     plt.style.use('seaborn')
     sizes = [8/9, 1/9]
@@ -33,11 +33,22 @@ def rich_club_piechart():
     ax[0].pie(sizes, labels=labels, autopct='%1.f\%%',
         wedgeprops={"linewidth" : 2.0, "edgecolor": "white"},
         textprops={'size': 'xx-large'})
-    sizes =     sizes = [4/7, 3/7]
-    labels = ["Single club", "No stable club"]
+    sizes =  sizes = [4/7, 3/7]
+    labels = ["Rich club", "No stable club"]
     ax[1].pie(sizes, labels=labels, autopct='%1.f\%%',
         wedgeprops={"linewidth" : 2.0, "edgecolor": "white"},
         textprops={'size': 'xx-large'})
+    plt.show()
+
+def rich_club_piechart_both():
+    fig, ax = plt.subplots(1, 1)
+    plt.style.use('seaborn')
+    sizes = [13/16, 3/16]
+    labels = ["Stable \nrich club", "No stable \nrich club"]
+    ax.pie(sizes, labels=labels, autopct='%1.f\%%',
+        wedgeprops={"linewidth" : 2.0, "edgecolor": "white"},
+        textprops={'size': 'xx-large'})
+    plt.tight_layout()
     plt.show()
 
 def mutants_RC_hist():
@@ -625,10 +636,11 @@ def chasingOrder_RC(out = True, both = False):
    plt.show()
     
 if __name__ == "__main__":
-    # rich_club_piechart()
+    # rich_club_piecharts()
+    rich_club_piechart_both()
     # mutants_RC_hist()
     # rc_coefficient_histogram(4, 3)
-    chasingrank_vs_rc()
+    # chasingrank_vs_rc()
     # tuberank_vs_rc()
     # chasingrank_vs_nonrc()
     # tuberank_vs_nonrc()
