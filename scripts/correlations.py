@@ -433,6 +433,47 @@ def interaction_vs_social_rank_correlation():
     plt.title("Both cohorts", fontsize = 20)
     plt.tight_layout()
     plt.show()
+
+def chasingOrder_vs_approachOrder():
+    approach_dir = "C:\\Users\\Agarwal Lab\\Corentin\\Python\\NoSeMaze\data\\averaged\\"
+    chasing_dir = "C:\\Users\\Agarwal Lab\\Corentin\\Python\\NoSeMaze\\data\\chasing\\single\\"
+
+    approachOrders, chasingOrders = [], []
+    for group_idx in range(1, 18): #iterate over groups
+        approach_matrix = np.loadtxt(approach_dir+"G"+str(group_idx)+"\\approaches_resD7_1.csv",
+                                    delimiter = ",", dtype=str)[1:, 1:].astype(np.int16) + np.loadtxt(approach_dir+"G"+str(group_idx)+"\\approaches_resD7_2.csv",
+                                    delimiter = ",", dtype=str)[1:, 1:].astype(np.int16)
+        
+        names_in_approach_matrix =  np.loadtxt(approach_dir+"G"+str(group_idx)+"\\approaches_resD7_1.csv",
+                                            delimiter=",", dtype=str)[0, :][1:]
+        
+        chasing_matrix = np.loadtxt(chasing_dir+"G"+str(group_idx)+"_single_chasing.csv",
+                                    delimiter = ",", dtype=str)[1:, 1:].astype(np.int16)
+        names_in_chasing_matrix =  np.loadtxt(chasing_dir+"G"+str(group_idx)+"_single_chasing.csv",
+                                            delimiter=",", dtype=str)[0, :][1:]
+        approach_order = np.argsort(-np.sum(approach_matrix, 1))
+        chasing_order = np.argsort(-np.sum(chasing_matrix, 1))
+        for idx, mouse_name in enumerate(names_in_approach_matrix):
+            if names_in_chasing_matrix[idx] == mouse_name:
+                approachOrders.append(list(approach_order).index(idx))
+                chasingOrders.append(list(chasing_order).index(idx))
+
+    approachOrders, chasingOrders = np.array(approachOrders), np.array(chasingOrders)
+
+    plt.figure()
+    plt.xlabel("Approach order (outgoing)", fontsize = 17)
+    plt.ylabel("Chasing order (outgoing)", fontsize = 17)
+    correlation_matrix = np.corrcoef(approachOrders, chasingOrders)
+    pearson_corr = correlation_matrix[0, 1] 
+    points = list(zip(approachOrders, chasingOrders))
+    counts = Counter(points)
+    sizes = [counts[(xi, yi)] * 80 for xi, yi in points]  # Scale size
+    plt.scatter(approachOrders, chasingOrders, c = 'k', s = sizes, alpha = 0.5, label = "Pearson = "+str(np.round(pearson_corr, 2)))
+    plt.xticks(np.arange(0, 10), labels=["1","2","3","4","5","6","7","8","9","10"]) 
+    plt.yticks(np.arange(0, 10), labels=["1","2","3","4","5","6","7","8","9","10"]) 
+    plt.legend(loc = "lower right")
+    plt.tight_layout()
+    plt.show()
     
 # chasingRank_david_vs_sortingRC()
 # chasingRank_david_vs_sortingALL()
@@ -444,3 +485,4 @@ def interaction_vs_social_rank_correlation():
 # chasingRank_david_vs_sortingALL()
 # ChasingRank_vs_approachRank()
 # TubeRank_vs_approachRank()
+chasingOrder_vs_approachOrder()

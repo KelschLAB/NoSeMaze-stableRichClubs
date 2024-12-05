@@ -111,8 +111,13 @@ def time_in_arena(plot_both_cohorts = False):
         ax.text(i + 1, 15000, fr'$n = {sample_size}$', ha='center', size='x-small')
         
 
-
-        
+def rc_size():
+    rcs = [2, 3, 3, 2, 2, 2, 3, 2, 2, 2, 2, 3, 2, 2]
+    plt.hist(rcs, bins = [1.5, 2.5, 3.5], rwidth = 0.8)
+    plt.xticks([1, 2, 3,4 ,5, 6], labels = [1, 2, 3, 4, 5, 6])
+    plt.xlabel("Rich club size")
+    plt.ylabel("Count")
+    plt.show()
     
-
+rc_size()
 # time_in_arena(True)
