@@ -225,9 +225,9 @@ def cumulative_approaches():
     
     
 # chasing_towards_piechart(True)
-cumulative_approaches()
+# cumulative_approaches()
 # chasing_manhanttan_plot(False)
-# cumulative_chasings()
+cumulative_chasings()
 
 # plot normalized cumulative plots of chasings for ranked animals (by chasing), in and out
 # plot chasings ranking for ingoing.
