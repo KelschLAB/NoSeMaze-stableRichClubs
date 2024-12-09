@@ -63,26 +63,26 @@ def time_in_arena(plot_both_cohorts = False):
     rc_index_in_excel1 = np.array([7, 12, 14, 15, 25, 26, 31, 34, 35, 45, 53, 59, 67, 69, 70, 76, 78, 95, 98]) - 2 # RC
     mutants_index_in_excel1 = np.array([6, 9, 13, 21, 27, 28, 33, 41, 51, 54, 58, 65, 66, 73, 75, 92, 94]) - 2 # Mutants
     other_index_in_excel1 = np.arange(99)[~np.isin(np.arange(99), np.concatenate((rc_index_in_excel1, mutants_index_in_excel1)))] # Others
-    arena_time_rc1 = pd.read_excel(r"C:\Users\Agarwal Lab\Corentin\Python\NoSeMaze\data\reduced_data.xlsx", 
+    arena_time_rc1 = pd.read_excel(r"..\data\reduced_data.xlsx", 
                                    sheet_name = 0).to_numpy()[:, 1:][rc_index_in_excel1, 32].astype(float)
     arena_time_rc1 = arena_time_rc1[~np.isnan(arena_time_rc1)]
-    arena_time_mutants1 = pd.read_excel(r"C:\Users\Agarwal Lab\Corentin\Python\NoSeMaze\data\reduced_data.xlsx", 
+    arena_time_mutants1 = pd.read_excel(r"..\data\reduced_data.xlsx", 
                                         sheet_name = 0).to_numpy()[:, 1:][mutants_index_in_excel1, 32].astype(float)
     arena_time_mutants1 = arena_time_mutants1[~np.isnan(arena_time_mutants1)]
-    arena_time_others1 = pd.read_excel(r"C:\Users\Agarwal Lab\Corentin\Python\NoSeMaze\data\reduced_data.xlsx", 
+    arena_time_others1 = pd.read_excel(r"..\data\reduced_data.xlsx", 
                                        sheet_name = 0).to_numpy()[:, 1:][other_index_in_excel1, 32].astype(float)
     arena_time_others1 = arena_time_others1[~np.isnan(arena_time_others1)]
     # data second cohort 
     rc_index_in_excel2 = np.array([9, 11, 12, 14, 50, 51]) - 2
     mutants_index_in_excel2 = np.array([3, 5, 6, 7, 17, 19, 22, 28, 29, 34, 40, 43, 46]) - 2
     other_index_in_excel2 = np.arange(109)[~np.isin(np.arange(109), np.concatenate((rc_index_in_excel2, mutants_index_in_excel2)))] # Others
-    arena_time_rc2 = pd.read_excel(r"C:\Users\Agarwal Lab\Corentin\Python\NoSeMaze\data\meta-data_validation.xlsx", 
+    arena_time_rc2 = pd.read_excel(r"..\data\meta-data_validation.xlsx", 
                                    sheet_name = 0).to_numpy()[:, 1:][rc_index_in_excel1, 32].astype(float)
     arena_time_rc2 = arena_time_rc2[~np.isnan(arena_time_rc2)]
-    arena_time_mutants2 = pd.read_excel(r"C:\Users\Agarwal Lab\Corentin\Python\NoSeMaze\data\meta-data_validation.xlsx", 
+    arena_time_mutants2 = pd.read_excel(r"..\data\meta-data_validation.xlsx", 
                                         sheet_name = 0).to_numpy()[:, 1:][mutants_index_in_excel1, 32].astype(float)
     arena_time_mutants2 = arena_time_mutants2[~np.isnan(arena_time_mutants2)]
-    arena_time_others2 = pd.read_excel(r"C:\Users\Agarwal Lab\Corentin\Python\NoSeMaze\data\meta-data_validation.xlsx", 
+    arena_time_others2 = pd.read_excel(r"..\data\meta-data_validation.xlsx", 
                                        sheet_name = 0).to_numpy()[:, 1:][other_index_in_excel1, 32].astype(float)
     arena_time_others2 = arena_time_others2[~np.isnan(arena_time_others2)]
     # plot params
@@ -119,5 +119,5 @@ def rc_size():
     plt.ylabel("Count")
     plt.show()
     
-rc_size()
-# time_in_arena(True)
+# rc_size()
+time_in_arena(True)

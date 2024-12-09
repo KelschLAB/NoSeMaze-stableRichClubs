@@ -116,6 +116,66 @@ def mutants_in_both():
     plt.xlabel("Groups with at least 1 mutants in RC", fontsize=15)
     plt.ylabel("Probability", fontsize=15)
     plt.legend()
+    
+def mutants_in_both_mnn5_k4():
+    number_of_hits = []
+    mutants = np.array([1, 2, 3])
+    shuffled_arr = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    
+    for i in tqdm(range(5000)):
+        hits = 0
+        for j in range(1):
+            # expID 1
+            np.random.shuffle(shuffled_arr)
+            hits += np.any(np.isin(mutants, shuffled_arr[:3]))
+            # expID 2
+            np.random.shuffle(shuffled_arr)
+            hits += np.any(np.isin(mutants, shuffled_arr[:23]))
+            # expID 3
+            np.random.shuffle(shuffled_arr)
+            hits += np.any(np.isin(mutants, shuffled_arr[:4]))
+            # expID 4
+            np.random.shuffle(shuffled_arr)
+            hits += np.any(np.isin(mutants, shuffled_arr[:3]))
+            # expID 5
+            np.random.shuffle(shuffled_arr)
+            hits += np.any(np.isin(mutants, shuffled_arr[:2]))
+            # expID 6
+            np.random.shuffle(shuffled_arr)
+            hits += np.any(np.isin(mutants, shuffled_arr[:3]))
+            # expID 7
+            np.random.shuffle(shuffled_arr)
+            hits += np.any(np.isin(mutants, shuffled_arr[:3]))
+            # expID 8
+            np.random.shuffle(shuffled_arr)
+            hits += np.any(np.isin(mutants, shuffled_arr[:2]))
+            # expID 10
+            np.random.shuffle(shuffled_arr)
+            hits += np.any(np.isin(mutants, shuffled_arr[:3]))
+            # expID 11
+            np.random.shuffle(shuffled_arr)
+            hits += np.any(np.isin(mutants, shuffled_arr[:3]))
+            # expID 12
+            np.random.shuffle(shuffled_arr)
+            hits += np.any(np.isin(mutants, shuffled_arr[:3]))
+            # expID 15
+            np.random.shuffle(shuffled_arr)
+            hits += np.any(np.isin(mutants, shuffled_arr[:2]))
+            # # expID 18
+            # np.random.shuffle(shuffled_arr)
+            # hits += np.any(np.isin(mutants, shuffled_arr[:3]))
+            
+        number_of_hits.append(hits)
+        
+    h = plt.hist(number_of_hits, bins = np.arange(15), density = True, align = 'left', label = "Expected by random chance")
+    plt.axvline(np.percentile(number_of_hits, 5), ls = "--", color = 'k', label = "95% CI")
+    # plt.axvline(np.percentile(number_of_hits, 95), ls = "--", color = 'k', label = "95% CI")
+    plt.axvline(5, color = 'red', label = "Experimentally observed")
+    plt.annotate("p-value = "+str(h[0][1]), (1.5, 0.2), bbox=dict(facecolor='white', edgecolor='none', pad=1.0), ha='center')
+    plt.title("Random chance of mutant in rich-club\n both cohorts")
+    plt.xlabel("Groups with at least 1 mutants in RC", fontsize=15)
+    plt.ylabel("Probability", fontsize=15)
+    plt.legend()
 
 
 def mutants_in_validation():
@@ -312,8 +372,8 @@ def reshuffled_RC():
     plt.legend()
 
 # reshuffled_RC()
-littermates_in_club()
-# mutants_in_both()
+# littermates_in_club()
+mutants_in_both_mnn5_k4()
 # for i in range(1):
     # plt.figure()
     # mutant_in_cohort()

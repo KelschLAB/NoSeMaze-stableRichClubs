@@ -391,17 +391,29 @@ def chasingRank_david_vs_approachesALL(datapath = "..\\data\\averaged\\", both =
     
 
 def time_in_arena_correlation():
-    path_to_first_cohort = "C:\\Users\\Agarwal Lab\\Corentin\\Python\\NoSeMaze\\data\\reduced_data.xlsx"
-    path_to_second_cohort = "C:\\Users\\Agarwal Lab\\Corentin\\Python\\NoSeMaze\\data\\meta-data_full.xlsx"
+    path_to_first_cohort = "..\\data\\reduced_data.xlsx"
+    path_to_second_cohort = "..\\data\\meta-data_full.xlsx"
+    
     df1 = pd.read_excel(path_to_first_cohort)
+    rc1 = df1.loc[:, "RC"]
+    mutants1 = df1.loc[:, "mutant"]
     time_in_arena1 = np.array(df1.time_in_arena_average.values)
     social_time1 = np.array(df1.ratio_social_to_total_time_average.values)*time_in_arena1
     df2 = pd.read_excel(path_to_second_cohort)
-    time_in_arena2 = np.array(df2.time_in_arena_average.values)
-    social_time2 = np.array(df2.ratio_social_to_total_time_average.values)*time_in_arena2
-    time_in_arena = np.concatenate((time_in_arena1, time_in_arena2))
-    social_time = np.concatenate((social_time1, social_time2))
-    plt.scatter(time_in_arena, social_time, c = 'k')
+    
+    # rc2 = df2.loc[:, "RC"]
+    # rc = np.concatenate([rc1, rc2])
+    # time_in_arena2 = np.array(df2.time_in_arena_average.values)
+    # social_time2 = np.array(df2.ratio_social_to_total_time_average.values)*time_in_arena2
+    # time_in_arena = np.concatenate((time_in_arena1, time_in_arena2))
+    # social_time = np.concatenate((social_time1, social_time2))
+    plt.scatter(time_in_arena1[rc1], social_time1[rc1], c = 'green', alpha = 0.5)
+    plt.scatter(time_in_arena1[~rc1], social_time1[~rc1], c = 'blue', alpha = 0.5)
+    plt.scatter(time_in_arena1[~mutants1], social_time1[~mutants1], c = 'gray', alpha = 0.5)
+    plt.scatter(time_in_arena1[mutants1], social_time1[mutants1], c = 'red', alpha = 0.5)
+
+
+
     plt.xlabel("Time in arena", fontsize = 20)
     plt.ylabel("Social time", fontsize = 20)
     plt.title("Both cohorts", fontsize = 20)
@@ -485,4 +497,5 @@ def chasingOrder_vs_approachOrder():
 # chasingRank_david_vs_sortingALL()
 # ChasingRank_vs_approachRank()
 # TubeRank_vs_approachRank()
-chasingOrder_vs_approachOrder()
+# chasingOrder_vs_approachOrder()
+time_in_arena_correlation()

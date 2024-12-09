@@ -14,7 +14,7 @@ abspath = os.path.abspath(__file__)
 dname = os.path.dirname(abspath)
 os.chdir(dname)
 os.chdir('..\\src\\')
-sys.path.append(os.getcwd())
+#sys.path.append(os.getcwd())
 from read_graph import read_graph
 from collections import Counter
 
