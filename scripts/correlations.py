@@ -1,3 +1,4 @@
+from cProfile import label
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -390,7 +391,7 @@ def chasingRank_david_vs_approachesALL(datapath = "..\\data\\averaged\\", both =
     plt.show()
     
 
-def time_in_arena_correlation():
+def time_in_arena_correlation(sep = False):
     path_to_first_cohort = "..\\data\\reduced_data.xlsx"
     path_to_second_cohort = "..\\data\\meta-data_full.xlsx"
     
@@ -401,22 +402,48 @@ def time_in_arena_correlation():
     social_time1 = np.array(df1.ratio_social_to_total_time_average.values)*time_in_arena1
     df2 = pd.read_excel(path_to_second_cohort)
     
-    # rc2 = df2.loc[:, "RC"]
-    # rc = np.concatenate([rc1, rc2])
-    # time_in_arena2 = np.array(df2.time_in_arena_average.values)
-    # social_time2 = np.array(df2.ratio_social_to_total_time_average.values)*time_in_arena2
-    # time_in_arena = np.concatenate((time_in_arena1, time_in_arena2))
-    # social_time = np.concatenate((social_time1, social_time2))
-    plt.scatter(time_in_arena1[rc1], social_time1[rc1], c = 'green', alpha = 0.5)
-    plt.scatter(time_in_arena1[~rc1], social_time1[~rc1], c = 'blue', alpha = 0.5)
-    plt.scatter(time_in_arena1[~mutants1], social_time1[~mutants1], c = 'gray', alpha = 0.5)
-    plt.scatter(time_in_arena1[mutants1], social_time1[mutants1], c = 'red', alpha = 0.5)
+    rc2 = df2.loc[:, "RC"]
+    mutants2 = df2.loc[:, "mutant"]
 
+    rc = np.concatenate([rc1, rc2])
+    mutants = np.concatenate([mutants1, mutants2])
+    time_in_arena2 = np.array(df2.time_in_arena_average.values)
+    social_time2 = np.array(df2.ratio_social_to_total_time_average.values)*time_in_arena2
+    time_in_arena = np.concatenate((time_in_arena1, time_in_arena2))
+    social_time = np.concatenate((social_time1, social_time2))
 
+    if sep:
+        _, ax = plt.subplots(2, 2, sharex=True, sharey=True)
+        ax[0, 0].scatter(time_in_arena[rc], social_time[rc], c = 'k', alpha = 0.5, label = "RC members")
+        ax[0, 0].annotate('RC members', xy=(0.93, 0.9), xycoords='axes fraction',
+            size=11, ha='right', va='top',
+            bbox=dict(boxstyle='round', fc='w'))
+        ax[0, 1].scatter(time_in_arena[~rc], social_time[~rc], c = 'k', alpha = 0.5, label = "Non RC members")
+        ax[0, 1].annotate('Non RC members', xy=(0.93, 0.9), xycoords='axes fraction',
+            size=11, ha='right', va='top',
+            bbox=dict(boxstyle='round', fc='w'))
+        ax[1, 0].scatter(time_in_arena[~mutants], social_time[~mutants], c = 'k', alpha = 0.5, label = "WT")
+        ax[1, 0].annotate('WT', xy=(0.93, 0.9), xycoords='axes fraction',
+            size=11, ha='right', va='top',
+            bbox=dict(boxstyle='round', fc='w'))
+        ax[1, 1].scatter(time_in_arena[mutants], social_time[mutants], c = 'k', alpha = 0.5, label = "Mutants")
+        ax[1, 1].annotate('Mutants', xy=(0.93, 0.9), xycoords='axes fraction',
+            size=11, ha='right', va='top',
+            bbox=dict(boxstyle='round', fc='w'))
+        ax[1, 0].set_xlabel("Time in arena", fontsize = 20)
+        ax[1, 1].set_xlabel("Time in arena", fontsize = 20)
+        ax[0, 0].set_ylabel("Social time", fontsize = 20)
+        ax[1, 0].set_ylabel("Social time", fontsize = 20)
 
-    plt.xlabel("Time in arena", fontsize = 20)
-    plt.ylabel("Social time", fontsize = 20)
-    plt.title("Both cohorts", fontsize = 20)
+    else:
+        plt.scatter(time_in_arena[~mutants], social_time[~mutants], s = 70, c = 'blue', alpha = 0.5, label = "WT")
+        plt.scatter(time_in_arena[mutants], social_time[mutants], s = 70, c = 'red', alpha = 0.5, label = "mutants")
+        plt.scatter(time_in_arena[rc], social_time[rc], c = 'green', alpha = 1, label = "RC members")
+        plt.scatter(time_in_arena[~rc], social_time[~rc], c = 'gray', alpha = 1, label = "Non RC members")
+        plt.xlabel("Time in arena", fontsize = 18)
+        plt.ylabel("Social time", fontsize = 18)
+        plt.legend()
+    plt.show()
     
 def interaction_vs_social_rank_correlation():
     path_to_first_cohort = "C:\\Users\\Corentin offline\\Documents\\GitHub\\clusterGUI\\data\\reduced_data.xlsx"
@@ -498,4 +525,4 @@ def chasingOrder_vs_approachOrder():
 # ChasingRank_vs_approachRank()
 # TubeRank_vs_approachRank()
 # chasingOrder_vs_approachOrder()
-time_in_arena_correlation()
+time_in_arena_correlation(True)
