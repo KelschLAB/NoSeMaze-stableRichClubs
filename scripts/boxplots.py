@@ -7,6 +7,7 @@ import sys
 import seaborn as sns
 from weighted_rc import weighted_rich_club
 from scipy import stats
+import pandas as pd
 
 sys.path.append('..\\src\\')
 from read_graph import read_graph
@@ -15,6 +16,9 @@ datapath = "..\\data\\chasing\\single\\"
 datapath = "..\\data\\averaged\\"
 plt.rc('text', usetex=True)
 plt.rc('font', family='serif')
+
+def statistic(x, y, axis):
+    return np.mean(x, axis=axis) - np.mean(y, axis=axis)
 
 def format_plot(ax, bp):
     """ Sets the x-axis the RC/mutants/Others, changes the color of the bars in the boxplot."""
@@ -36,7 +40,12 @@ def add_significance(data, ax, bp):
         data1 = data[combination[0] - 1]
         data2 = data[combination[1] - 1]
         # Significance
-        U, p = stats.mannwhitneyu(data1, data2, alternative='two-sided')
+        # U, p = stats.mannwhitneyu(data1, data2, alternative='two-sided')
+        # U, p = stats.ttest_ind(data1, data2,equal_var=False)
+        result = stats.permutation_test((data1, data2), statistic)
+        U = result.statistic  # This gives the test statistic
+        p = result.pvalue      # This gives the p-value
+
         if p < 0.05:
             significant_combinations.append([combination, p])
     for i, significant_combination in enumerate(significant_combinations):
@@ -170,8 +179,117 @@ def boxplot_interactions():
     # bottom, top = ax.get_ylim()
     plt.show()
     
+def social_time():
+    path_to_first_cohort = "..\\data\\reduced_data.xlsx"
+    path_to_second_cohort = "..\\data\\meta-data_full.xlsx"
+    
+    df1 = pd.read_excel(path_to_first_cohort)
+    rc1 = df1.loc[:, "RC"]
+    mutants1 = df1.loc[:, "mutant"]
+    time_in_arena1 = np.array(df1.time_in_arena_average.values)
+    social_time1 = np.array(df1.ratio_social_to_total_time_average.values)*time_in_arena1
+    df2 = pd.read_excel(path_to_second_cohort)
+    
+    rc2 = df2.loc[:, "RC"]
+    mutants2 = df2.loc[:, "mutant"]
+
+    rc = np.concatenate([rc1, rc2])
+    mutants = np.concatenate([mutants1, mutants2])
+    time_in_arena2 = np.array(df2.time_in_arena_average.values)
+    social_time2 = np.array(df2.ratio_social_to_total_time_average.values)*time_in_arena2
+    time_in_arena = np.concatenate((time_in_arena1, time_in_arena2))
+    social_time = np.concatenate((social_time1, social_time2))
+    
+    # print(time_in_arena[~rc]**2)
+    nan = np.isnan(social_time)
+    rc_mems = np.array([time_in_arena[~nan*rc], social_time[~nan*rc]])
+    non_rc = np.array([time_in_arena[~nan*~rc], social_time[~nan*~rc]])
+    wt = np.array([time_in_arena[~nan*~mutants], social_time[~nan*~mutants]])
+    muts = np.array([time_in_arena[~nan*mutants], social_time[~nan*mutants]])
+    
+    # plot params
+    data = [social_time[~nan*rc], 
+            social_time[~nan*mutants], 
+            social_time[~nan*~mutants*~rc]]
+
+    ax = plt.axes()
+    bp = ax.boxplot(data, widths=0.6, patch_artist=True)
+    format_plot(ax, bp) # set x_axis, and colors of each bar
+    add_significance(data, ax, bp)
+    
+    plt.rc('text', usetex=True)
+    plt.rc('font', family='serif')
+    xticklabels = ["RC", "Mutants", "Others"]
+    ax.set_xticklabels(xticklabels, fontsize = 20)
+    ax.set_ylabel("Avg. social time", fontsize = 20)
+    colors = sns.color_palette('pastel')
+    for patch, color in zip(bp['boxes'], colors): # set colors
+        patch.set_facecolor(color)
+    plt.setp(bp['medians'], color='k')
+    bottom, top = ax.get_ylim()
+    y_range = top - bottom
+    for i, dataset in enumerate(data):
+        sample_size = len(dataset)
+        ax.text(i + 1, 3000, fr'$n = {sample_size}$', ha='center', size='x-small')
+    plt.tight_layout()
+    
+def time_in_arena(plot_both_cohorts = False):
+    path_to_first_cohort = "..\\data\\reduced_data.xlsx"
+    path_to_second_cohort = "..\\data\\meta-data_full.xlsx"
+    
+    df1 = pd.read_excel(path_to_first_cohort)
+    rc1 = df1.loc[:, "RC"]
+    mutants1 = df1.loc[:, "mutant"]
+    time_in_arena1 = np.array(df1.time_in_arena_average.values)
+    social_time1 = np.array(df1.ratio_social_to_total_time_average.values)*time_in_arena1
+    df2 = pd.read_excel(path_to_second_cohort)
+    
+    rc2 = df2.loc[:, "RC"]
+    mutants2 = df2.loc[:, "mutant"]
+
+    rc = np.concatenate([rc1, rc2])
+    mutants = np.concatenate([mutants1, mutants2])
+    time_in_arena2 = np.array(df2.time_in_arena_average.values)
+    social_time2 = np.array(df2.ratio_social_to_total_time_average.values)*time_in_arena2
+    time_in_arena = np.concatenate((time_in_arena1, time_in_arena2))
+    social_time = np.concatenate((social_time1, social_time2))
+    
+    # print(time_in_arena[~rc]**2)
+    nan = np.isnan(social_time)
+    rc_mems = np.array([time_in_arena[~nan*rc], social_time[~nan*rc]])
+    non_rc = np.array([time_in_arena[~nan*~rc], social_time[~nan*~rc]])
+    wt = np.array([time_in_arena[~nan*~mutants], social_time[~nan*~mutants]])
+    muts = np.array([time_in_arena[~nan*mutants], social_time[~nan*mutants]])
+    
+    # plot params
+    data = [time_in_arena[~nan*rc], 
+            time_in_arena[~nan*mutants], 
+            time_in_arena[~nan*~mutants*~rc]]
+
+    ax = plt.axes()
+    bp = ax.boxplot(data, widths=0.6, patch_artist=True)
+    format_plot(ax, bp) # set x_axis, and colors of each bar
+    add_significance(data, ax, bp)
+    plt.rc('text', usetex=True)
+    plt.rc('font', family='serif')
+    xticklabels = ["RC", "Mutants", "Others"]
+    ax.set_xticklabels(xticklabels, fontsize = 20)
+    ax.set_ylabel("Avg. time in arena", fontsize = 20)
+    colors = sns.color_palette('pastel')
+    for patch, color in zip(bp['boxes'], colors): # set colors
+        patch.set_facecolor(color)
+    plt.setp(bp['medians'], color='k')
+    bottom, top = ax.get_ylim()
+    y_range = top - bottom
+    for i, dataset in enumerate(data):
+        sample_size = len(dataset)
+        ax.text(i + 1, 15000, fr'$n = {sample_size}$', ha='center', size='x-small')
+    
 if __name__ == "__main__":
-    boxplot_chasing(False)
+    # boxplot_chasing(False)
     # boxplot_approaches() 
     # boxplot_interactions()
+    # time_in_arena(True)
+    social_time()
+
     

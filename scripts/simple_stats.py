@@ -110,6 +110,57 @@ def time_in_arena(plot_both_cohorts = False):
         sample_size = len(dataset)
         ax.text(i + 1, 15000, fr'$n = {sample_size}$', ha='center', size='x-small')
         
+def social_time():
+    path_to_first_cohort = "..\\data\\reduced_data.xlsx"
+    path_to_second_cohort = "..\\data\\meta-data_full.xlsx"
+    
+    df1 = pd.read_excel(path_to_first_cohort)
+    rc1 = df1.loc[:, "RC"]
+    mutants1 = df1.loc[:, "mutant"]
+    time_in_arena1 = np.array(df1.time_in_arena_average.values)
+    social_time1 = np.array(df1.ratio_social_to_total_time_average.values)*time_in_arena1
+    df2 = pd.read_excel(path_to_second_cohort)
+    
+    rc2 = df2.loc[:, "RC"]
+    mutants2 = df2.loc[:, "mutant"]
+
+    rc = np.concatenate([rc1, rc2])
+    mutants = np.concatenate([mutants1, mutants2])
+    time_in_arena2 = np.array(df2.time_in_arena_average.values)
+    social_time2 = np.array(df2.ratio_social_to_total_time_average.values)*time_in_arena2
+    time_in_arena = np.concatenate((time_in_arena1, time_in_arena2))
+    social_time = np.concatenate((social_time1, social_time2))
+    
+    # print(time_in_arena[~rc]**2)
+    nan = np.isnan(social_time)
+    rc_mems = np.array([time_in_arena[~nan*rc], social_time[~nan*rc]])
+    non_rc = np.array([time_in_arena[~nan*~rc], social_time[~nan*~rc]])
+    wt = np.array([time_in_arena[~nan*~mutants], social_time[~nan*~mutants]])
+    muts = np.array([time_in_arena[~nan*mutants], social_time[~nan*mutants]])
+    
+    # plot params
+    data = [social_time[~nan*rc], 
+            social_time[~nan*mutants], 
+            social_time[~nan*~mutants*~rc]]
+
+    ax = plt.axes()
+    bp = ax.boxplot(data, widths=0.6, patch_artist=True)
+    plt.rc('text', usetex=True)
+    plt.rc('font', family='serif')
+    xticklabels = ["RC", "Mutants", "Others"]
+    ax.set_xticklabels(xticklabels, fontsize = 20)
+    ax.set_ylabel("Avg. social time", fontsize = 20)
+    colors = sns.color_palette('pastel')
+    for patch, color in zip(bp['boxes'], colors): # set colors
+        patch.set_facecolor(color)
+    plt.setp(bp['medians'], color='k')
+    bottom, top = ax.get_ylim()
+    y_range = top - bottom
+    for i, dataset in enumerate(data):
+        sample_size = len(dataset)
+        ax.text(i + 1, 3000, fr'$n = {sample_size}$', ha='center', size='x-small')
+    plt.tight_layout()
+        
 
 def rc_size():
     rcs = [2, 3, 3, 2, 2, 2, 3, 2, 2, 2, 2, 3, 2, 2]
@@ -121,3 +172,4 @@ def rc_size():
     
 # rc_size()
 time_in_arena(True)
+# social_time()

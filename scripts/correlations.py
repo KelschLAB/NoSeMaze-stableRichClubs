@@ -16,6 +16,8 @@ sys.path.append(os.getcwd())
 from read_graph import read_graph
 from collections import Counter
 from scipy import stats
+import statsmodels.formula.api as smf
+import pandas as pd
 
 
 plt.rcParams.update({
@@ -390,6 +392,10 @@ def chasingRank_david_vs_approachesALL(datapath = "..\\data\\averaged\\", both =
     plt.legend(loc = "upper left")
     plt.show()
     
+def statistic(x, y, axis):
+    xm = np.mean(x, axis = axis)
+    ym = np.mean(y, axis = axis)
+    return np.linalg.norm(np.array([x[0]-xm[0], x[1]-xm[1]]), axis=axis) - np.linalg.norm(np.array([y[0]-ym[0], y[1]-ym[1]]), axis=axis)
 
 def time_in_arena_correlation(sep = False):
     path_to_first_cohort = "..\\data\\reduced_data.xlsx"
@@ -411,6 +417,77 @@ def time_in_arena_correlation(sep = False):
     social_time2 = np.array(df2.ratio_social_to_total_time_average.values)*time_in_arena2
     time_in_arena = np.concatenate((time_in_arena1, time_in_arena2))
     social_time = np.concatenate((social_time1, social_time2))
+    
+    # print(time_in_arena[~rc]**2)
+    nan = np.isnan(social_time)
+    rc_mems = np.array([time_in_arena[~nan*rc], social_time[~nan*rc]])
+    non_rc = np.array([time_in_arena[~nan*~rc], social_time[~nan*~rc]])
+    wt = np.array([time_in_arena[~nan*~mutants], social_time[~nan*~mutants]])
+    muts = np.array([time_in_arena[~nan*mutants], social_time[~nan*mutants]])
+    
+    
+    # groups = ["rc" if r else "non-rc" for r in rc[~nan]]
+    # data = {'X': time_in_arena[~nan], 'Y': social_time[~nan], 'Group': groups}
+    # df = pd.DataFrame(data)
+    # model = smf.ols('Y ~ X * C(Group)', data=df).fit()
+    # print(model.summary())
+    
+    
+    # groups = ["rc" for r in range(np.sum(rc[~nan]))]
+    # groups.extend(["wt" for r in range(np.sum(~nan*~mutants))])
+    # X = np.concatenate((rc_mems[0], wt[0]))
+    # Y = np.concatenate((rc_mems[1], wt[1]))
+    # data = {'X': X, 'Y': Y, 'Group': groups}
+    # df = pd.DataFrame(data)
+    # model = smf.ols('Y ~ X * C(Group)', data=df).fit()
+    # print(model.summary())
+    
+    groups = ["rc" for r in range(np.sum(rc[~nan]))]
+    groups.extend(["mutant" for r in range(np.sum(~nan*mutants))])
+    X = np.concatenate((rc_mems[0], muts[0]))
+    Y = np.concatenate((rc_mems[1], muts[1]))
+    data = {'X': X, 'Y': Y, 'Group': groups}
+    df = pd.DataFrame(data)
+    model = smf.ols('Y ~ X * C(Group)', data=df).fit()
+    print(model.summary())
+    
+    # groups = ["muts" if r else "wt" for r in mutants[~nan]]
+    # data = {'X': time_in_arena[~nan], 'Y': social_time[~nan], 'Group': groups}
+    # df = pd.DataFrame(data)
+    # model = smf.ols('Y ~ X * C(Group)', data=df).fit()
+    # print(model.summary())
+    
+    
+    
+    slope_A, intercept_A, _, _, SE_A = stats.linregress(rc_mems[0], rc_mems[1])
+    slope_B, intercept_B, _, _, SE_B = stats.linregress(non_rc[0], non_rc[1])
+    slope_C, intercept_C, _, _, SE_C = stats.linregress(wt[0], wt[1])
+    slope_D, intercept_D, _, _, SE_D = stats.linregress(muts[0], muts[1])
+
+    diff_slope = slope_A - slope_B
+    SE_diff = np.sqrt(SE_A**2 + SE_B**2)
+    z_stat = diff_slope / SE_diff
+    p_value = 2 * (1 - stats.norm.cdf(np.abs(z_stat)))
+    print(f"P-value rc vs non-rc: {p_value}")
+    
+    diff_slope = slope_A - slope_C
+    SE_diff = np.sqrt(SE_A**2 + SE_C**2)
+    z_stat = diff_slope / SE_diff
+    p_value = 2 * (1 - stats.norm.cdf(np.abs(z_stat)))
+    print(f"P-value rc vs wt: {p_value}")
+    
+    diff_slope = slope_A - slope_D
+    SE_diff = np.sqrt(SE_A**2 + SE_D**2)
+    z_stat = diff_slope / SE_diff
+    p_value = 2 * (1 - stats.norm.cdf(np.abs(z_stat)))
+    print(f"P-value rc vs mutants: {p_value}")
+    
+    diff_slope = slope_D - slope_C
+    SE_diff = np.sqrt(SE_D**2 + SE_C**2)
+    z_stat = diff_slope / SE_diff
+    p_value = 2 * (1 - stats.norm.cdf(np.abs(z_stat)))
+    print(f"P-value mutants vs wildtype: {p_value}")
+    
 
     if sep:
         _, ax = plt.subplots(2, 2, sharex=True, sharey=True)
@@ -438,8 +515,8 @@ def time_in_arena_correlation(sep = False):
     else:
         plt.scatter(time_in_arena[~mutants], social_time[~mutants], s = 70, c = 'blue', alpha = 0.5, label = "WT")
         plt.scatter(time_in_arena[mutants], social_time[mutants], s = 70, c = 'red', alpha = 0.5, label = "mutants")
-        plt.scatter(time_in_arena[rc], social_time[rc], c = 'green', alpha = 1, label = "RC members")
         plt.scatter(time_in_arena[~rc], social_time[~rc], c = 'gray', alpha = 1, label = "Non RC members")
+        plt.scatter(time_in_arena[rc], social_time[rc], c = 'green', alpha = 1, label = "RC members")
         plt.xlabel("Time in arena", fontsize = 18)
         plt.ylabel("Social time", fontsize = 18)
         plt.legend()
@@ -525,4 +602,4 @@ def chasingOrder_vs_approachOrder():
 # ChasingRank_vs_approachRank()
 # TubeRank_vs_approachRank()
 # chasingOrder_vs_approachOrder()
-time_in_arena_correlation(True)
+time_in_arena_correlation(False)

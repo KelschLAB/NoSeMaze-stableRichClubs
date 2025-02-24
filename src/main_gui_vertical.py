@@ -25,6 +25,7 @@ from clustering_window import *
 #       - figure out why -1 in nn for mnn
 #       - Check that feedback loops rm works, and that display of distance graphs also works
 #       - mnn in clustering should be fixed (the displayed cut graph isnt cut properly)
+#       - statistical test of random chance for rich club in statistics tabs
 #       - write tests
 
 ###### For future version: 
