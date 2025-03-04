@@ -56,7 +56,7 @@ def mutants_in_both():
     mutants = np.array([1, 2, 3])
     shuffled_arr = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
     
-    for i in tqdm(range(5000)):
+    for i in tqdm(range(10000)):
         hits = 0
         for j in range(1):
             # expID 1
@@ -102,8 +102,8 @@ def mutants_in_both():
             np.random.shuffle(shuffled_arr)
             hits += np.any(np.isin(mutants, shuffled_arr[:2]))
             # # expID 18
-            # np.random.shuffle(shuffled_arr)
-            # hits += np.any(np.isin(mutants, shuffled_arr[:3]))
+           # np.random.shuffle(shuffled_arr)
+           # hits += np.any(np.isin(mutants, shuffled_arr[:3]))
             
         number_of_hits.append(hits)
         
@@ -116,6 +116,8 @@ def mutants_in_both():
     plt.xlabel("Groups with at least 1 mutants in RC", fontsize=15)
     plt.ylabel("Probability", fontsize=15)
     plt.legend()
+    plt.savefig("C:\\Users\\wolfgang.kelsch\\Downloads\\mutants_in_RC.svg")
+    plt.show()
     
 def mutants_in_both_mnn5_k4():
     number_of_hits = []
@@ -130,7 +132,7 @@ def mutants_in_both_mnn5_k4():
             hits += np.any(np.isin(mutants, shuffled_arr[:3]))
             # expID 2
             np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(mutants, shuffled_arr[:23]))
+            hits += np.any(np.isin(mutants, shuffled_arr[:3]))
             # expID 3
             np.random.shuffle(shuffled_arr)
             hits += np.any(np.isin(mutants, shuffled_arr[:4]))
@@ -162,8 +164,8 @@ def mutants_in_both_mnn5_k4():
             np.random.shuffle(shuffled_arr)
             hits += np.any(np.isin(mutants, shuffled_arr[:2]))
             # # expID 18
-            # np.random.shuffle(shuffled_arr)
-            # hits += np.any(np.isin(mutants, shuffled_arr[:3]))
+            np.random.shuffle(shuffled_arr)
+            hits += np.any(np.isin(mutants, shuffled_arr[:3]))
             
         number_of_hits.append(hits)
         
@@ -176,6 +178,7 @@ def mutants_in_both_mnn5_k4():
     plt.xlabel("Groups with at least 1 mutants in RC", fontsize=15)
     plt.ylabel("Probability", fontsize=15)
     plt.legend()
+    plt.show()
 
 
 def mutants_in_validation():
@@ -369,11 +372,15 @@ def reshuffled_RC():
     plt.axvline(np.percentile(number_of_hits, 95), ls = "--", color = 'k', label = "95% CI")
     plt.axvline(6, color = 'red', label = "Experimentally observed")
     plt.xlim([0, 11])
-    plt.legend()
-
-# reshuffled_RC()
+    plt.legend(loc='upper left')
+    plt.savefig("C:\\Users\\wolfgang.kelsch\\Downloads\\reshuffled_RC.svg")
+  #  plt.tight_layout()
+    plt.show()
+    
+    
+#reshuffled_RC()
 # littermates_in_club()
-mutants_in_both_mnn5_k4()
+mutants_in_both()
 # for i in range(1):
     # plt.figure()
     # mutant_in_cohort()

@@ -287,9 +287,9 @@ def time_in_arena(plot_both_cohorts = False):
     
 if __name__ == "__main__":
     # boxplot_chasing(False)
-    # boxplot_approaches() 
+    boxplot_approaches() 
     # boxplot_interactions()
     # time_in_arena(True)
-    social_time()
+    # social_time()
 
     
