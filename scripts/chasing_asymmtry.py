@@ -333,9 +333,9 @@ def chasing_asymmetry_by_approachRank():
 def chasing_direction_RC():
     """Tests whether or not RC members preferentially chase other RC members.
     """
-    path_cohort1 = "C:\\Users\\Agarwal Lab\\Corentin\\Python\\NoSeMaze\\data\\reduced_data.xlsx"
-    chasing_dir = "C:\\Users\\Agarwal Lab\\Corentin\\Python\\NoSeMaze\\data\\chasing\\single\\"
-    path_cohort2 = "C:\\Users\\Agarwal Lab\\Corentin\\Python\\NoSeMaze\\data\\validation_cohort.xlsx"
+    path_cohort1 = "..\\data\\reduced_data.xlsx"
+    chasing_dir = "..\\data\\chasing\\single\\"
+    path_cohort2 = "..\\data\\validation_cohort.xlsx"
     # first cohort
     df1 = pd.read_excel(path_cohort1)
     groups1 = df1.loc[:, "group"].to_numpy()
@@ -427,7 +427,7 @@ def chasing_asymmetry(threshold = 2, qtl = 0.0, rc = False):
             Defaults to 0, to keep all data.
         - rc (bool): if true, only the appaoches of RC members towards other RC are considered.
     """
-    chasing_dir = "C:\\Users\\Corentin offline\\Documents\\GitHub\\clusterGUI\\data\\chasing\\single\\"
+    chasing_dir = "..\\data\\chasing\\single\\"
     ingoings, outgoings = [], []
     all_rc = [[0,6], [3, 8, 9], [3, 4, 8], [2, 4], [5,6], [0, 1], [3,4,6], [3, 5, 7], [6, 7, 8], [5, 8], [0, 2], [], [], [2, 8, 9], []]
     labels = ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G10", "G11", "G12", "G13", "G14", "G15", "G16"]
@@ -455,9 +455,8 @@ def chasing_asymmetry(threshold = 2, qtl = 0.0, rc = False):
     outgoings = np.array(outgoings)
     print(np.corrcoef(ingoings, outgoings))
     print((np.sum(ingoings > threshold*outgoings) + np.sum(outgoings > threshold*ingoings))/len(ingoings))
-    plt.rc('text', usetex=True)
-    plt.rc('font', family='serif')
-        
+  #  plt.rc('text', usetex=True)
+  #  plt.rc('font', family='serif')
     plt.pie([(np.sum(ingoings > threshold*outgoings) + np.sum(outgoings > threshold*ingoings))/len(ingoings),
              1 - (np.sum(ingoings > threshold*outgoings) + np.sum(outgoings > threshold*ingoings))/len(ingoings)], 
             labels = ["Asymmetric chasing", "Symmetric chasings"], autopct=lambda frac: f'{frac :.1f}%', colors=['gray', 'silver'])
@@ -527,6 +526,6 @@ def approach_symmetry(threshold = 2, qtl = 0.0, rc = False):
 # chasing_asymmetry_by_chasingOrder(out=True)
 # chasing_asymmetry_by_approachRank()
 # chasing_direction_RC()
-chasing_asymmetry(1.5, 0.0, True)
+chasing_asymmetry(2, 0.0, True)
 # approach_symmetry(1.5, 0.5, rc = False)
 
