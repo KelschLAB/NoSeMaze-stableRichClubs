@@ -14,7 +14,7 @@ from read_graph import read_graph
 
 datapath = "..\\data\\chasing\\single\\"
 datapath = "..\\data\\averaged\\"
-plt.rc('text', usetex=True)
+#plt.rc('text', usetex=True)
 plt.rc('font', family='serif')
 
 def statistic(x, y, axis):
@@ -82,7 +82,6 @@ def boxplot_chasing(out = True):
     all_rc = [[0,6], [3, 8, 9], [3, 4, 8], [2, 4], [5,6], [0, 1], [3,4,6], [3, 5, 7], [6, 7, 8], [5, 8], [0, 2], [], [], [2, 8, 9], []]
     all_mutants = [[6], [2], [6], [5], [2, 4], [7], [0, 5], [3], [2], [0,2,3], [5,7], [2,3,9], [3,9], [0,2,3], [2,3,8,9]] #took out mutants with weak histology
     labels = ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G10", "G11", "G12", "G13", "G14", "G15", "G16"]
-    
     
     chasings_rc, chasings_mutants, chasings_others = [], [], [] 
     for idx, g in enumerate(labels):
@@ -217,7 +216,7 @@ def social_time():
     format_plot(ax, bp) # set x_axis, and colors of each bar
     add_significance(data, ax, bp)
     
-    plt.rc('text', usetex=True)
+ #   plt.rc('text', usetex=True)
     plt.rc('font', family='serif')
     xticklabels = ["RC", "Mutants", "Others"]
     ax.set_xticklabels(xticklabels, fontsize = 20)
@@ -270,7 +269,7 @@ def time_in_arena(plot_both_cohorts = False):
     bp = ax.boxplot(data, widths=0.6, patch_artist=True)
     format_plot(ax, bp) # set x_axis, and colors of each bar
     add_significance(data, ax, bp)
-    plt.rc('text', usetex=True)
+ #   plt.rc('text', usetex=True)
     plt.rc('font', family='serif')
     xticklabels = ["RC", "Mutants", "Others"]
     ax.set_xticklabels(xticklabels, fontsize = 20)
