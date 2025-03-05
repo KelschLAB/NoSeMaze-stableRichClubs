@@ -416,85 +416,117 @@ def chasing_direction_RC():
     direction = np.array(direction)
     print(np.sum(direction)/len(direction))
     
-def chasing_asymmetry(threshold = 0.5):
+def chasing_asymmetry(threshold = 2, qtl = 0.0, rc = False):
     """Shows that chasing is a highly asymmetric behavior, by showing the total lack of correlation between ingoing and
     outgoing chasings.
+    inputs:
+        - treshold: how many times an approaches has to be bigger 
+            than the reciprocal one to consider it is not symmetric
+        - qtl: quantile filter to cut the graph before computing the symmetry. 
+            If set to 0.5, all approaches under the value of median approach are cut.
+            Defaults to 0, to keep all data.
+        - rc (bool): if true, only the appaoches of RC members towards other RC are considered.
     """
     chasing_dir = "C:\\Users\\Corentin offline\\Documents\\GitHub\\clusterGUI\\data\\chasing\\single\\"
     ingoings, outgoings = [], []
-
-    for group_idx in range(1, 20): #iterate over groups
+    all_rc = [[0,6], [3, 8, 9], [3, 4, 8], [2, 4], [5,6], [0, 1], [3,4,6], [3, 5, 7], [6, 7, 8], [5, 8], [0, 2], [], [], [2, 8, 9], []]
+    labels = ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G10", "G11", "G12", "G13", "G14", "G15", "G16"]
+    cohorts_list = [1,2,3,4,5,6,7,8,10,11,12,13,14,15,16] if rc else range(1, 17)
+    for rc_list_idx, group_idx in enumerate(cohorts_list): #iterate over groups
         chasing_matrix = np.loadtxt(chasing_dir+"G"+str(group_idx)+"_single_chasing.csv",
                                     delimiter = ",", dtype=str)[1:, 1:].astype(np.int16)
         names_in_chasing_matrix =  np.loadtxt(chasing_dir+"G"+str(group_idx)+"_single_chasing.csv",
                                             delimiter=",", dtype=str)[0, :][1:]
         
-        max_chasing = np.quantile(chasing_matrix[:], 0.5)#np.max(chasing_matrix[:])
+        chasing_cut = np.quantile(chasing_matrix[:], qtl)#np.max(chasing_matrix[:])
         
         for idx_a, mouse_a in enumerate(names_in_chasing_matrix):
             for idx_b, mouse_b in enumerate(names_in_chasing_matrix):
-                if idx_a != idx_b and (chasing_matrix[idx_a, idx_b] > max_chasing*threshold or chasing_matrix[idx_b, idx_a] > max_chasing*threshold):
-                    outgoings.append(chasing_matrix[idx_a, idx_b])
-                    ingoings.append(chasing_matrix[idx_b, idx_a])
+                if idx_a != idx_b and (chasing_matrix[idx_a, idx_b] > chasing_cut or chasing_matrix[idx_b, idx_a] > chasing_cut):
+                    if rc and (np.isin(idx_a, all_rc[rc_list_idx]) and np.isin(idx_b, all_rc[rc_list_idx])):
+                        outgoings.append(chasing_matrix[idx_a, idx_b])
+                        ingoings.append(chasing_matrix[idx_b, idx_a])
+                    elif not rc:
+                        outgoings.append(chasing_matrix[idx_a, idx_b])
+                        ingoings.append(chasing_matrix[idx_b, idx_a])
         # plt.xscale('log')
         # plt.yscale('log')
     ingoings = np.array(ingoings)
     outgoings = np.array(outgoings)
     print(np.corrcoef(ingoings, outgoings))
-    print((np.sum(ingoings > 2*outgoings) + np.sum(outgoings > 2*ingoings))/len(ingoings))
+    print((np.sum(ingoings > threshold*outgoings) + np.sum(outgoings > threshold*ingoings))/len(ingoings))
     plt.rc('text', usetex=True)
     plt.rc('font', family='serif')
         
-    plt.pie([(np.sum(ingoings > 2*outgoings) + np.sum(outgoings > 2*ingoings))/len(ingoings),
-             1 - (np.sum(ingoings > 2*outgoings) + np.sum(outgoings > 2*ingoings))/len(ingoings)], 
-            labels = ["Asymmetric chasing", "Symmetric chasings"] , autopct='%1.1f\%%')
+    plt.pie([(np.sum(ingoings > threshold*outgoings) + np.sum(outgoings > threshold*ingoings))/len(ingoings),
+             1 - (np.sum(ingoings > threshold*outgoings) + np.sum(outgoings > threshold*ingoings))/len(ingoings)], 
+            labels = ["Asymmetric chasing", "Symmetric chasings"], autopct=lambda frac: f'{frac :.1f}%', colors=['gray', 'silver'])
+    title="Asymmetry of chasings from RC towards RC" if rc else "Asymmetry of chasings"
+    plt.title(title)
+    plt.tight_layout()
     # plt.scatter(outgoings, ingoings, c = 'k')
+    plt.show()
     
-def approach_symmetry(threshold = 0.5):
+def approach_symmetry(threshold = 2, qtl = 0.0, rc = False):
     """Shows that approach is a symmetric behavior, by showing the correlation between ingoing and
-    outgoing chasings.
+    outgoing approaches. If rc is True, only the approaches of RC members to themsleves will be compared.
+    inputs:
+        - treshold: how many times an approaches has to be bigger 
+            than the reciprocal one to consider it is not symmetric
+        - qtl: quantile filter to cut the graph before computing the symmetry. 
+            If set to 0.5, all approaches under the value of median approach are cut.
+            Defaults to 0, to keep all data.
+        - rc (bool): if true, only the appaoches of RC members towards other RC are considered.
     """
     approach_dir = "..\\data\\averaged\\"
     ingoings, outgoings = [], []
 
-    for group_idx in range(1, 17): #iterate over groups
-        chasing_matrix = np.loadtxt(approach_dir+"G"+str(group_idx)+"\\approaches_resD7_1.csv",
+    all_rc = [[0,6], [3, 8, 9], [2, 3, 6], [2, 4], [1, 6], [0, 1], [3, 4, 6], [3, 5, 7, 8], [7, 8], [5, 8], [0, 2], [], [], [2, 8, 9], []]
+    labels = ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G10", "G11", "G12", "G13", "G14", "G15", "G16"]
+    cohorts_list = [1,2,3,4,5,6,7,8,10,11,12,13,14,15,16] if rc else range(1, 17)
+    for rc_list_idx, group_idx in enumerate(cohorts_list): #iterate over groups
+        approach_matrix = np.loadtxt(approach_dir+"G"+str(group_idx)+"\\approaches_resD7_1.csv",
                                      delimiter = ",", dtype=str)[1:, 1:].astype(np.int16) + np.loadtxt(approach_dir+"G"+str(group_idx)+"\\approaches_resD7_2.csv",
                                      delimiter = ",", dtype=str)[1:, 1:].astype(np.int16)
-        names_in_chasing_matrix =  np.loadtxt(approach_dir+"G"+str(group_idx)+"\\approaches_resD7_1.csv",
+        names_in_approach_matrix =  np.loadtxt(approach_dir+"G"+str(group_idx)+"\\approaches_resD7_1.csv",
                                                  delimiter=",", dtype=str)[0, :][1:]
                 
-        max_chasing = np.quantile(chasing_matrix[:], 0.5)#np.max(chasing_matrix[:])
+        approach_cut = np.quantile(approach_matrix[:], qtl)#np.max(chasing_matrix[:])
         
-        for idx_a, mouse_a in enumerate(names_in_chasing_matrix):
-            for idx_b, mouse_b in enumerate(names_in_chasing_matrix):
-                if idx_a != idx_b and (chasing_matrix[idx_a, idx_b] > max_chasing*threshold or chasing_matrix[idx_b, idx_a] > max_chasing*threshold):
-                    outgoings.append(chasing_matrix[idx_a, idx_b])
-                    ingoings.append(chasing_matrix[idx_b, idx_a])
+        for idx_a, mouse_a in enumerate(names_in_approach_matrix):
+            for idx_b, mouse_b in enumerate(names_in_approach_matrix):
+                if idx_a != idx_b and (approach_matrix[idx_a, idx_b] > approach_cut or approach_matrix[idx_b, idx_a] > approach_cut):
+                    if rc and (np.isin(idx_a, all_rc[rc_list_idx]) and np.isin(idx_b, all_rc[rc_list_idx])):
+                        outgoings.append(approach_matrix[idx_a, idx_b])
+                        ingoings.append(approach_matrix[idx_b, idx_a])
+                    elif not rc:
+                        outgoings.append(approach_matrix[idx_a, idx_b])
+                        ingoings.append(approach_matrix[idx_b, idx_a])
         # plt.xscale('log')
         # plt.yscale('log')
     ingoings = np.array(ingoings)
     outgoings = np.array(outgoings)
     print(np.corrcoef(ingoings, outgoings))
-    print((np.sum(ingoings > 2*outgoings) + np.sum(outgoings > 2*ingoings))/len(ingoings))
+    print((np.sum(ingoings > threshold*outgoings) + np.sum(outgoings > threshold*ingoings))/len(ingoings))
     # plt.rc('text', usetex=True)
     # plt.rc('font', family='serif')
     plt.figure()
-    plt.pie([(np.sum(ingoings > 2*outgoings) + np.sum(outgoings > 2*ingoings))/len(ingoings),
-             1 - (np.sum(ingoings > 2*outgoings) + np.sum(outgoings > 2*ingoings))/len(ingoings)], 
-            labels = ["Asymmetric approaches", "Symmetric approaches"] , autopct='%1.1f\%%')
+    plt.pie([(np.sum(ingoings > threshold*outgoings) + np.sum(outgoings > threshold*ingoings))/len(ingoings),
+             1 - (np.sum(ingoings > threshold*outgoings) + np.sum(outgoings > threshold*ingoings))/len(ingoings)], 
+            labels = ["Asymmetric approaches", "Symmetric approaches"] , autopct=lambda frac: f'{frac :.1f}%', colors=['gray', 'silver'])
+    title="Symmetry of approaches from RC towards RC" if rc else "Symmetry of approaches"
+    plt.title(title)
     plt.tight_layout()
     # plt.scatter(outgoings, ingoings, c = 'k')
     plt.show()
 
 
-                
+
 # chasing_asymmetry_by_tube()
 # chasing_asymmetry_by_chasing()
 # chasing_asymmetry_by_chasingOrder(out=True)
 # chasing_asymmetry_by_approachRank()
 # chasing_direction_RC()
-# chasing_asymmetry()
-# approach_symmetry()
-
+chasing_asymmetry(1.5, 0.0, True)
+# approach_symmetry(1.5, 0.5, rc = False)
 
