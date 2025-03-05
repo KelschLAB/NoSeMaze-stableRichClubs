@@ -485,6 +485,7 @@ def approach_symmetry(threshold = 0.5):
             labels = ["Asymmetric approaches", "Symmetric approaches"] , autopct='%1.1f\%%')
     plt.tight_layout()
     # plt.scatter(outgoings, ingoings, c = 'k')
+    plt.show()
 
 
                 
@@ -494,6 +495,6 @@ def approach_symmetry(threshold = 0.5):
 # chasing_asymmetry_by_approachRank()
 # chasing_direction_RC()
 # chasing_asymmetry()
-approach_symmetry()
+# approach_symmetry()
 
 
