@@ -526,6 +526,6 @@ def approach_symmetry(threshold = 2, qtl = 0.0, rc = False):
 # chasing_asymmetry_by_chasingOrder(out=True)
 # chasing_asymmetry_by_approachRank()
 # chasing_direction_RC()
-chasing_asymmetry(2, 0.0, True)
-# approach_symmetry(1.5, 0.5, rc = False)
+# chasing_asymmetry(2, 0.0, True)
+approach_symmetry(1.5, 0.5, rc = True)
 

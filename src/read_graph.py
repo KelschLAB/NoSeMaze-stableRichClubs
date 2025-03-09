@@ -49,6 +49,7 @@ def nn_cut(arr, nn = 2):
         return:
                 array representing the graph with cut edges
     """
+    assert nn >= 1, "nn should be a positive integer bigger than 1." # nn = 0 means self ineractions with is trivially true (unless stated otherwise)
     nn_arr = np.zeros_like(arr) 
     neighbors_i = np.argsort(-arr, 1) #computing the nearest neighbors for local nn estimation
     neighbors_j = np.argsort(-arr, 0)
@@ -73,8 +74,7 @@ def mnn_cut(arr, nn = 2):
         return:
                 array representing the graph with cut edges
     """
-    assert nn > 1, "nn should be a positive integer bigger than 1."
-    nn -= 1 #
+    assert nn >= 1, "nn should be a positive integer bigger than 1." # nn = 0 means self ineractions with is trivially true (unless stated otherwise)
     mnn_arr = np.zeros_like(arr) + 0.01 #0.01 for visualization, to force igraph to keep layout
     neighbors_i = np.argsort(-arr, 1) #computing the nearest neighbors for local nn estimation
     neighbors_j = np.argsort(-arr, 0)

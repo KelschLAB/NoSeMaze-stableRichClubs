@@ -171,7 +171,6 @@ class App:
         self.stats_btn["command"] = self.stats_clicked
         self.plot_btn.config(bg="#d1d1d1")
         self.stats_btn.config(bg="#f0f0f0")
-
         
     # functions for 'file' menu 
     def settings_button_command(self):
@@ -287,7 +286,6 @@ class App:
         self.plot_in_frame(layout_style = self.layout_style, node_metric = self.node_metric,\
                                percentage_threshold=self.percentage_threshold, mnn = self.mnn_number, deg = self.degree)
             
-
     # central function for plotting the graph(s)
     def plot_in_frame(self, layout_style = "fr", node_metric = "none", percentage_threshold=0.0, mnn = None, deg = 0):
         for fm in self.content_frame.winfo_children():
