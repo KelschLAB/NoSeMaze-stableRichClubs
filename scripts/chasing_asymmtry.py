@@ -573,5 +573,5 @@ def approach_symmetry_mutants(threshold = 1.5, qtl = 0.0):
 # chasing_direction_RC()
 # chasing_asymmetry(2, 0.0, True)
 # approach_symmetry(1.5, 0.5, rc = False)
-approach_symmetry_mutants()
+# approach_symmetry_mutants()
 
