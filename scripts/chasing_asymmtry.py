@@ -518,6 +518,51 @@ def approach_symmetry(threshold = 2, qtl = 0.0, rc = False):
     plt.tight_layout()
     # plt.scatter(outgoings, ingoings, c = 'k')
     plt.show()
+    
+    
+def approach_symmetry_mutants(threshold = 1.5, qtl = 0.0):
+    """Shows the symmetry of the approach behavior for mutants
+    inputs:
+        - treshold: how many times an approaches has to be bigger 
+            than the reciprocal one to consider it is not symmetric
+        - qtl: quantile filter to cut the graph before computing the symmetry. 
+            If set to 0.5, all approaches under the value of median approach are cut.
+            Defaults to 0, to keep all data.
+    """
+    approach_dir = "..\\data\\averaged\\"
+    ingoings, outgoings = [], []
+
+    all_mutants = [[6], [2], [6], [5], [2, 4], [7], [0, 5], [3], [2], [0,2,3], [5,7], [2,3,9], [3,9], [0,2,3], [2,3,8,9]] #took out mutants with weak histology
+    labels = ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G10", "G11", "G12", "G13", "G14", "G15", "G16"]
+    cohorts_list = [1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16]
+    for rc_list_idx, group_idx in enumerate(cohorts_list): #iterate over groups
+        approach_matrix = np.loadtxt(approach_dir+"G"+str(group_idx)+"\\approaches_resD7_1.csv",
+                                     delimiter = ",", dtype=str)[1:, 1:].astype(np.int16) + np.loadtxt(approach_dir+"G"+str(group_idx)+"\\approaches_resD7_2.csv",
+                                     delimiter = ",", dtype=str)[1:, 1:].astype(np.int16)
+        names_in_approach_matrix =  np.loadtxt(approach_dir+"G"+str(group_idx)+"\\approaches_resD7_1.csv",
+                                                 delimiter=",", dtype=str)[0, :][1:]
+                
+        approach_cut = np.quantile(approach_matrix[:], qtl)#np.max(chasing_matrix[:])
+        
+        for idx_a, mouse_a in enumerate(names_in_approach_matrix):
+            for idx_b, mouse_b in enumerate(names_in_approach_matrix):
+                if idx_a != idx_b and (approach_matrix[idx_a, idx_b] > approach_cut or approach_matrix[idx_b, idx_a] > approach_cut):
+                    outgoings.append(approach_matrix[idx_a, idx_b])
+                    ingoings.append(approach_matrix[idx_b, idx_a])
+                    if np.isin(idx_a, all_mutants[rc_list_idx]) and np.isin(idx_b, all_mutants[rc_list_idx]):
+                        outgoings.append(approach_matrix[idx_a, idx_b])
+                        ingoings.append(approach_matrix[idx_b, idx_a])
+                    
+    ingoings = np.array(ingoings)
+    outgoings = np.array(outgoings)
+    plt.figure()
+    plt.pie([(np.sum(ingoings > threshold*outgoings) + np.sum(outgoings > threshold*ingoings))/len(ingoings),
+             1 - (np.sum(ingoings > threshold*outgoings) + np.sum(outgoings > threshold*ingoings))/len(ingoings)], 
+            labels = ["Asymmetric approaches", "Symmetric approaches"] , autopct=lambda frac: f'{frac :.1f}%', colors=['gray', 'silver'])
+    title = "Symmetry of approaches between mutants"
+    plt.title(title)
+    plt.tight_layout()
+    plt.show()
 
 
 
@@ -527,5 +572,6 @@ def approach_symmetry(threshold = 2, qtl = 0.0, rc = False):
 # chasing_asymmetry_by_approachRank()
 # chasing_direction_RC()
 # chasing_asymmetry(2, 0.0, True)
-approach_symmetry(1.5, 0.5, rc = True)
+# approach_symmetry(1.5, 0.5, rc = False)
+approach_symmetry_mutants()
 
