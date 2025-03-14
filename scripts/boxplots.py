@@ -10,7 +10,7 @@ from scipy import stats
 import pandas as pd
 
 sys.path.append('..\\src\\')
-from read_graph import read_graph
+from read_graph import read_graph, read_labels
 
 datapath = "..\\data\\chasing\\single\\"
 datapath = "..\\data\\averaged\\"
@@ -20,9 +20,8 @@ plt.rc('font', family='serif')
 def statistic(x, y, axis):
     return np.mean(x, axis=axis) - np.mean(y, axis=axis)
 
-def format_plot(ax, bp):
+def format_plot(ax, bp, xticklabels = ["RC", "Mutants", "Others"]):
     """ Sets the x-axis the RC/mutants/Others, changes the color of the bars in the boxplot."""
-    xticklabels = ["RC", "Mutants", "Others"]
     ax.set_xticklabels(xticklabels, fontsize = 20)
     colors = sns.color_palette('pastel')
     for patch, color in zip(bp['boxes'], colors): # set colors
@@ -283,12 +282,114 @@ def time_in_arena(plot_both_cohorts = False):
     for i, dataset in enumerate(data):
         sample_size = len(dataset)
         ax.text(i + 1, 15000, fr'$n = {sample_size}$', ha='center', size='x-small')
+        
+        
+## Graph theory measures
+all_rc =  [[0,6], [3, 8, 9], [2, 3, 6], [2, 4], [1, 6], [0, 1], [3, 4, 6], [3, 5, 7, 8], [7, 8], [5, 8], [0, 2], [], [], [2, 8, 9], [], [0, 2]]
+# all_mutants = [[6], [2], [6], [5], [2, 4], [7], [0, 5], [3], [2], [0,2,3], [5,7], [2,3,9], [3,9], [0,2,3], [2,3,8,9], [3, 9]] #took out mutants with weak histology
+all_mutants = [[4, 6], [2, 6], [6], [0, 5], [3, 5], [7, 9], [0, 5], [2, 3], [2, 3], [0, 2, 3, 6], [4, 5, 6, 7, 9], [2, 3, 9], [1,3,9], [0,2,3, 6], [2,3,8,9], [3, 9]] #full histology
+
+labels = ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G10", "G11", "G12", "G13", "G14", "G15", "G16", "G17"]
+
+def measures(graph_idx, measure = "hub"):
+    """
+    Returns the measurement specified by input argument for mutants, rc and in wt in graph specified by input index.
+    """
+    datapath = "..\\data\\averaged\\"+labels[graph_idx]
+    data = read_graph([datapath+"\\interactions_resD7_1.csv"], percentage_threshold = 0)[0] + read_graph([datapath+"\\interactions_resD7_2.csv"], percentage_threshold = 0)[0]
+    data = (data + np.transpose(data))/2 # ensure symmetry
+    g = ig.Graph.Weighted_Adjacency(data, mode='undirected')
+    node_labels = read_labels(datapath+"\\approaches_resD7_1.csv")
+    graph_length = len(g.vs())
+    mutants = all_mutants[graph_idx]
+    rc = all_rc[graph_idx]
+    others = np.arange(graph_length)[np.logical_and(~np.isin(np.arange(graph_length), all_rc[graph_idx]), ~np.isin(np.arange(graph_length), all_mutants[graph_idx]))]
+    wt = np.arange(graph_length)[~np.isin(np.arange(graph_length), all_mutants[graph_idx])]
+    if measure == "hub":
+        scores_mutants = [g.hub_score(weights = [e['weight'] for e in g.es()])[i] for i in mutants]
+        scores_rc = [g.hub_score(weights = [e['weight'] for e in g.es()])[i] for i in rc]
+        scores_rest = [g.hub_score(weights = [e['weight'] for e in g.es()])[i] for i in others]
+        scores_wt = [g.hub_score(weights = [e['weight'] for e in g.es()])[i] for i in wt]
+    elif measure == "pagerank":
+        scores_mutants = [g.pagerank(weights = [e['weight'] for e in g.es()])[i] for i in mutants]
+        scores_rc = [g.pagerank(weights = [e['weight'] for e in g.es()])[i] for i in rc]
+        scores_rest = [g.pagerank(weights = [e['weight'] for e in g.es()])[i] for i in others]
+        scores_wt = [g.pagerank(weights = [e['weight'] for e in g.es()])[i] for i in wt]
+    elif measure == "authority":
+        scores_mutants = [g.authority_score(weights = [e['weight'] for e in g.es()])[i] for i in mutants]
+        scores_rc = [g.authority_score(weights = [e['weight'] for e in g.es()])[i] for i in rc]
+        scores_rest = [g.authority_score(weights = [e['weight'] for e in g.es()])[i] for i in others]
+        scores_wt = [g.authority_score(weights = [e['weight'] for e in g.es()])[i] for i in wt]
+    elif measure == "eigenvector_centrality":
+        scores_mutants = [g.eigenvector_centrality(weights = [e['weight'] for e in g.es()])[i] for i in mutants]
+        scores_rc = [g.eigenvector_centrality(weights = [e['weight'] for e in g.es()])[i] for i in rc]
+        scores_rest = [g.eigenvector_centrality(weights = [e['weight'] for e in g.es()])[i] for i in others]
+        scores_wt = [g.eigenvector_centrality(weights = [e['weight'] for e in g.es()])[i] for i in wt]
+    elif measure == "harmonic_centrality":
+        scores_mutants = [g.harmonic_centrality(weights = [e['weight'] for e in g.es()])[i] for i in mutants]
+        scores_rc = [g.harmonic_centrality(weights = [e['weight'] for e in g.es()])[i] for i in rc]
+        scores_rest = [g.harmonic_centrality(weights = [e['weight'] for e in g.es()])[i] for i in others]
+        scores_wt = [g.harmonic_centrality(weights = [e['weight'] for e in g.es()])[i] for i in wt]
+    elif measure == "betweenness":
+         scores_mutants = [g.betweenness(weights = [1/e['weight'] for e in g.es()])[i] for i in mutants]
+         scores_rc = [g.betweenness(weights = [1/e['weight'] for e in g.es()])[i] for i in rc]
+         scores_rest = [g.betweenness(weights = [1/e['weight'] for e in g.es()])[i] for i in others]  
+         scores_wt = [g.betweenness(weights = [1/e['weight'] for e in g.es()])[i] for i in wt]  
+    elif measure == "closeness":
+         scores_mutants = [g.closeness(weights = [1/e['weight'] for e in g.es()])[i] for i in mutants]
+         scores_rc = [g.closeness(weights = [1/e['weight'] for e in g.es()])[i] for i in rc]
+         scores_rest = [g.closeness(weights = [1/e['weight'] for e in g.es()])[i] for i in others]  
+         scores_wt = [g.closeness(weights = [1/e['weight'] for e in g.es()])[i] for i in wt]  
+    else:
+        raise Exception("Unknown or misspelled input measurement.") 
+
+    return scores_mutants, scores_rc, scores_rest, scores_wt
+
+def boxplot_measures(measure = "hub", separate_wt = False):
+    """
+    Box plot of graph theory measurement specified by input argument for all graphs in dataset, separated in mutants and WT, or 
+    mutants, RC and others (using separate_wt argument).
+    """
+    scores_mutants, scores_rc, scores_rest, scores_wt = [], [], [], []
+    for j in range(10):#range(len(labels)):
+        scores = measures(j, measure)
+        scores_mutants.extend(scores[0])
+        scores_rc.extend(scores[1])
+        scores_rest.extend(scores[2])
+        scores_wt.extend(scores[3])
+    plt.figure()
+    ax = plt.axes()
+    # sns.catplot([scores_mutants, scores_wt])
+    # plt.hist(scores_mutants, bins = 10, alpha = 0.5)
+    # plt.hist(scores_wt, bins = 10, alpha = 0.5)
+    if separate_wt:
+        bp = ax.boxplot([scores_rc, scores_mutants, scores_wt], widths=0.6, patch_artist=True)
+        format_plot(ax, bp) # set x_axis, and colors of each bar
+        add_significance([scores_rc, scores_mutants, scores_wt], ax, bp)
+    else:
+        bp = ax.boxplot([scores_mutants, scores_wt], widths=0.6, patch_artist=True)
+        format_plot(ax, bp, ["Mutants", "WT"]) # set x_axis, and colors of each bar
+        add_significance([scores_mutants, scores_wt], ax, bp)
+    plt.title(measure)
+    plt.show()
     
 if __name__ == "__main__":
     # boxplot_chasing(False)
-    boxplot_approaches() 
+    # boxplot_approaches() 
     # boxplot_interactions()
     # time_in_arena(True)
     # social_time()
+    # boxplot_measures("hub")
+    # boxplot_measures("authority")
+    # boxplot_measures("pagerank")
+    # boxplot_measures("pagerank", True)
+    # boxplot_measures("eigenvector_centrality")
+    # boxplot_measures("eigenvector_centrality", True)
+
+    boxplot_measures("harmonic_centrality")
+    # boxplot_measures("closeness")
+
+
+
 
     
