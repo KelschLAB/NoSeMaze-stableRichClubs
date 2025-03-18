@@ -5,7 +5,6 @@ import networkx as nx
 import os
 import sys
 import seaborn as sns
-from weighted_rc import weighted_rich_club
 from scipy import stats
 import pandas as pd
 
@@ -351,7 +350,7 @@ def boxplot_measures(measure = "hub", separate_wt = False):
     mutants, RC and others (using separate_wt argument).
     """
     scores_mutants, scores_rc, scores_rest, scores_wt = [], [], [], []
-    for j in range(10):#range(len(labels)):
+    for j in range(10):#9, len(labels)):
         scores = measures(j, measure)
         scores_mutants.extend(scores[0])
         scores_rc.extend(scores[1])
@@ -383,10 +382,10 @@ if __name__ == "__main__":
     # boxplot_measures("authority")
     # boxplot_measures("pagerank")
     # boxplot_measures("pagerank", True)
-    # boxplot_measures("eigenvector_centrality")
+    boxplot_measures("eigenvector_centrality")
     # boxplot_measures("eigenvector_centrality", True)
 
-    boxplot_measures("harmonic_centrality")
+    # boxplot_measures("harmonic_centrality")
     # boxplot_measures("closeness")
 
 
