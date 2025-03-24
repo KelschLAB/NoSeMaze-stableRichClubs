@@ -4,6 +4,7 @@ import igraph as ig
 import networkx as nx
 import os
 import sys
+import seaborn as sns
 from scipy import stats
 import pandas as pd
 
@@ -18,6 +19,14 @@ plt.rc('font', family='serif')
 def statistic(x, y, axis):
     return np.mean(x, axis=axis) - np.mean(y, axis=axis)
 
+def format_plot(ax, bp, xticklabels = ["RC", "Mutants", "Others"]):
+    """ Sets the x-axis the RC/mutants/Others, changes the color of the bars in the boxplot."""
+    ax.set_xticklabels(xticklabels, fontsize = 20)
+    colors = sns.color_palette('pastel')
+    for patch, color in zip(bp['boxes'], colors): # set colors
+        patch.set_facecolor(color)
+    plt.setp(bp['medians'], color='k')
+    
 def add_significance(data, ax, bp):
     """Computes and adds p-value significance to input ax and boxplot"""
     # Initialise a list of combinations of groups that are significantly different
@@ -34,7 +43,7 @@ def add_significance(data, ax, bp):
         result = stats.permutation_test((data1, data2), statistic)
         U = result.statistic  # This gives the test statistic
         p = result.pvalue      # This gives the p-value
-
+        print(p)
         if p < 0.05:
             significant_combinations.append([combination, p])
     for i, significant_combination in enumerate(significant_combinations):
@@ -67,20 +76,31 @@ def add_significance(data, ax, bp):
 ## Graph theory measures
 all_rc =  [[0,6], [3, 8, 9], [2, 3, 6], [2, 4], [1, 6], [0, 1], [3, 4, 6], [3, 5, 7, 8], [7, 8], [5, 8], [0, 2], [], [], [2, 8, 9], [], [0, 2]]
 # all_mutants = [[6], [2], [6], [5], [2, 4], [7], [0, 5], [3], [2], [0,2,3], [5,7], [2,3,9], [3,9], [0,2,3], [2,3,8,9], [3, 9]] #took out mutants with weak histology
-all_mutants = [[4, 6], [2, 6], [6], [0, 5], [3, 5], [7, 9], [0, 5], [2, 3], [2, 3], [0, 2, 3, 6], [4, 5, 6, 7, 9], [2, 3, 9], [1,3,9], [0,2,3, 6], [2,3,8,9], [3, 9]] #full histology
+all_mutants = [[4, 6], [2, 6], [4, 6], [0, 5], [3, 5], [7, 9], [0, 5], [2, 3], [2, 3], [0, 2, 3, 6], [4, 5, 6, 7, 9], [2, 3, 9], [1,3,9], [0,2,3, 6], [2,3,8,9], [3, 9]] #full histology
 
 # labels = ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G10"]
 labels = ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G10", "G11", "G12", "G13", "G14", "G15", "G16", "G17"]
+to_skip = []# ["G3", "G4", "G5", "G6", "G7", "G11", "G12", "G13", "G14", "G15"]
 
-def measures(graph_idx, day, measure = "hub"):
+def measures(graph_idx, day, window = 3, measure = "hub"):
     """
     Returns the measurement specified by input argument for mutants, rc and in wt in graph specified by input index.
+    graph_idx specifies the cohort number, day specifies the specific timepoint (depends on window) and window specifies 
+    the size of the window of averaging for the graph representation.
     """
-    datapath = "..\\data\\social network matrices 1day\\"+labels[graph_idx]+"\\interactions_resD1_"+str(day)+".csv"
-    if graph_idx > 8:
-        datapath = "..\\data\\validation cohort\\1day\\"+labels[graph_idx]+"\\interactions_resD1_"+str(day)+".csv"
+    if window == 1:
+        datapath = "..\\data\\both_cohorts_1day\\"+labels[graph_idx]+"\\interactions_resD1_"+str(day)+".csv"
+    elif window == 3:
+        datapath = "..\\data\\both_cohorts_3days\\"+labels[graph_idx]+"\\interactions_resD3_"+str(day)+".csv"
+    elif window == 7:
+        datapath = "..\\data\\averaged\\"+labels[graph_idx]+"\\interactions_resD7_"+str(day)+".csv"
+    else:
+        print("Incorrect time window")
+        return
     try:
         data = read_graph([datapath], percentage_threshold = 0)[0]
+        arr = np.loadtxt(datapath, delimiter=",", dtype=str)
+        RFIDs = arr[0, :].astype(str)
     except Exception as e:
         print(e)
         return [np.nan], [np.nan], [np.nan], [np.nan]    
@@ -132,24 +152,26 @@ def measures(graph_idx, day, measure = "hub"):
     else:
         raise Exception("Unknown or misspelled input measurement.") 
 
-    return scores_mutants, scores_rc, scores_rest, scores_wt
+    return scores_mutants, scores_rc, scores_rest, scores_wt, RFIDs
 
-def plot_measure_timeseries(measure = "hub", separate_wt = False):
+def plot_measure_timeseries(measure = "hub", window = 3, separate_wt = False):
     """
     Box plot of graph theory measurement specified by input argument for all graphs in dataset, separated in mutants and WT, or 
     mutants, RC and others (using separate_wt argument).
     """
     value_mutants, value_rc, value_rest, value_wt = [], [], [], []
     std_mutants, std_rc, std_rest, std_wt = [], [], [], []
-    for d in range(15):
-        scores_mutants, scores_rc, scores_rest, scores_wt = [], [], [], []
+    for d in range(15//window):
         scores_mutants, scores_rc, scores_rest, scores_wt = [], [], [], []
         for j in range(len(labels)):
-            scores = measures(j, d+1, measure)
-            scores_mutants.append(np.nanmean(scores[0]))
-            scores_rc.append(np.nanmean(scores[1]))
-            scores_rest.append(np.nanmean(scores[2]))
-            scores_wt.append(np.nanmean(scores[3]))
+            if any(x == labels[j] for x in to_skip):
+                continue
+            else:
+                scores = measures(j, d+1, window, measure)
+                scores_mutants.extend(scores[0])
+                scores_rc.extend(scores[1])
+                scores_rest.extend(scores[2])
+                scores_wt.extend(scores[3])
         value_mutants.append(np.nanmean(scores_mutants)) 
         value_rc.append(np.nanmean(scores_rc))
         value_rest.append(np.nanmean(scores_rest))
@@ -158,7 +180,7 @@ def plot_measure_timeseries(measure = "hub", separate_wt = False):
         std_rc.append(np.nanstd(scores_rc))
         std_rest.append(np.nanstd(scores_rest))
         std_wt.append(np.nanstd(scores_wt))
-    t = np.arange(1, 16)
+    t = np.arange(1, 1+15//window)
     value_mutants, value_rc, value_rest, value_wt = np.array(value_mutants), np.array(value_rc), np.array(value_rest), np.array(value_wt)
     std_mutants, std_rc, std_rest, std_wt = np.array(std_mutants), np.array(std_rc), np.array(std_rest), np.array(std_wt) 
     plt.figure()
@@ -179,9 +201,84 @@ def plot_measure_timeseries(measure = "hub", separate_wt = False):
     plt.title(measure, fontsize = 18)
     plt.xlabel("Day", fontsize = 15)
     plt.ylabel("Value", fontsize = 15)
-    plt.xticks(range(1, 16, 2)) 
+    plt.xticks(range(1, 15//window, 2)) 
     plt.tick_params(axis='both', which='major', labelsize=15)  # Adjust major tick labels
     plt.show()
+    plt.figure()
+    ax = plt.axes()
+    if separate_wt:
+        bp = ax.boxplot([value_rc, value_mutants, value_wt], widths=0.6, patch_artist=True)
+        format_plot(ax, bp) # set x_axis, and colors of each bar
+        add_significance([value_rc, value_mutants, value_wt], ax, bp)
+    else:
+        mutants = np.array(scores_mutants).flatten()
+        wt = np.array(scores_wt).flatten()
+        # bp = ax.boxplot([value_mutants[~np.isnan(value_mutants)], value_wt[~np.isnan(value_wt)]], widths=0.6, patch_artist=True)
+        bp = ax.boxplot([mutants[~np.isnan(mutants)], wt[~np.isnan(wt)]], widths=0.6, patch_artist=True) 
+        format_plot(ax, bp, ["Mutants", "WT"]) # set x_axis, and colors of each bar
+        add_significance([value_mutants, value_wt], ax, bp)
+    plt.title("Averaging across"+window+"days")
+    plt.ylabel(measure, fontsize = 15)
+    plt.show()
+    
+def format_measure(measure = "hub", window = 3):
+    """Formats the measures made on the graphs into a csv file readable by matlab or R to run LME analysis
+    """
+    genotype_info_path = "..\\data\\genotype_info.csv"
+    genotype_df = pd.read_csv(genotype_info_path)
+    all_scores, RFIDs, genotype, day = [], [], [], []
+    for d in range(15//window):
+        for j in range(len(labels)):
+            if window == 1:
+                datapath = "..\\data\\both_cohorts_1day\\"+labels[j]+"\\interactions_resD1_"+str(d+1)+".csv"
+            elif window == 3:
+                datapath = "..\\data\\both_cohorts_3days\\"+labels[j]+"\\interactions_resD3_"+str(d+1)+".csv"
+            elif window == 7:
+                datapath = "..\\data\\averaged\\"+labels[j]+"\\interactions_resD7_"+str(d+1)+".csv"
+            else:
+                print("Incorrect time window")
+                return
+            try:
+                data = read_graph([datapath], percentage_threshold = 0)[0]
+                arr = np.loadtxt(datapath, delimiter=",", dtype=str)
+                tags = arr[0, 1:].astype(str)
+            except Exception as e:
+                print(e)
+                continue   
+            
+            data = (data + np.transpose(data))/2 # ensure symmetry
+            g = ig.Graph.Weighted_Adjacency(data, mode='undirected')
+            # g = ig.Graph.Weighted_Adjacency(data, mode='directed')
+            
+            graph_len = len(g.vs())
+            if measure == "hub":
+                scores = [g.hub_score(weights = [e['weight'] for e in g.es()])[i] for i in range(graph_len)]
+            elif measure == "pagerank":
+                scores = [g.pagerank(weights = [e['weight'] for e in g.es()])[i] for i in range(graph_len)]
+            elif measure == "eigenvector_centrality":
+                scores = [g.eigenvector_centrality(weights = [e['weight'] for e in g.es()])[i] for i in range(graph_len)]
+            elif measure == "betweenness":
+                scores = [g.netweenness(weights = [e['weight'] for e in g.es()])[i] for i in range(graph_len)]
+            elif measure == "closeness":
+                scores = [g.closeness(weights = [e['weight'] for e in g.es()])[i] for i in range(graph_len)]
+            else:
+                raise Exception("Unknown or misspelled input measurement.") 
+                return
+            scores = np.array(scores)
+            
+            matched_RFID = np.array([any(genotype_df["Mouse_RFID"] == t) for t in tags]) # checking if there are misnamed RFIDs that need to be filtered out
+            all_scores.extend(scores[matched_RFID])
+            RFIDs.extend(tags[matched_RFID]) # RFIDs tags of this cohort
+            genotype.extend([genotype_df.loc[genotype_df["Mouse_RFID"] == t, 'genotype'].values[0] for t in tags[matched_RFID]])
+            day.extend([d for i in range(np.sum(matched_RFID))])
+            
+    d = {"Mouse_RFID":RFIDs, "%s"%measure: all_scores, "genotype":genotype, "timepoint":day}
+    df = pd.DataFrame(data=d)
+    df.to_csv("C:\\Users\\Corentin offline\\Downloads\\"+str(measure)+"_data_"+str(window)+"d.csv")
+            
+
+  
+    
     
 if __name__ == "__main__":
     # boxplot_chasing(False)
@@ -191,10 +288,11 @@ if __name__ == "__main__":
     # social_time()
     # boxplot_measures("hub")
     # plot_measure_timeseries("authority")
-    # plot_measure_timeseries("pagerank")
+    # plot_measure_timeseries("pagerank")5
     # plot_measure_timeseries("hub")
-    plot_measure_timeseries("eigenvector_centrality")
-    # plot_measure_timeseries("harmonic_centrality")
+    # plot_measure_timeseries("hub", 1)
+    # format_measure("eigenvector_centrality", 1)
+    plot_measure_timeseries("harmonic_centrality", 1)
 
     # boxplot_measures("harmonic_centrality")
     # boxplot_measures("closeness")

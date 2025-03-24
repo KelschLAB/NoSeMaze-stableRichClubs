@@ -43,7 +43,7 @@ def add_significance(data, ax, bp):
         result = stats.permutation_test((data1, data2), statistic)
         U = result.statistic  # This gives the test statistic
         p = result.pvalue      # This gives the p-value
-
+        print(p)
         if p < 0.05:
             significant_combinations.append([combination, p])
     for i, significant_combination in enumerate(significant_combinations):
@@ -289,13 +289,14 @@ all_rc =  [[0,6], [3, 8, 9], [2, 3, 6], [2, 4], [1, 6], [0, 1], [3, 4, 6], [3, 5
 all_mutants = [[4, 6], [2, 6], [6], [0, 5], [3, 5], [7, 9], [0, 5], [2, 3], [2, 3], [0, 2, 3, 6], [4, 5, 6, 7, 9], [2, 3, 9], [1,3,9], [0,2,3, 6], [2,3,8,9], [3, 9]] #full histology
 
 labels = ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G10", "G11", "G12", "G13", "G14", "G15", "G16", "G17"]
+to_skip = []#["G3", "G4", "G5", "G6", "G7", "G11", "G12", "G13", "G14", "G15"]
 
 def measures(graph_idx, measure = "hub"):
     """
     Returns the measurement specified by input argument for mutants, rc and in wt in graph specified by input index.
     """
     datapath = "..\\data\\averaged\\"+labels[graph_idx]
-    data = read_graph([datapath+"\\interactions_resD7_1.csv"], percentage_threshold = 0)[0] + read_graph([datapath+"\\interactions_resD7_2.csv"], percentage_threshold = 0)[0]
+    data = read_graph([datapath+"\\interactions_resD7_1.csv"], percentage_threshold = 0)[0] #+ read_graph([datapath+"\\interactions_resD7_2.csv"], percentage_threshold = 0)[0]
     data = (data + np.transpose(data))/2 # ensure symmetry
     g = ig.Graph.Weighted_Adjacency(data, mode='undirected')
     node_labels = read_labels(datapath+"\\approaches_resD7_1.csv")
@@ -350,12 +351,15 @@ def boxplot_measures(measure = "hub", separate_wt = False):
     mutants, RC and others (using separate_wt argument).
     """
     scores_mutants, scores_rc, scores_rest, scores_wt = [], [], [], []
-    for j in range(10):#9, len(labels)):
-        scores = measures(j, measure)
-        scores_mutants.extend(scores[0])
-        scores_rc.extend(scores[1])
-        scores_rest.extend(scores[2])
-        scores_wt.extend(scores[3])
+    for j in range(len(labels)):
+        if any(x == labels[j] for x in to_skip):
+            continue
+        else:
+            scores = measures(j, measure)
+            scores_mutants.extend(scores[0])
+            scores_rc.extend(scores[1])
+            scores_rest.extend(scores[2])
+            scores_wt.extend(scores[3])
     plt.figure()
     ax = plt.axes()
     # sns.catplot([scores_mutants, scores_wt])
