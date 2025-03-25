@@ -80,7 +80,6 @@ all_mutants = [[4, 6], [2, 6], [4, 6], [0, 5], [3, 5], [7, 9], [0, 5], [2, 3], [
 
 # labels = ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G10"]
 labels = ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G10", "G11", "G12", "G13", "G14", "G15", "G16", "G17"]
-to_skip = []# ["G3", "G4", "G5", "G6", "G7", "G11", "G12", "G13", "G14", "G15"]
 
 def measures(graph_idx, day, window = 3, measure = "hub"):
     """
@@ -88,6 +87,8 @@ def measures(graph_idx, day, window = 3, measure = "hub"):
     graph_idx specifies the cohort number, day specifies the specific timepoint (depends on window) and window specifies 
     the size of the window of averaging for the graph representation.
     """
+    genotype_info_path = "..\\data\\genotype_info.csv"
+    genotype_df = pd.read_csv(genotype_info_path)
     if window == 1:
         datapath = "..\\data\\both_cohorts_1day\\"+labels[graph_idx]+"\\interactions_resD1_"+str(day)+".csv"
     elif window == 3:
@@ -100,17 +101,22 @@ def measures(graph_idx, day, window = 3, measure = "hub"):
     try:
         data = read_graph([datapath], percentage_threshold = 0)[0]
         arr = np.loadtxt(datapath, delimiter=",", dtype=str)
-        RFIDs = arr[0, :].astype(str)
+        RFIDs = arr[0, 1:].astype(str)
     except Exception as e:
         print(e)
         return [np.nan], [np.nan], [np.nan], [np.nan]    
     data = (data + np.transpose(data))/2 # ensure symmetry
     g = ig.Graph.Weighted_Adjacency(data, mode='undirected')
-
     # g = ig.Graph.Weighted_Adjacency(data, mode='directed')
     # node_labels = read_labels(datapath+"\\approaches_resD7_1.csv")
     graph_length = len(g.vs())
     mutants = all_mutants[graph_idx]
+    # try:
+    #     is_mutant = [genotype_df.loc[genotype_df["Mouse_RFID"] == name, 'genotype'].values[0] == "OxtKO" if len(genotype_df.loc[genotype_df["Mouse_RFID"] == name, 'genotype']) != 0 else False for name in RFIDs]
+    #     mutants = np.where(is_mutant)[0]
+    # except Exception as e:
+    #     print(e)
+    #     mutants = []
     rc = all_rc[graph_idx]
     others = np.arange(graph_length)[np.logical_and(~np.isin(np.arange(graph_length), all_rc[graph_idx]), ~np.isin(np.arange(graph_length), all_mutants[graph_idx]))]
     wt = np.arange(graph_length)[~np.isin(np.arange(graph_length), all_mutants[graph_idx])]
@@ -164,14 +170,11 @@ def plot_measure_timeseries(measure = "hub", window = 3, separate_wt = False):
     for d in range(15//window):
         scores_mutants, scores_rc, scores_rest, scores_wt = [], [], [], []
         for j in range(len(labels)):
-            if any(x == labels[j] for x in to_skip):
-                continue
-            else:
-                scores = measures(j, d+1, window, measure)
-                scores_mutants.extend(scores[0])
-                scores_rc.extend(scores[1])
-                scores_rest.extend(scores[2])
-                scores_wt.extend(scores[3])
+            scores = measures(j, d+1, window, measure)
+            scores_mutants.extend(scores[0])
+            scores_rc.extend(scores[1])
+            scores_rest.extend(scores[2])
+            scores_wt.extend(scores[3])
         value_mutants.append(np.nanmean(scores_mutants)) 
         value_rc.append(np.nanmean(scores_rc))
         value_rest.append(np.nanmean(scores_rest))
@@ -291,8 +294,8 @@ if __name__ == "__main__":
     # plot_measure_timeseries("pagerank")5
     # plot_measure_timeseries("hub")
     # plot_measure_timeseries("hub", 1)
-    # format_measure("eigenvector_centrality", 1)
-    plot_measure_timeseries("harmonic_centrality", 1)
+    # format_measure("pagerank", 1)
+    plot_measure_timeseries("eigenvector_centrality", 1)
 
     # boxplot_measures("harmonic_centrality")
     # boxplot_measures("closeness")
