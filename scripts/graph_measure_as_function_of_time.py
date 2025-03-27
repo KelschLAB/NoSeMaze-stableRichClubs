@@ -7,6 +7,7 @@ import sys
 import seaborn as sns
 from scipy import stats
 import pandas as pd
+from scipy.stats import sem
 
 sys.path.append('..\\src\\')
 from read_graph import read_graph, read_labels
@@ -81,20 +82,20 @@ all_mutants = [[4, 6], [2, 6], [4, 6], [0, 5], [3, 5], [7, 9], [0, 5], [2, 3], [
 # labels = ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G10"]
 labels = ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G10", "G11", "G12", "G13", "G14", "G15", "G16", "G17"]
 
-def measures(graph_idx, day, window = 3, measure = "hub"):
+def measures(graph_idx, day, window = 3, measure = "hub", variable = "interactions", transpose = False):
     """
     Returns the measurement specified by input argument for mutants, rc and in wt in graph specified by input index.
     graph_idx specifies the cohort number, day specifies the specific timepoint (depends on window) and window specifies 
-    the size of the window of averaging for the graph representation.
+    the size of the window of averaging for the graph representation.        
     """
     genotype_info_path = "..\\data\\genotype_info.csv"
     genotype_df = pd.read_csv(genotype_info_path)
     if window == 1:
-        datapath = "..\\data\\both_cohorts_1day\\"+labels[graph_idx]+"\\interactions_resD1_"+str(day)+".csv"
+        datapath = "..\\data\\both_cohorts_1day\\"+labels[graph_idx]+"\\"+variable+"_resD1_"+str(day)+".csv"
     elif window == 3:
-        datapath = "..\\data\\both_cohorts_3days\\"+labels[graph_idx]+"\\interactions_resD3_"+str(day)+".csv"
+        datapath = "..\\data\\both_cohorts_3days\\"+labels[graph_idx]+"\\"+variable+"_resD3_"+str(day)+".csv"
     elif window == 7:
-        datapath = "..\\data\\averaged\\"+labels[graph_idx]+"\\interactions_resD7_"+str(day)+".csv"
+        datapath = "..\\data\\averaged\\"+labels[graph_idx]+"\\"+variable+"_resD7_"+str(day)+".csv"
     else:
         print("Incorrect time window")
         return
@@ -105,18 +106,19 @@ def measures(graph_idx, day, window = 3, measure = "hub"):
     except Exception as e:
         print(e)
         return [np.nan], [np.nan], [np.nan], [np.nan]    
-    data = (data + np.transpose(data))/2 # ensure symmetry
-    g = ig.Graph.Weighted_Adjacency(data, mode='undirected')
-    # g = ig.Graph.Weighted_Adjacency(data, mode='directed')
-    # node_labels = read_labels(datapath+"\\approaches_resD7_1.csv")
+    if variable == "interactions":
+        mode = 'undirected'
+        data = (data + np.transpose(data))/2 # ensure symmetry
+    elif variable == "approaches":
+        mode = 'directed'
+    else:
+        raise NameError("Incorrect input argument for 'variable'.")
+    if transpose:
+        g = ig.Graph.Weighted_Adjacency(np.transpose(data), mode=mode)
+    else:
+        g = ig.Graph.Weighted_Adjacency(data, mode=mode)
     graph_length = len(g.vs())
     mutants = all_mutants[graph_idx]
-    # try:
-    #     is_mutant = [genotype_df.loc[genotype_df["Mouse_RFID"] == name, 'genotype'].values[0] == "OxtKO" if len(genotype_df.loc[genotype_df["Mouse_RFID"] == name, 'genotype']) != 0 else False for name in RFIDs]
-    #     mutants = np.where(is_mutant)[0]
-    # except Exception as e:
-    #     print(e)
-    #     mutants = []
     rc = all_rc[graph_idx]
     others = np.arange(graph_length)[np.logical_and(~np.isin(np.arange(graph_length), all_rc[graph_idx]), ~np.isin(np.arange(graph_length), all_mutants[graph_idx]))]
     wt = np.arange(graph_length)[~np.isin(np.arange(graph_length), all_mutants[graph_idx])]
@@ -160,17 +162,25 @@ def measures(graph_idx, day, window = 3, measure = "hub"):
 
     return scores_mutants, scores_rc, scores_rest, scores_wt, RFIDs
 
-def plot_measure_timeseries(measure = "hub", window = 3, separate_wt = False):
+def plot_measure_timeseries(measure = "hub", window = 3, variable = "interactions", transpose = False, separate_wt = False):
     """
     Box plot of graph theory measurement specified by input argument for all graphs in dataset, separated in mutants and WT, or 
     mutants, RC and others (using separate_wt argument).
+    Inputs:
+        - measure: the type of graph measurment to display. Default to hub score.
+        - window: how many days of averaging should be used to display the results. 
+            Defaults to 3, meaning one graph is the average of three days of experiment. 
+        - variable: which kind of variable should be displayed. Shoud be "interactions" or "approaches".
+        - transpose: (bool) this variable specifies if the data should be transposed before analysing the graph.
+            in the case where directed data is studied, this effectively changes the point of focus from outgoing to ingoing.
+        - separate_wt: whether or not the display of WT should be separated in the RC and others.
     """
     value_mutants, value_rc, value_rest, value_wt = [], [], [], []
     std_mutants, std_rc, std_rest, std_wt = [], [], [], []
     for d in range(15//window):
         scores_mutants, scores_rc, scores_rest, scores_wt = [], [], [], []
         for j in range(len(labels)):
-            scores = measures(j, d+1, window, measure)
+            scores = measures(j, d+1, window, measure, variable, transpose)
             scores_mutants.extend(scores[0])
             scores_rc.extend(scores[1])
             scores_rest.extend(scores[2])
@@ -179,10 +189,11 @@ def plot_measure_timeseries(measure = "hub", window = 3, separate_wt = False):
         value_rc.append(np.nanmean(scores_rc))
         value_rest.append(np.nanmean(scores_rest))
         value_wt.append(np.nanmean(scores_wt))
-        std_mutants.append(np.nanstd(scores_mutants))
-        std_rc.append(np.nanstd(scores_rc))
-        std_rest.append(np.nanstd(scores_rest))
-        std_wt.append(np.nanstd(scores_wt))
+        scores_mutants, scores_rc, scores_rest, scores_wt = np.array(scores_mutants), np.array(scores_rc), np.array(scores_rest), np.array(scores_wt)
+        std_mutants.append(sem(scores_mutants[~np.isnan(scores_mutants)]))
+        std_rc.append(sem(scores_rc[~np.isnan(scores_rc)]))
+        std_rest.append(sem(scores_rest[~np.isnan(scores_rest)]))
+        std_wt.append(sem(scores_wt[~np.isnan(scores_wt)]))
     t = np.arange(1, 1+15//window)
     value_mutants, value_rc, value_rest, value_wt = np.array(value_mutants), np.array(value_rc), np.array(value_rest), np.array(value_wt)
     std_mutants, std_rc, std_rest, std_wt = np.array(std_mutants), np.array(std_rc), np.array(std_rest), np.array(std_wt) 
@@ -204,25 +215,25 @@ def plot_measure_timeseries(measure = "hub", window = 3, separate_wt = False):
     plt.title(measure, fontsize = 18)
     plt.xlabel("Day", fontsize = 15)
     plt.ylabel("Value", fontsize = 15)
-    plt.xticks(range(1, 15//window, 2)) 
+    plt.xticks(range(1, 15//window+1, 1)) 
     plt.tick_params(axis='both', which='major', labelsize=15)  # Adjust major tick labels
     plt.show()
-    plt.figure()
-    ax = plt.axes()
-    if separate_wt:
-        bp = ax.boxplot([value_rc, value_mutants, value_wt], widths=0.6, patch_artist=True)
-        format_plot(ax, bp) # set x_axis, and colors of each bar
-        add_significance([value_rc, value_mutants, value_wt], ax, bp)
-    else:
-        mutants = np.array(scores_mutants).flatten()
-        wt = np.array(scores_wt).flatten()
-        # bp = ax.boxplot([value_mutants[~np.isnan(value_mutants)], value_wt[~np.isnan(value_wt)]], widths=0.6, patch_artist=True)
-        bp = ax.boxplot([mutants[~np.isnan(mutants)], wt[~np.isnan(wt)]], widths=0.6, patch_artist=True) 
-        format_plot(ax, bp, ["Mutants", "WT"]) # set x_axis, and colors of each bar
-        add_significance([value_mutants, value_wt], ax, bp)
-    plt.title("Averaging across"+window+"days")
-    plt.ylabel(measure, fontsize = 15)
-    plt.show()
+    # plt.figure()
+    # ax = plt.axes()
+    # if separate_wt:
+    #     bp = ax.boxplot([value_rc, value_mutants, value_wt], widths=0.6, patch_artist=True)
+    #     format_plot(ax, bp) # set x_axis, and colors of each bar
+    #     add_significance([value_rc, value_mutants, value_wt], ax, bp)
+    # else:
+    #     mutants = np.array(scores_mutants).flatten()
+    #     wt = np.array(scores_wt).flatten()
+    #     # bp = ax.boxplot([value_mutants[~np.isnan(value_mutants)], value_wt[~np.isnan(value_wt)]], widths=0.6, patch_artist=True)
+    #     bp = ax.boxplot([mutants[~np.isnan(mutants)], wt[~np.isnan(wt)]], widths=0.6, patch_artist=True) 
+    #     format_plot(ax, bp, ["Mutants", "WT"]) # set x_axis, and colors of each bar
+    #     add_significance([value_mutants, value_wt], ax, bp)
+    # plt.title("Averaging across"+str(window)+"days")
+    # plt.ylabel(measure, fontsize = 15)
+    # plt.show()
     
 def format_measure(measure = "hub", window = 3):
     """Formats the measures made on the graphs into a csv file readable by matlab or R to run LME analysis
@@ -233,11 +244,11 @@ def format_measure(measure = "hub", window = 3):
     for d in range(15//window):
         for j in range(len(labels)):
             if window == 1:
-                datapath = "..\\data\\both_cohorts_1day\\"+labels[j]+"\\interactions_resD1_"+str(d+1)+".csv"
+                datapath = "..\\data\\both_cohorts_1day\\"+labels[j]+"\\approaches_resD1_"+str(d+1)+".csv"
             elif window == 3:
-                datapath = "..\\data\\both_cohorts_3days\\"+labels[j]+"\\interactions_resD3_"+str(d+1)+".csv"
+                datapath = "..\\data\\both_cohorts_3days\\"+labels[j]+"\\approaches_resD3_"+str(d+1)+".csv"
             elif window == 7:
-                datapath = "..\\data\\averaged\\"+labels[j]+"\\interactions_resD7_"+str(d+1)+".csv"
+                datapath = "..\\data\\averaged\\"+labels[j]+"\\approaches_resD7_"+str(d+1)+".csv"
             else:
                 print("Incorrect time window")
                 return
@@ -249,10 +260,10 @@ def format_measure(measure = "hub", window = 3):
                 print(e)
                 continue   
             
-            data = (data + np.transpose(data))/2 # ensure symmetry
-            g = ig.Graph.Weighted_Adjacency(data, mode='undirected')
-            # g = ig.Graph.Weighted_Adjacency(data, mode='directed')
-            
+            # data = (data + np.transpose(data))/2 # ensure symmetry
+            # g = ig.Graph.Weighted_Adjacency(data, mode='undirected')
+            g = ig.Graph.Weighted_Adjacency(data, mode='directed')
+            # 
             graph_len = len(g.vs())
             if measure == "hub":
                 scores = [g.hub_score(weights = [e['weight'] for e in g.es()])[i] for i in range(graph_len)]
@@ -279,10 +290,6 @@ def format_measure(measure = "hub", window = 3):
     df = pd.DataFrame(data=d)
     df.to_csv("C:\\Users\\Corentin offline\\Downloads\\"+str(measure)+"_data_"+str(window)+"d.csv")
             
-
-  
-    
-    
 if __name__ == "__main__":
     # boxplot_chasing(False)
     # boxplot_approaches() 
@@ -291,11 +298,14 @@ if __name__ == "__main__":
     # social_time()
     # boxplot_measures("hub")
     # plot_measure_timeseries("authority")
-    # plot_measure_timeseries("pagerank")5
+    # plot_measure_timeseries("pagerank")
     # plot_measure_timeseries("hub")
-    # plot_measure_timeseries("hub", 1)
+    # plot_measure_timeseries("hub", 3)
     # format_measure("pagerank", 1)
-    plot_measure_timeseries("eigenvector_centrality", 1)
+    plot_measure_timeseries("eigenvector_centrality", 3, 'interactions', False)
+    plot_measure_timeseries("hub", 3, 'approaches', False) #outgoing approaches
+    plot_measure_timeseries("hub", 3, 'approaches', True) # ingoing approaches
+
 
     # boxplot_measures("harmonic_centrality")
     # boxplot_measures("closeness")

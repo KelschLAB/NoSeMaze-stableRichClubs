@@ -20,6 +20,7 @@ from clustering_window import *
 #To-do: 
 #       - what does it mean to be neighbors in terms of chasing?? (directed interaction). Rich club coloring does not seem to work
 #           properly in these cases. It only colors nodes that have outgoing edges.
+#       - setting: stacked histogram and side by side are inverted.
 #       - fix overlapping small white link between nodes that make visualization hard
 #       - remove colorbar from 3D view
 #       - figure out why -1 in nn for mnn
