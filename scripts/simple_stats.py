@@ -189,6 +189,27 @@ def approaches():
     # ax.set_title("Week 1", fontsize = 25, weight='bold')
     plt.show()
     
+def approaches_scatter_plot():
+    """
+    Compares the number of ingoing approaches to outgoing via a scatterplot.
+    """
+    
+    data_ingoing, data_outgoing = [], []
+    labels = ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G10", "G11", "G12", "G13", "G14", "G15", "G16"]
+    for idx, g in enumerate(labels):
+        data = read_graph(["..\\data\\averaged\\"+g+"\\approaches_resD7_1.csv"], percentage_threshold = 0)[0] + read_graph(["..\\data\\averaged\\"+g+"\\approaches_resD7_2.csv"], percentage_threshold = 0)[0]
+        for mouse in range(data.shape[0]):
+            data_ingoing.append(np.sum(data[mouse, :]))
+            data_outgoing.append(np.sum(data[:, mouse]))
+    
+    plt.figure(figsize=(4, 3))
+    plt.scatter(data_ingoing, data_outgoing, c = 'k', alpha = 0.5)
+    plt.xlabel("Total outgoing approaches", fontsize = 15)
+    plt.ylabel("Total ingoing approaches", fontsize = 15)
+    plt.title("approaches_scatter_plot function in ./src/simple_stats.py", fontsize = 5)
+    plt.tight_layout()
+    plt.show()
+    
 def interactions():
     """
     Compares the number of interactions made by RC members, mutants and others.
@@ -337,3 +358,4 @@ def rc_size():
 # chasings()
 # approaches()
 # interactions()
+approaches_scatter_plot()
