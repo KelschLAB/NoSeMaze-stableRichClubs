@@ -302,9 +302,9 @@ if __name__ == "__main__":
     # plot_measure_timeseries("hub")
     # plot_measure_timeseries("hub", 3)
     # format_measure("pagerank", 1)
-    plot_measure_timeseries("eigenvector_centrality", 3, 'interactions', False)
-    plot_measure_timeseries("hub", 3, 'approaches', False) #outgoing approaches
-    plot_measure_timeseries("hub", 3, 'approaches', True) # ingoing approaches
+    # plot_measure_timeseries("eigenvector_centrality", 3, 'interactions', False)
+    plot_measure_timeseries("pagerank", 3, 'approaches', False) #outgoing approaches
+    # plot_measure_timeseries("hub", 3, 'approaches', True) # ingoing approaches
 
 
     # boxplot_measures("harmonic_centrality")

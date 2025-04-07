@@ -189,25 +189,53 @@ def approaches():
     # ax.set_title("Week 1", fontsize = 25, weight='bold')
     plt.show()
     
-def approaches_scatter_plot():
+def approaches_scatter_plot(show_rc = False, symmetry_parameter = 1.5):
     """
     Compares the number of ingoing approaches to outgoing via a scatterplot.
     """
     
     data_ingoing, data_outgoing = [], []
+    data_ingoing_rc, data_outgoing_rc = [], []
+    all_rc =  [[0,6], [3, 8, 9], [2, 3, 6], [2, 4], [1, 6], [0, 1], [3, 4, 6], [3, 5, 7, 8], [7, 8], [5, 8], [0, 2], [], [], [2, 8, 9], []]
     labels = ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G10", "G11", "G12", "G13", "G14", "G15", "G16"]
     for idx, g in enumerate(labels):
         data = read_graph(["..\\data\\averaged\\"+g+"\\approaches_resD7_1.csv"], percentage_threshold = 0)[0] + read_graph(["..\\data\\averaged\\"+g+"\\approaches_resD7_2.csv"], percentage_threshold = 0)[0]
         for mouse in range(data.shape[0]):
-            data_ingoing.append(np.sum(data[mouse, :]))
-            data_outgoing.append(np.sum(data[:, mouse]))
+            if mouse in all_rc[idx]:
+                data_ingoing_rc.append(np.sum(data[mouse, :]))
+                data_outgoing_rc.append(np.sum(data[:, mouse]))
+            else:
+                data_ingoing.append(np.sum(data[mouse, :]))
+                data_outgoing.append(np.sum(data[:, mouse]))
+    data_ingoing, data_outgoing = np.array(data_ingoing), np.array(data_outgoing) 
+    data_ingoing_rc, data_outgoing_rc = np.array(data_ingoing_rc), np.array(data_outgoing_rc)
+    
     
     plt.figure(figsize=(4, 3))
-    plt.scatter(data_ingoing, data_outgoing, c = 'k', alpha = 0.5)
+    # Define the x range to show symmetric approaches
+    x_min = np.min(data_outgoing) - 100  # Extend slightly below the minimum
+    x_max = np.max(data_outgoing_rc) + 1000  # Extend slightly above the maximum
+    x = np.linspace(x_min, x_max, 500)  # Create a smooth range of x values
+    # _, intercept = np.polyfit(np.concatenate((data_outgoing, data_outgoing_rc)), np.concatenate((data_ingoing, data_ingoing_rc)), 1)
+    plt.fill_between(x, 0.5*x, 1.5*x, color = 'gray', alpha=0.2, label = "Symmetric approaches")
+    
+    plt.grid(alpha = 0.2)
+    plt.scatter(data_outgoing, data_ingoing, c = 'k', alpha = 0.6, label = "Non-RC members")
+    
+    if show_rc:
+        edge_colors = ['red' if np.abs(data_ingoing_rc[i] - v)/v > 0.5  else 'green' for i, v in enumerate(data_outgoing_rc)]
+        plt.scatter(data_outgoing_rc, data_ingoing_rc, c = 'limegreen', alpha = 0.8, label = "RC members")
+        # plt.xscale("log")
+        # plt.yscale("log")
+        plt.legend(fontsize = 8)
+    else:
+        plt.scatter(data_outgoing_rc, data_ingoing_rc, c = 'k', alpha = 0.4)
+    
     plt.xlabel("Total outgoing approaches", fontsize = 15)
     plt.ylabel("Total ingoing approaches", fontsize = 15)
     plt.title("approaches_scatter_plot function in ./src/simple_stats.py", fontsize = 5)
     plt.tight_layout()
+    plt.xlim(x_min, x_max)
     plt.show()
     
 def interactions():
@@ -358,4 +386,4 @@ def rc_size():
 # chasings()
 # approaches()
 # interactions()
-approaches_scatter_plot()
+approaches_scatter_plot(True)
