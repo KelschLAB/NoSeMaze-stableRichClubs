@@ -5,6 +5,8 @@ import networkx as nx
 import os
 from tqdm import tqdm
 from copy import deepcopy
+from scipy.stats import sem
+
 
 def mnn_cut(arr, nn = 2):
     """
@@ -18,7 +20,6 @@ def mnn_cut(arr, nn = 2):
                 array representing the graph with cut edges
     """
     assert nn > 1, "nn should be bigger than 1."
-    nn -= 1
     mnn_arr = np.zeros_like(arr)  
     neighbors_i = np.argsort(-arr, 1) #computing the nearest neighbors for local nn estimation
     neighbors_j = np.argsort(-arr, 0)
@@ -63,18 +64,39 @@ def weighted_rich_club(data, k = 3, iterations = 100):
         
     normalization_factor = np.sum(np.array(random_richness))/iterations
     return observed_richness/normalization_factor
+
+labels = ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G10", "G11", "G12", "G13", "G14", "G15", "G16", "G17"]
+def rich_club_coefficients(variable, k):
+    avg_rc_coeffs, std_rc_coeffs = [], []
+    for day in range(1, 6):
+        coefficients = []
+        for graph_idx in range(len(labels)):
+            try:
+                path_to_file = "..\\data\\both_cohorts_3days\\"+labels[graph_idx]+"\\"+variable+"_resD3_"+str(day)+".csv"
+                arr = np.loadtxt(path_to_file, delimiter=",", dtype=str)
+                data = arr[1:, 1:].astype(float)
+                data = mnn_cut(data, k)
+                rc = weighted_rich_club(data, k, 100)
+                coefficients.append(rc)
+            except Exception as e:
+                print(e)
+        coefficients = np.array(coefficients)
+        avg_rc_coeffs.append(np.nanmean(coefficients))
+        std_rc_coeffs.append(sem(coefficients[~np.isnan(coefficients)]))
+    t = np.arange(1, 15, 3)
+    avg_rc_coeffs, std_rc_coeffs = np.array(avg_rc_coeffs), np.array(std_rc_coeffs)
+    plt.figure(figsize=(4, 3.5))
+    plt.plot(t, avg_rc_coeffs, ls = "--", lw = 2, c = "k")
+    plt.scatter(t, avg_rc_coeffs, lw = 2, c = "k", label = "Rich club coefficient")
+    plt.fill_between(t, avg_rc_coeffs - std_rc_coeffs, avg_rc_coeffs + std_rc_coeffs, color="k", alpha=0.2)
+    plt.xlabel("Day", fontsize = 18)
+    plt.ylabel("Richness", fontsize = 18)
+    plt.xticks(range(1, 15, 3), fontsize = 14) 
+    plt.yticks(np.linspace(1, 3, 5), fontsize = 14)
+    plt.ylim(1, 3)
+    plt.tight_layout()
     
-if __name__ == '__main__':
-    
-    path = "..\\data\\averaged\\"
-    G = os.listdir(path)[0]
-    path_to_file = path+G+"\\interactions_resD7_1.csv"
-    arr = np.loadtxt(path_to_file, delimiter=",", dtype=str)
-    data = arr[1:, 1:].astype(float)
-    data = mnn_cut(data, 4)
-    for k in range(6):
-        rc = weighted_rich_club(data, k, 100)
-        print(rc)
-    
-        
+    return avg_rc_coeffs, std_rc_coeffs
+
+a, s = rich_club_coefficients('interactions', 3)
     

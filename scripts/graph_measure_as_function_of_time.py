@@ -127,6 +127,36 @@ def measures(graph_idx, day, window = 3, measure = "hub", variable = "interactio
         scores_rc = [g.hub_score(weights = [e['weight'] for e in g.es()])[i] for i in rc]
         scores_rest = [g.hub_score(weights = [e['weight'] for e in g.es()])[i] for i in others]
         scores_wt = [g.hub_score(weights = [e['weight'] for e in g.es()])[i] for i in wt]
+    elif measure == "indegree":
+        scores_mutants = [g.degree(mode="in")[i] for i in mutants]
+        scores_rc = [g.degree(mode="in")[i] for i in rc]
+        scores_rest = [g.degree(mode="in")[i] for i in others]
+        scores_wt = [g.degree(mode="in")[i] for i in wt]    
+    elif measure == "outdegree":
+        scores_mutants = [g.degree(mode="out")[i] for i in mutants]
+        scores_rc = [g.degree(mode="out")[i] for i in rc]
+        scores_rest = [g.degree(mode="out")[i] for i in others]
+        scores_wt = [g.degree(mode="out")[i] for i in wt]    
+    elif measure == "instrength":
+        scores_mutants = [g.strength(mode="in", weights = [e['weight'] for e in g.es()])[i] for i in mutants]
+        scores_rc = [g.strength(mode="in", weights = [e['weight'] for e in g.es()])[i] for i in rc]
+        scores_rest = [g.strength(mode="in", weights = [e['weight'] for e in g.es()])[i] for i in others]
+        scores_wt = [g.strength(mode="in", weights = [e['weight'] for e in g.es()])[i] for i in wt]     
+    elif measure == "outstrength":
+        scores_mutants = [g.strength(mode="out", weights = [e['weight'] for e in g.es()])[i] for i in mutants]
+        scores_rc = [g.strength(mode="out", weights = [e['weight'] for e in g.es()])[i] for i in rc]
+        scores_rest = [g.strength(mode="out", weights = [e['weight'] for e in g.es()])[i] for i in others]
+        scores_wt = [g.strength(mode="out", weights = [e['weight'] for e in g.es()])[i] for i in wt]    
+    elif measure == "outcloseness":
+        scores_mutants = [g.closeness(mode="out", weights = [e['weight'] for e in g.es()])[i] for i in mutants]
+        scores_rc = [g.closeness(mode="out", weights = [e['weight'] for e in g.es()])[i] for i in rc]
+        scores_rest = [g.closeness(mode="out", weights = [e['weight'] for e in g.es()])[i] for i in others]
+        scores_wt = [g.closeness(mode="out", weights = [e['weight'] for e in g.es()])[i] for i in wt]       
+    elif measure == "incloseness":
+        scores_mutants = [g.closeness(mode="in", weights = [e['weight'] for e in g.es()])[i] for i in mutants]
+        scores_rc = [g.closeness(mode="in", weights = [e['weight'] for e in g.es()])[i] for i in rc]
+        scores_rest = [g.closeness(mode="in", weights = [e['weight'] for e in g.es()])[i] for i in others]
+        scores_wt = [g.closeness(mode="in", weights = [e['weight'] for e in g.es()])[i] for i in wt]    
     elif measure == "pagerank":
         scores_mutants = [g.pagerank(weights = [e['weight'] for e in g.es()])[i] for i in mutants]
         scores_rc = [g.pagerank(weights = [e['weight'] for e in g.es()])[i] for i in rc]
@@ -303,7 +333,11 @@ if __name__ == "__main__":
     # plot_measure_timeseries("hub", 3)
     # format_measure("pagerank", 1)
     # plot_measure_timeseries("eigenvector_centrality", 3, 'interactions', False)
-    plot_measure_timeseries("pagerank", 3, 'approaches', False) #outgoing approaches
+    plot_measure_timeseries("incloseness", 3, 'approaches', False) #outgoing approaches
+    plot_measure_timeseries("outcloseness", 3, 'approaches', False) #outgoing approaches
+    # plot_measure_timeseries("instrength", 3, 'approaches', False) #outgoing approaches
+    # plot_measure_timeseries("outstrength", 3, 'approaches', False) #outgoing approaches
+
     # plot_measure_timeseries("hub", 3, 'approaches', True) # ingoing approaches
 
 
