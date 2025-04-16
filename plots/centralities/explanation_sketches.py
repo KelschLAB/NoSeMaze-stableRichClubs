@@ -69,11 +69,11 @@ def pagerank_explanation():
                   [0, 0, 0, 3],
                   [0, 0, 0.01, 0]])
     
-    A = np.array([[0, 0, 0, 1, 0],
-                  [2, 0, 0, 1, 0],
-                  [2, 0, 0, 1, 0],
-                  [10, 1, 1, 0, 1],
-                  [2, 0, 0, 1, 0]])
+    # A = np.array([[0, 0, 0, 1, 0],
+    #               [2, 0, 0, 1, 0],
+    #               [2, 0, 0, 1, 0],
+    #               [10, 1, 1, 0, 1],
+    #               [2, 0, 10, 1, 0]])
     
     g = ig.Graph.Weighted_Adjacency(A, mode = "directed")
     # computing eigevec centralites
@@ -94,7 +94,7 @@ def pagerank_explanation():
     edge_cmap = get_cmap('Greys')
     visual_style["edge_color"] = [edge_cmap(edge) for edge in np.array([w['weight'] for w in g.es]) + 0.25]
     visual_style["edge_arrow_width"] = 9# rescale(np.array([w['weight'] for w in g.es])) + 0.2
-    visual_style["edge_width"] = 0.5#rescale(np.array([w['weight'] for w in g.es]))+0.25
+    visual_style["edge_width"] = rescale(np.array([w['weight'] for w in g.es]))+0.25
     # visual_style["layout"] = layout
     visual_style["vertex_frame_color"] = node_color
     ig.plot(g, target=ax, layout = "reingold_tilford", **visual_style)

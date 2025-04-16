@@ -478,6 +478,7 @@ def reshuffled_RC():
         for j in range(1):
             shuffled_arr = np.random.permutation(arr)
             hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
+            
         for j in range(1):
             shuffled_arr = np.random.permutation(arr)
             hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
@@ -497,9 +498,11 @@ def reshuffled_RC():
         for j in range(3):
             shuffled_arr = np.random.permutation(arr)
             hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
+            
         for j in range(2):
             shuffled_arr = np.random.permutation(arr)
             hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
+            
         for j in range(1):
             shuffled_arr = np.random.permutation(arr)
             hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
@@ -544,10 +547,10 @@ def reshuffled_RC():
     plt.show()
     
     
-#reshuffled_RC()
+reshuffled_RC()
 # littermates_in_club()
 # mutants_in_both_mnn2_k2()
-mutants_in_both()
+# mutants_in_both()
 # mutants_in_both_mnn5_k4()
 # mutants_in_both_mnn5_k5(True)
 # for i in range(1):
