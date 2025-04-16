@@ -355,7 +355,7 @@ if __name__ == "__main__":
     # persistence_chasings("G7_single_chasing.csv", [3, 4, 6])
     # histogram_chasing_new(out= False)
     # histogram_approaches(out= False)
-    # rank_by_outgoing_approaches(outgoing = True)
+    rank_by_outgoing_approaches(outgoing = True)
     # histogram_shared_passages()
 
     

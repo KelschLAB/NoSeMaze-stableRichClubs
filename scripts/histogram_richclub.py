@@ -637,7 +637,7 @@ def chasingOrder_RC(out = True, both = False):
     
 if __name__ == "__main__":
     # rich_club_piecharts()
-    rich_club_piechart_both()
+    # rich_club_piechart_both()
     # mutants_RC_hist()
     # rc_coefficient_histogram(4, 3)
     # chasingrank_vs_rc()
