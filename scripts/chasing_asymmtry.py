@@ -571,9 +571,10 @@ def approach_symmetry_mutants(threshold = 1.5, qtl = 0.0):
 # chasing_asymmetry_by_chasingOrder(out=True)
 # chasing_asymmetry_by_approachRank()
 # chasing_direction_RC()
-chasing_asymmetry(100, 0.0, True)
-# chasing_asymmetry(3, 0.5, False)
+# chasing_asymmetry(100, 0.0, True)
+chasing_asymmetry(1.5, 0.0, False)
 
-# approach_symmetry(1.5, 0.99, rc = False)
+# approach_symmetry(1.5, 0.0, rc = True)
+
 # approach_symmetry_mutants()
 
