@@ -13,8 +13,8 @@ from read_graph import read_graph
 from collections import Counter
 
 
-plt.rc('text', usetex=True)
-plt.rc('font', family='serif')
+# plt.rc('text', usetex=True)
+# plt.rc('font', family='serif')
     
 def chasing_towards_piechart(normed = False, filter_big_chasers = False):
     # """
@@ -46,7 +46,6 @@ def chasing_towards_piechart(normed = False, filter_big_chasers = False):
     #             else:
     #                 rc_chased.append(0)
                 
-
     # total_rc_chasings = np.array(rc_chased)
     # num_chasings = len(total_rc_chasings)
     # in_frac = np.sum(total_rc_chasings)
@@ -65,7 +64,13 @@ def chasing_towards_piechart(normed = False, filter_big_chasers = False):
     labels = "Towards RC", "Outside RC"
     sizes = [in_frac, out_frac]
     fig, ax = plt.subplots()
-    ax.pie(sizes, labels=labels, autopct='%1.1f\%%')
+    # ax.pie(sizes, labels=labels, autopct='%1.1f\%%')
+    explode = (0.0, 0.0)  # Slight explode for asymmetric slice
+    plt.pie(sizes, labels=labels, autopct=lambda p: f'{p:.1f}\%', 
+            explode=explode, startangle=90, 
+            wedgeprops=dict(width=0.6, edgecolor='white', linewidth=5, alpha=0.7),
+            textprops=dict(color="black", fontsize=16))    
+    
     if normed:
         ax.set_title("Direction of maximal chasings\nfrom RC members (normalized)")
     else:
@@ -224,10 +229,10 @@ def cumulative_approaches():
     plt.show()
     
     
-# chasing_towards_piechart(True)
+chasing_towards_piechart(True)
 # cumulative_approaches()
 # chasing_manhanttan_plot(False)
-cumulative_chasings()
+# cumulative_chasings()
 
 # plot normalized cumulative plots of chasings for ranked animals (by chasing), in and out
 # plot chasings ranking for ingoing.

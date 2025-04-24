@@ -100,5 +100,6 @@ def rich_club_coefficients(variable, k):
     
     return avg_rc_coeffs, std_rc_coeffs
 
-a, s = rich_club_coefficients('interactions', 3)
+if __name__ == "__main__":
+    a, s = rich_club_coefficients('interactions', 3)
     

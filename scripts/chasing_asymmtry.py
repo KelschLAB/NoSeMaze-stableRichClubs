@@ -2,6 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 from HierarchiaPy import Hierarchia
+import matplotlib
+matplotlib.style.use("seaborn-v0_8-whitegrid")
 
 
 def chasing_asymmetry_by_tube():
@@ -453,17 +455,24 @@ def chasing_asymmetry(threshold = 2, qtl = 0.0, rc = False):
         # plt.yscale('log')
     ingoings = np.array(ingoings)
     outgoings = np.array(outgoings)
-    print(np.corrcoef(ingoings, outgoings))
-    print((np.sum(ingoings > threshold*outgoings) + np.sum(outgoings > threshold*ingoings))/len(ingoings))
-  #  plt.rc('text', usetex=True)
-  #  plt.rc('font', family='serif')
-    plt.pie([(np.sum(ingoings > threshold*outgoings) + np.sum(outgoings > threshold*ingoings))/len(ingoings),
-             1 - (np.sum(ingoings > threshold*outgoings) + np.sum(outgoings > threshold*ingoings))/len(ingoings)], 
-            labels = ["Asymmetric chasing", "Symmetric chasings"], autopct=lambda frac: f'{frac :.1f}%', colors=['gray', 'silver'])
-    title="Asymmetry of chasings from RC towards RC" if rc else "Asymmetry of chasings"
-    plt.title(title)
-    plt.tight_layout()
-    # plt.scatter(outgoings, ingoings, c = 'k')
+    # plt.rc('text', usetex=True)
+    # plt.rc('font', family='serif')
+    asym_count = np.sum(ingoings > threshold * outgoings) + np.sum(outgoings > threshold * ingoings)
+    asym_ratio = asym_count / len(ingoings)
+    sizes = [asym_ratio, 1 - asym_ratio]
+    labels = ["Asymmetric chasings", "Symmetric chasings"]
+    colors = ['dimgray', 'lightgray']
+    explode = (0.05, 0)  # Slight explode for asymmetric slice
+    
+    # Plot
+    plt.figure(figsize=(6, 6))
+    plt.pie(sizes, labels=labels, autopct=lambda p: f'{p:.1f}\%', 
+            colors=colors, explode=explode, startangle=90, 
+            wedgeprops=dict(width=0.6, edgecolor='k'),
+            textprops=dict(color="black", fontsize=16))
+    title = "Symmetry of chasing \n from RC towards RC" if rc else "Symmetry of chasing \n whole population"
+    plt.title(title, fontsize=18)
+    # plt.tight_layout()
     plt.show()
     
 def approach_symmetry(threshold = 2, qtl = 0.0, rc = False):
@@ -511,13 +520,14 @@ def approach_symmetry(threshold = 2, qtl = 0.0, rc = False):
     # plt.rc('font', family='serif')
     plt.figure()
     plt.pie([(np.sum(ingoings > threshold*outgoings) + np.sum(outgoings > threshold*ingoings))/len(ingoings),
-             1 - (np.sum(ingoings > threshold*outgoings) + np.sum(outgoings > threshold*ingoings))/len(ingoings)], 
+              1 - (np.sum(ingoings > threshold*outgoings) + np.sum(outgoings > threshold*ingoings))/len(ingoings)], 
             labels = ["Asymmetric approaches", "Symmetric approaches"] , autopct=lambda frac: f'{frac :.1f}%', colors=['gray', 'silver'])
     title="Symmetry of approaches from RC towards RC" if rc else "Symmetry of approaches"
     plt.title(title)
     plt.tight_layout()
     # plt.scatter(outgoings, ingoings, c = 'k')
     plt.show()
+
     
     
 def approach_symmetry_mutants(threshold = 1.5, qtl = 0.0):
@@ -570,9 +580,9 @@ def approach_symmetry_mutants(threshold = 1.5, qtl = 0.0):
 # chasing_asymmetry_by_chasing()
 # chasing_asymmetry_by_chasingOrder(out=True)
 # chasing_asymmetry_by_approachRank()
-# chasing_direction_RC()
-# chasing_asymmetry(100, 0.0, True)
-chasing_asymmetry(1.5, 0.0, False)
+chasing_direction_RC()
+# chasing_asymmetry(1.5, 0.0, True)
+# chasing_asymmetry(1.5, 0.0, False)
 
 # approach_symmetry(1.5, 0.0, rc = True)
 
