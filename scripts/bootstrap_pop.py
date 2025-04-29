@@ -49,165 +49,8 @@ def mutant_in_cohort():
     plt.axvline(np.percentile(number_of_hits, 95), ls = "--", color = 'k', label = "95% CI")
     plt.axvline(1, color = 'red', label = "Experimentally observed")
     plt.legend()
-
-
-def mutants_in_both(weak = False): #mnn = 3, rc = 3
-    number_of_hits = []
-    number_of_hits = []
-    single_mutants = np.array([1])
-    double_mutants = np.array([1, 2])
-    triple_mutants = np.array([1,2,3])
-    quadruple_mutants = np.array([1,2,3,4])
-    quintuple_mutants = np.array([1,2,3,4,5])
-    shuffled_arr = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
-    if weak:
-        full_histo_mutants = [double_mutants, double_mutants,double_mutants,double_mutants,double_mutants,double_mutants,double_mutants, double_mutants, double_mutants, 
-                              quadruple_mutants, quintuple_mutants, triple_mutants, triple_mutants, triple_mutants]
-    else:
-        full_histo_mutants = [single_mutants, double_mutants, single_mutants, double_mutants, single_mutants,single_mutants, double_mutants, single_mutants, single_mutants,
-                              quadruple_mutants, double_mutants, double_mutants, triple_mutants, triple_mutants]
-
     
-    for i in tqdm(range(1000)):
-        hits = 0
-        for j in range(1):
-            # expID 1
-            np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(full_histo_mutants[0], shuffled_arr[:2]))
-            # expID 2
-            np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(full_histo_mutants[1], shuffled_arr[:3]))
-            # expID 3
-            np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(full_histo_mutants[2], shuffled_arr[:3]))
-            # expID 4
-            np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(full_histo_mutants[3], shuffled_arr[:2]))
-            # expID 5
-            np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(full_histo_mutants[4], shuffled_arr[:2]))
-            # expID 6
-            np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(full_histo_mutants[5], shuffled_arr[:2]))
-            # expID 7
-            np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(full_histo_mutants[6], shuffled_arr[:3]))
-            # expID 8
-            np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(full_histo_mutants[7], shuffled_arr[:2]))
-            # expID 10
-            np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(full_histo_mutants[8], shuffled_arr[:3]))
-            # expID 11
-            np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(full_histo_mutants[9], shuffled_arr[:2]))
-            # expID 12
-            np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(full_histo_mutants[10], shuffled_arr[:2]))
-            # expID 15
-            np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(full_histo_mutants[12], shuffled_arr[:3]))
-            # # expID 17
-            np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(full_histo_mutants[13], shuffled_arr[:2]))
-            
-        number_of_hits.append(hits)
-        
-    h = plt.hist(number_of_hits, bins = np.arange(15), density = True, align = 'left', label = "Expected by random chance")
-    if weak:
-        observed = 2
-    else:
-        observed = 1
-    plt.axvline(np.percentile(number_of_hits, 5), ls = "--", color = 'k', label = "95% CI")
-    # plt.axvline(np.percentile(number_of_hits, 95), ls = "--", color = 'k', label = "95% CI")
-    plt.axvline(observed, color = 'red', label = "Experimentally observed")
-    plt.annotate("p-value = "+str(h[0][observed]), (1.5, 0.2), bbox=dict(facecolor='white', edgecolor='none', pad=1.0), ha='center')
-    plt.title("Random chance of mutant in rich-club\n both cohorts")
-    plt.xlabel("Groups with at least 1 mutants in RC", fontsize=15)
-    plt.ylabel("Probability", fontsize=15)
-    plt.legend()
-    plt.savefig("C:\\Users\\wolfgang.kelsch\\Downloads\\mutants_in_RC_mnn3_rc3.svg")
-    plt.show()
-    
-def mutants_in_both_mnn5_k4(weak = False): #actually 4 mnn and rc 4
-    number_of_hits = []
-    single_mutants = np.array([1])
-    double_mutants = np.array([1, 2])
-    triple_mutants = np.array([1,2,3])
-    quadruple_mutants = np.array([1,2,3,4])
-    quintuple_mutants = np.array([1,2,3,4,5])
-    shuffled_arr = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
-    if weak:
-        full_histo_mutants = [double_mutants, double_mutants,double_mutants,double_mutants,double_mutants,double_mutants,double_mutants, double_mutants, double_mutants, 
-                              quadruple_mutants, quintuple_mutants, triple_mutants, quadruple_mutants, triple_mutants]
-    else:
-        full_histo_mutants = [single_mutants, double_mutants, single_mutants, single_mutants, double_mutants, single_mutants, double_mutants, single_mutants, single_mutants,
-                              quadruple_mutants, double_mutants, double_mutants, triple_mutants, triple_mutants]
-
-    for i in tqdm(range(1000)):
-        hits = 0
-        for j in range(1):
-            # expID 1
-            np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(full_histo_mutants[0], shuffled_arr[:2]))
-            # expID 2
-            np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(full_histo_mutants[1], shuffled_arr[:3]))
-            # expID 3
-            np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(full_histo_mutants[2], shuffled_arr[:4]))
-            # expID 4
-            np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(full_histo_mutants[3], shuffled_arr[:2]))
-            # expID 5
-            np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(full_histo_mutants[4], shuffled_arr[:3]))
-            # expID 6
-            np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(full_histo_mutants[5], shuffled_arr[:4]))
-            # expID 7
-            np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(full_histo_mutants[6], shuffled_arr[:2]))
-            # expID 8
-            np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(full_histo_mutants[7], shuffled_arr[:3]))
-            # expID 10
-            np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(full_histo_mutants[8], shuffled_arr[:3]))
-            # expID 11
-            np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(full_histo_mutants[9], shuffled_arr[:3]))
-            # expID 12
-            np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(full_histo_mutants[10], shuffled_arr[:3]))
-            # expID 14
-            np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(full_histo_mutants[11], shuffled_arr[:1]))
-            # expID 15
-            np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(full_histo_mutants[12], shuffled_arr[:2]))
-            # # expID 17
-            np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(full_histo_mutants[13], shuffled_arr[:2]))
-            
-        number_of_hits.append(hits)
-        
-    h = plt.hist(number_of_hits, bins = np.arange(15), density = True, align = 'left', label = "Expected by random chance")
-    if weak:
-        observed = 5
-    else:
-        observed = 3
-    plt.axvline(np.percentile(number_of_hits, 5), ls = "--", color = 'k', label = "95% CI")
-    # plt.axvline(np.percentile(number_of_hits, 95), ls = "--", color = 'k', label = "95% CI")
-    plt.axvline(observed, color = 'red', label = "Experimentally observed")
-    plt.annotate("p-value = "+str(h[0][observed]), (1.5, 0.2), bbox=dict(facecolor='white', edgecolor='none', pad=1.0), ha='center')
-    plt.title("Random chance of mutant in rich-club\n both cohorts")
-    plt.xlabel("Groups with at least 1 mutants in RC", fontsize=15)
-    plt.ylabel("Probability", fontsize=15)
-    plt.legend()
-    plt.show()
-    
-def mutants_in_both_mnn2_k2(): #actually 4 mnn and rc 4
+def mutants_in_both_mnn2_k2(): 
     number_of_hits = []
     mutants = np.array([1, 2])
     mutants_G11 = np.array([1,2,3,4])
@@ -268,6 +111,168 @@ def mutants_in_both_mnn2_k2(): #actually 4 mnn and rc 4
     plt.ylabel("Probability", fontsize=15)
     plt.legend()
     plt.show()
+
+
+def mutants_in_both(weak = True): #mnn = 3, rc = 3
+    """ Function used to assess the significance of the mutant's presence in the RC club
+    mnn and k = 3 are the paramaters we used in the main text.
+    """
+    number_of_hits = []
+    number_of_hits = []
+    single_mutants = np.array([1])
+    double_mutants = np.array([1, 2])
+    triple_mutants = np.array([1,2,3])
+    quadruple_mutants = np.array([1,2,3,4])
+    quintuple_mutants = np.array([1,2,3,4,5])
+    shuffled_arr = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    if weak:
+        full_histo_mutants = [double_mutants, double_mutants,double_mutants,double_mutants,double_mutants,double_mutants,double_mutants, double_mutants, double_mutants, 
+                              quadruple_mutants, quintuple_mutants, triple_mutants, triple_mutants, triple_mutants]
+    else:
+        full_histo_mutants = [single_mutants, double_mutants, single_mutants, double_mutants, single_mutants,single_mutants, double_mutants, single_mutants, single_mutants,
+                              quadruple_mutants, double_mutants, double_mutants, quadruple_mutants, triple_mutants]
+
+    
+    for i in tqdm(range(1000)):
+        hits = 0
+        for j in range(1):
+            # expID 1
+            np.random.shuffle(shuffled_arr)
+            hits += np.any(np.isin(full_histo_mutants[0], shuffled_arr[:2]))
+            # expID 2
+            np.random.shuffle(shuffled_arr)
+            hits += np.any(np.isin(full_histo_mutants[1], shuffled_arr[:3]))
+            # expID 3
+            np.random.shuffle(shuffled_arr)
+            hits += np.any(np.isin(full_histo_mutants[2], shuffled_arr[:3]))
+            # expID 4
+            np.random.shuffle(shuffled_arr)
+            hits += np.any(np.isin(full_histo_mutants[3], shuffled_arr[:2]))
+            # expID 5
+            np.random.shuffle(shuffled_arr)
+            hits += np.any(np.isin(full_histo_mutants[4], shuffled_arr[:2]))
+            # expID 6
+            np.random.shuffle(shuffled_arr)
+            hits += np.any(np.isin(full_histo_mutants[5], shuffled_arr[:2]))
+            # expID 7
+            np.random.shuffle(shuffled_arr)
+            hits += np.any(np.isin(full_histo_mutants[6], shuffled_arr[:3]))
+            # expID 8
+            np.random.shuffle(shuffled_arr)
+            hits += np.any(np.isin(full_histo_mutants[7], shuffled_arr[:2]))
+            # expID 10
+            np.random.shuffle(shuffled_arr)
+            hits += np.any(np.isin(full_histo_mutants[8], shuffled_arr[:3]))
+            # expID 11
+            np.random.shuffle(shuffled_arr)
+            hits += np.any(np.isin(full_histo_mutants[9], shuffled_arr[:2]))
+            # expID 12
+            np.random.shuffle(shuffled_arr)
+            hits += np.any(np.isin(full_histo_mutants[10], shuffled_arr[:2]))
+            # expID 15
+            np.random.shuffle(shuffled_arr)
+            hits += np.any(np.isin(full_histo_mutants[12], shuffled_arr[:3]))
+            # # expID 17
+            np.random.shuffle(shuffled_arr)
+            hits += np.any(np.isin(full_histo_mutants[13], shuffled_arr[:2]))
+            
+        number_of_hits.append(hits)
+        
+    h = plt.hist(number_of_hits, bins = np.arange(15), density = True, align = 'left', label = "Expected by random chance")
+    if weak:
+        observed = 2
+    else:
+        observed = 2
+    plt.axvline(np.percentile(number_of_hits, 5), ls = "--", color = 'k', label = "95% CI")
+    # plt.axvline(np.percentile(number_of_hits, 95), ls = "--", color = 'k', label = "95% CI")
+    plt.axvline(observed, color = 'red', label = "Experimentally observed")
+    plt.annotate("p-value = "+str(h[0][observed]), (1.5, 0.2), bbox=dict(facecolor='white', edgecolor='none', pad=1.0), ha='center')
+    plt.title("Random chance of mutant in rich-club\n both cohorts")
+    plt.xlabel("Groups with at least 1 mutants in RC", fontsize=15)
+    plt.ylabel("Probability", fontsize=15)
+    plt.legend()
+    plt.savefig("C:\\Users\\wolfgang.kelsch\\Downloads\\mutants_in_RC_mnn3_rc3.svg")
+    plt.show()
+    
+def mutants_in_both_mnn4_k4(weak = False): 
+    number_of_hits = []
+    single_mutants = np.array([1])
+    double_mutants = np.array([1, 2])
+    triple_mutants = np.array([1,2,3])
+    quadruple_mutants = np.array([1,2,3,4])
+    quintuple_mutants = np.array([1,2,3,4,5])
+    shuffled_arr = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    if ~weak:
+        full_histo_mutants = [double_mutants, double_mutants,double_mutants,double_mutants,double_mutants,double_mutants,double_mutants, double_mutants, double_mutants, 
+                              quadruple_mutants, quintuple_mutants, triple_mutants, quadruple_mutants, triple_mutants]
+    else:
+        full_histo_mutants = [single_mutants, double_mutants, single_mutants, single_mutants, double_mutants, single_mutants, double_mutants, single_mutants, single_mutants,
+                              quadruple_mutants, double_mutants, double_mutants, quadruple_mutants, triple_mutants]
+
+    for i in tqdm(range(1000)):
+        hits = 0
+        for j in range(1):
+            # expID 1
+            np.random.shuffle(shuffled_arr)
+            hits += np.any(np.isin(full_histo_mutants[0], shuffled_arr[:2]))
+            # expID 2
+            np.random.shuffle(shuffled_arr)
+            hits += np.any(np.isin(full_histo_mutants[1], shuffled_arr[:3]))
+            # expID 3
+            np.random.shuffle(shuffled_arr)
+            hits += np.any(np.isin(full_histo_mutants[2], shuffled_arr[:4]))
+            # expID 4
+            np.random.shuffle(shuffled_arr)
+            hits += np.any(np.isin(full_histo_mutants[3], shuffled_arr[:2]))
+            # expID 5
+            np.random.shuffle(shuffled_arr)
+            hits += np.any(np.isin(full_histo_mutants[4], shuffled_arr[:3]))
+            # expID 6
+            np.random.shuffle(shuffled_arr)
+            hits += np.any(np.isin(full_histo_mutants[5], shuffled_arr[:4]))
+            # expID 7
+            np.random.shuffle(shuffled_arr)
+            hits += np.any(np.isin(full_histo_mutants[6], shuffled_arr[:2]))
+            # expID 8
+            np.random.shuffle(shuffled_arr)
+            hits += np.any(np.isin(full_histo_mutants[7], shuffled_arr[:3]))
+            # expID 10
+            np.random.shuffle(shuffled_arr)
+            hits += np.any(np.isin(full_histo_mutants[8], shuffled_arr[:3]))
+            # expID 11
+            np.random.shuffle(shuffled_arr)
+            hits += np.any(np.isin(full_histo_mutants[9], shuffled_arr[:3]))
+            # expID 12
+            np.random.shuffle(shuffled_arr)
+            hits += np.any(np.isin(full_histo_mutants[10], shuffled_arr[:3]))
+            # expID 14
+            np.random.shuffle(shuffled_arr)
+            hits += np.any(np.isin(full_histo_mutants[11], shuffled_arr[:1]))
+            # expID 15
+            np.random.shuffle(shuffled_arr)
+            hits += np.any(np.isin(full_histo_mutants[12], shuffled_arr[:2]))
+            # # expID 17
+            np.random.shuffle(shuffled_arr)
+            hits += np.any(np.isin(full_histo_mutants[13], shuffled_arr[:2]))
+            
+        number_of_hits.append(hits)
+        
+    h = plt.hist(number_of_hits, bins = np.arange(15), density = True, align = 'left', label = "Expected by random chance")
+    if weak:
+        observed = 5
+    else:
+        observed = 4
+    plt.axvline(np.percentile(number_of_hits, 5), ls = "--", color = 'k', label = "95% CI")
+    # plt.axvline(np.percentile(number_of_hits, 95), ls = "--", color = 'k', label = "95% CI")
+    plt.axvline(observed, color = 'red', label = "Experimentally observed")
+    plt.annotate("p-value = "+str(h[0][observed]), (1.5, 0.2), bbox=dict(facecolor='white', edgecolor='none', pad=1.0), ha='center')
+    plt.title("Random chance of mutant in rich-club\n both cohorts")
+    plt.xlabel("Groups with at least 1 mutants in RC", fontsize=15)
+    plt.ylabel("Probability", fontsize=15)
+    plt.legend()
+    plt.show()
+    
+
     
 def mutants_in_both_mnn5_k5(weak = False):
     number_of_hits = []
@@ -282,7 +287,7 @@ def mutants_in_both_mnn5_k5(weak = False):
                           quadruple_mutants, quintuple_mutants, triple_mutants, quadruple_mutants, triple_mutants]
     else:
         full_histo_mutants = [single_mutants, double_mutants, single_mutants, single_mutants, double_mutants, single_mutants, double_mutants, single_mutants, single_mutants,
-                              quadruple_mutants, double_mutants, double_mutants, triple_mutants, triple_mutants]
+                              quadruple_mutants, double_mutants, double_mutants, quadruple_mutants, triple_mutants]
     for i in tqdm(range(1000)):
         hits = 0
         for j in range(1):
@@ -547,12 +552,17 @@ def reshuffled_RC():
     plt.show()
     
     
-reshuffled_RC()
+# reshuffled_RC()
 # littermates_in_club()
+
+
+## plot chance of finding mutant in rich club as function of parameter k and mnn. The value of k and mnn are specified in the function's name
 # mutants_in_both_mnn2_k2()
-# mutants_in_both()
-# mutants_in_both_mnn5_k4()
-# mutants_in_both_mnn5_k5(True)
+# mutants_in_both(False) # mnn and k = 3, i.e. parameters from the main text
+mutants_in_both_mnn4_k4(False)
+# mutants_in_both_mnn5_k5(False)
+
+
 # for i in range(1):
     # plt.figure()
     # mutant_in_cohort()
