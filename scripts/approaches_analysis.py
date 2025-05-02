@@ -196,21 +196,37 @@ def hist_travelled_dist(path_to_data):
     plt.show()
     
 def plot_traj(path_to_data, index):
+    fig, ax = plt.subplots(figsize=(7, 5))
+
     files = os.listdir(path_to_data)
     file = os.path.join(path_to_data, files[index])
     df = pd.read_csv(file)
-    partner_x = df["x_partner_smooth"]
-    partner_y = df["y_partner_smooth"]
-    focus_x = df["x_focal_smooth"]
-    focus_y = df["y_focal_smooth"]
-    plt.plot(partner_x, partner_y, c = "gray", label = "Approchee")
-    plt.plot(focus_x, focus_y, c = "k", label = "Approacher")
+    partner_x = np.array(df["x_partner_smooth"])
+    partner_y = np.array(df["y_partner_smooth"])
+    focus_x = np.array(df["x_focal_smooth"])
+    focus_y = np.array(df["y_focal_smooth"])
+    partner_x, partner_y = partner_x[~np.isnan(partner_x)], partner_y[~np.isnan(partner_y)]
+    focus_x, focus_y = focus_x[~np.isnan(focus_x)], focus_y[~np.isnan(focus_y)]
+    
+    c_partner = "k" if df["partner_length"][0] > df["focal_length"][0] else "gray"
+    c_focus = "k" if df["partner_length"][0] < df["focal_length"][0] else "gray"
+
+    plt.plot(partner_x, partner_y, c = c_partner , label = "Approchee")
+    plt.plot(focus_x, focus_y, c = c_focus, label = "Approacher")
+    dx = partner_x[-1] - partner_x[-2]
+    dy = partner_y[-1] - partner_y[-2]
+    plt.arrow(partner_x[-1], partner_y[-1], dx, dy, head_width=15, head_length=15, fc=c_partner , ec=c_partner )
+    dx = focus_x[-1] - focus_x[-2]
+    dy = focus_y[-1] - focus_y[-2]
+    plt.arrow(focus_x[-1], focus_y[-1], dx, dy, head_width=15, head_length=15, fc=c_focus, ec=c_focus)
     plt.xlim([0, 680])
     plt.ylim([0, 480])
-    plt.legend()
+    ax.set_xlabel("x (px)", fontsize = 15)
+    ax.set_ylabel("y (px)", fontsize = 15)
+    ax.spines[['right', 'top']].set_visible(False)
     plt.show()
     
 # plot_2d_distribution(path_to_data, "start_point", 0, "hot_r")
 # plot_2d_distribution(path_to_data, "interactions", 0, "bwr")
 # hist_travelled_dist(path_to_data)
-plot_traj("C:\\Users\\wolfgang.kelsch\\Documents\\GitHub\\RichClubs\\data\\approach_meta_data\\trajectories\\", 24)
+plot_traj("C:\\Users\\wolfgang.kelsch\\Documents\\GitHub\\RichClubs\\data\\approach_meta_data\\trajectories\\", 35)
