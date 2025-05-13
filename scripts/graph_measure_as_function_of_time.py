@@ -393,22 +393,22 @@ if __name__ == "__main__":
     # unweighted_features = ["indegree", "outdegree", "transitivity", "summed cocitation", "summed bibcoupling", 
     #     "summed insubcomponent", "summed outsubcomponent", "summed injaccard", "summed outjaccard"]
     
-    # weighted_features = ["authority", "hub", "eigenvector_centrality", "constraint", "pagerank", "incloseness", "outcloseness",
-    #     "instrength", "outstrength"]
+    weighted_features = ["authority", "hub", "eigenvector_centrality", "constraint", "pagerank", "incloseness", "outcloseness",
+        "instrength", "outstrength"]
 
-    # mnn = 3
-    # mutual = False
-    # fig, axs = plt.subplots(3, 3, figsize = (16, 13))
-    # for idx, ax in enumerate(axs.flatten()):
-    #     try:
-    #         plot_measure_timeseries(unweighted_features[idx], 3, 'approaches', False, mnn = mnn, mutual = mutual, ax = ax)
-    #     except:
-    #         continue
-    # # plt.tight_layout()
-    # title = f"mnn = {mnn}" if mutual else f"nn = {mnn}"
-    # fig.suptitle(title)
+    mnn = None
+    mutual = False
+    fig, axs = plt.subplots(3, 3, figsize = (16, 13))
+    for idx, ax in enumerate(axs.flatten()):
+        try:
+            plot_measure_timeseries(weighted_features[idx], 3, 'approaches', False, mnn = mnn, mutual = mutual, ax = ax)
+        except:
+            continue
+    # plt.tight_layout()
+    title = f"mnn = {mnn}" if mutual else f"nn = {mnn}"
+    fig.suptitle(title)
     
-    plot_measure_timeseries("incloseness", 3, 'approaches', False, mnn = None, mutual = False)
+    # plot_measure_timeseries("incloseness", 3, 'approaches', False, mnn = None, mutual = False)
 
     # plt.savefig(f"..\\plots\\graph_features\\unweighted_mnn_{mnn}_mutual_{mutual}.png", dpi = 150)
     # plot_measure_timeseries("hub", 3, 'approaches', True) # ingoing approaches

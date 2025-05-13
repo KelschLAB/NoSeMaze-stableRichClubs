@@ -16,7 +16,8 @@ from sklearn.metrics import classification_report, accuracy_score
 from sklearn.inspection import permutation_importance
 from imblearn.under_sampling import RandomUnderSampler
 from sklearn.neural_network import MLPClassifier
-
+from imblearn.over_sampling import SMOTE
+from imblearn.combine import SMOTEENN
 from tqdm import tqdm 
 from sklearn.manifold import TSNE
 from sklearn import manifold
@@ -619,28 +620,39 @@ def train_mlp_classifier(df_path, pred_var = "mutant", subset=None):
     y = df[pred_var]
     
     accuracies, mlps = [], []
-
+    
+    # rus = RandomUnderSampler()
+    # X_balanced, y_balanced = rus.fit_resample(X, y)
+    X, X_gt, y, y_gt= train_test_split(X, y, test_size=0.1)
+    print(f"Portion of mutants in GT : {np.sum(y_gt)/len(y_gt)}")
+    rus = RandomUnderSampler()
+    X_gt, y_gt = rus.fit_resample(X_gt, y_gt)
+    
     for i in tqdm(range(10)):
-        rus = RandomUnderSampler()
-        X_balanced, y_balanced = rus.fit_resample(X, y)
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+        # rus = RandomUnderSampler()
+        # X_balanced, y_balanced = rus.fit_resample(X, y)
+        
+        smote = SMOTE()
+        X_balanced, y_balanced = smote.fit_resample(X, y)
+        
+        X_train, X_test, y_train, y_test = train_test_split(X_balanced, y_balanced, test_size=0.01)
         
         # Normalize the features
         scaler = StandardScaler()
         X_train = scaler.fit_transform(X_train)
-        X_test = scaler.transform(X_test)
+        X_test = scaler.transform(X_gt)
         
         # Train a feed-forward neural network
-        mlp = MLPClassifier(hidden_layer_sizes=(100, 50), max_iter=500, random_state=42)
+        mlp = MLPClassifier(hidden_layer_sizes=(100, 100, 50, 50, 25, 25), activation = "relu", max_iter=500, random_state=42)
         mlp.fit(X_train, y_train)
         mlps.append(mlp)
         y_pred = mlp.predict(X_test)
     
-        accuracies.append(accuracy_score(y_test, y_pred))
+        accuracies.append(accuracy_score(y_gt, y_pred))
         
     print(f"aveaged accuracy = {np.mean(accuracies)}")
     
-    return mlps[np.argmax(accuracies)], X_test, y_test, X.columns.to_list()
+    return #mlps[np.argmax(accuracies)], X_test, y_test, X.columns.to_list()
 
 def evaluate_feature_importance(mlp, X_test, y_test, feature_names):
     result = permutation_importance(mlp, X_test, y_test, n_repeats=10, random_state=42)
@@ -659,12 +671,13 @@ if __name__ == "__main__":
     # run_tsne_and_plot("..\\data\\graph_features_approaches_d3.csv", 3)
     # SE_and_plot("..\\data\\graph_features_approaches_d3_nn4.csv", 3, 30, "RC")
     # MDS_and_plot("..\\data\\graph_features_approaches_d3_nn4.csv", 3, "mutant")
-    # isomap_and_plot("..\\data\\graph_features_approaches_d3.csv", 3, 50, "mutant")
+    # isomap_and_plot("..\\data\\graph_features_approaches_d3_nn4.csv", 3, 50, "RC")
     # LLE_and_plot("..\\data\\graph_features_approaches_d3.csv", 2, 100, "mutant")
-    # subset =  ["transitivity", "summed bibcoupling", "summed outjaccard", "summed insubcomponent", "summed outsubcomponent", "outdegree"]
-    # isomap_and_plot("..\\data\\graph_features_approaches_d3_nn4_all_muts.csv", 3, 50, "RC")#,subset)
-
-    mlp, x_test, y_test, feature_names = train_mlp_classifier("..\\data\\graph_features_approaches_d3_nn4.csv", "mutant")#, subset)
-    evaluate_feature_importance(mlp, x_test, y_test, feature_names)
+    subset =  ["outdegree", "outcloseness", 
+          "summed outsubcomponent", "summed outjaccard"]
+    isomap_and_plot("..\\data\\graph_features_approaches_d3_nn4.csv", 3, 80, "mutant")#,subset)
+    # train_mlp_classifier("..\\data\\graph_features_approaches_d3_nn4.csv", "mutant")
+    # mlp, x_test, y_test, feature_names = train_mlp_classifier("..\\data\\graph_features_approaches_d3_nn4.csv", "mutant")
+    # evaluate_feature_importance(mlp, x_test, y_test, feature_names)
 
     
