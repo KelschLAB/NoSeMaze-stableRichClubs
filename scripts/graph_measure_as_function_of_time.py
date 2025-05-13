@@ -8,6 +8,7 @@ import seaborn as sns
 from scipy import stats
 import pandas as pd
 from scipy.stats import sem
+from tqdm import tqdm
 
 sys.path.append('..\\src\\')
 from read_graph import read_graph, read_labels
@@ -294,6 +295,7 @@ def plot_measure_timeseries(measure = "hub", window = 3, variable = "approaches"
         std_rc.append(sem(scores_rc[~np.isnan(scores_rc)]))
         std_rest.append(sem(scores_rest[~np.isnan(scores_rest)]))
         std_wt.append(sem(scores_wt[~np.isnan(scores_wt)]))
+        
     t = np.arange(1, 1+15//window)
     value_mutants, value_rc, value_rest, value_wt = np.array(value_mutants), np.array(value_rc), np.array(value_rest), np.array(value_wt)
     std_mutants, std_rc, std_rest, std_wt = np.array(std_mutants), np.array(std_rc), np.array(std_rest), np.array(std_wt) 
@@ -320,6 +322,115 @@ def plot_measure_timeseries(measure = "hub", window = 3, variable = "approaches"
     ax.tick_params(axis='both', which='major', labelsize=12)  # Adjust major tick labels
     if ax is None:
         ax.legend()
+        
+def plot_persistance(out = True, window = 3, variable = "approaches", separate_wt = False, mnn = None, mutual = True, ax = None):
+    metadata_path = "..\\data\\meta_data.csv"
+    metadata_df = pd.read_csv(metadata_path)
+    value_mutants, value_rc, value_rest, value_wt = [], [], [], []
+    std_mutants, std_rc, std_rest, std_wt = [], [], [], []
+    for d in tqdm(range(1, 15//window)):
+        scores_mutants, scores_rc, scores_rest, scores_wt = [], [], [], []
+        for j in range(len(labels)):
+            if window == 1:
+                datapath_t1 = "..\\data\\both_cohorts_1day\\"+labels[j]+"\\"+variable+"_resD1_"+str(d)+".csv"
+                datapath_t2 = "..\\data\\both_cohorts_1day\\"+labels[j]+"\\"+variable+"_resD1_"+str(d+1)+".csv"
+            elif window == 3:
+                datapath_t1 = "..\\data\\both_cohorts_3days\\"+labels[j]+"\\"+variable+"_resD3_"+str(d)+".csv"
+                datapath_t2 = "..\\data\\both_cohorts_3days\\"+labels[j]+"\\"+variable+"_resD3_"+str(d+1)+".csv"
+            elif window == 7:
+                datapath_t1 = "..\\data\\averaged\\"+labels[j]+"\\"+variable+"_resD7_"+str(d)+".csv"
+                datapath_t2 = "..\\data\\averaged\\"+labels[j]+"\\"+variable+"_resD7_"+str(d+1)+".csv"
+            else:
+                print("Incorrect time window")
+                return
+            try:
+                data_t1 = read_graph([datapath_t1], percentage_threshold = 0, mnn = mnn, mutual = mutual)[0]
+                data_t2 = read_graph([datapath_t2], percentage_threshold = 0, mnn = mnn, mutual = mutual)[0]
+                arr_t1 = np.loadtxt(datapath_t1, delimiter=",", dtype=str)
+                arr_t2 = np.loadtxt(datapath_t2, delimiter=",", dtype=str)
+                RFIDs = arr_t1[0, 1:].astype(str)
+            except Exception as e:
+                continue    
+            if variable == "interactions":
+                mode = 'undirected'
+                data_t1 = (data_t1 + np.transpose(data_t1))/2 # ensure symmetry
+                data_t2 = (data_t2 + np.transpose(data_t2))/2 # ensure symmetry
+            elif variable == "approaches":
+                mode = 'directed'
+            else:
+                raise NameError("Incorrect input argument for 'variable'.")
+    
+            # data_t1 = np.where(data_t1 > 0.01, 1, 0) # replacing remaining connections by 1
+            # data_t2 = np.where(data_t2 > 0.01, 1, 0)
+            axis = 1 if out else 0
+            persistance = np.sum((np.abs(data_t2 - data_t1)/data_t1) <= 0.2, axis = axis)
+
+            curr_metadata_df = metadata_df.loc[metadata_df["Group_ID"] == int(labels[j][1:]), :]
+            # figuring out index of true mutants in current group
+            is_mutant = []#[True if curr_metadata_df.loc[metadata_df["Mouse_RFID"] == rfid, "mutant"].values else False for rfid in RFIDs]
+            for rfid in RFIDs:
+                if len(metadata_df.loc[metadata_df["Mouse_RFID"] == rfid, "mutant"].values) != 0 and metadata_df.loc[metadata_df["Mouse_RFID"] == rfid, "mutant"].values[0]:
+                    histology = metadata_df.loc[metadata_df["Mouse_RFID"] == rfid, "histology"].values[0]
+                    if histology != 'weak':
+                        # mouse is a mutant and histology is strong or unknown
+                        is_mutant.append(True)
+                    else:
+                        is_mutant.append(False)
+                elif len(metadata_df.loc[metadata_df["Mouse_RFID"] == rfid, "mutant"].values) != 0 and not metadata_df.loc[metadata_df["Mouse_RFID"] == rfid, "mutant"].values[0]:
+                    is_mutant.append(False)
+                elif len(metadata_df.loc[metadata_df["Mouse_RFID"] == rfid, "mutant"].values) == 0: 
+                    print("Mouse not found, treat as WT")
+                    is_mutant.append(False)
+
+            is_RC = [True if curr_metadata_df.loc[curr_metadata_df["Mouse_RFID"] == rfid, "RC"].values else False for rfid in RFIDs] # list of boolean stating which mice are RC
+            graph_length = data_t1.shape[0]
+            mutants = np.where(is_mutant)[0] if len(np.where(is_mutant)) != 0 else [] # indices of mutants in this group
+            rc = np.where(is_RC)[0] if len(np.where(is_mutant)) != 0 else [] # indices of RC in this group
+            others = np.arange(graph_length)[np.logical_and(~np.isin(np.arange(graph_length), rc), ~np.isin(np.arange(graph_length), mutants))]
+            wt = np.arange(graph_length)[~np.isin(np.arange(graph_length), mutants)]
+            
+            scores_mutants = [persistance[i] for i in mutants]
+            scores_rc = [persistance[i] for i in rc]
+            scores_rest = [persistance[i] for i in others]
+            scores_wt = [persistance[i] for i in wt]
+            
+        value_mutants.append(np.nanmean(scores_mutants)) 
+        value_rc.append(np.nanmean(scores_rc))
+        value_rest.append(np.nanmean(scores_rest))
+        value_wt.append(np.nanmean(scores_wt))
+        scores_mutants, scores_rc, scores_rest, scores_wt = np.array(scores_mutants), np.array(scores_rc), np.array(scores_rest), np.array(scores_wt)
+        std_mutants.append(sem(scores_mutants[~np.isnan(scores_mutants)]))
+        std_rc.append(sem(scores_rc[~np.isnan(scores_rc)]))
+        std_rest.append(sem(scores_rest[~np.isnan(scores_rest)]))
+        std_wt.append(sem(scores_wt[~np.isnan(scores_wt)]))
+    
+    t = np.arange(1, 15//window)
+    value_mutants, value_rc, value_rest, value_wt = np.array(value_mutants), np.array(value_rc), np.array(value_rest), np.array(value_wt)
+    std_mutants, std_rc, std_rest, std_wt = np.array(std_mutants), np.array(std_rc), np.array(std_rest), np.array(std_wt) 
+    if ax is None:
+        fig, ax = plt.subplots(1, 1)
+    
+    if separate_wt:
+        ax.plot(t, value_mutants, lw = 2, c = "red", label = "Mutants")
+        ax.fill_between(t, value_mutants - std_mutants, value_mutants + std_mutants, color="red", alpha=0.2)
+        ax.plot(t, value_rc, lw = 2, c = "green", label = "RC members")
+        ax.fill_between(t, value_rc - std_rc, value_rc + std_rc, color="green", alpha=0.2)
+        ax.plot(t, value_rest, lw = 2, c = "blue", label = "Others")
+        ax.fill_between(t, value_rest - std_rest, value_rest + std_rest, color="blue", alpha=0.2)
+    else:
+        ax.plot(t, value_mutants, lw = 2, c = "red", label = "Mutants")
+        ax.fill_between(t, value_mutants - std_mutants, value_mutants + std_mutants, color="red", alpha=0.2)
+        ax.plot(t, value_wt, lw = 2, c = "green", label = "WT")
+        ax.fill_between(t, value_wt - std_wt, value_wt + std_wt, color="green", alpha=0.2)
+    
+    name = "Persistance out" if out else "Persistance in"
+    ax.set_title(name, fontsize = 15)
+    ax.set_xlabel("Day", fontsize = 13)
+    ax.set_ylabel("Value", fontsize = 13)
+    ax.set_xticks(range(1, 15//window, 1)) 
+    ax.tick_params(axis='both', which='major', labelsize=12)  # Adjust major tick labels
+    ax.legend()
+    plt.show()
     
 def format_measure(measure = "hub", window = 3):
     """Formats the measures made on the graphs into a csv file readable by matlab or R to run LME analysis
@@ -393,20 +504,23 @@ if __name__ == "__main__":
     # unweighted_features = ["indegree", "outdegree", "transitivity", "summed cocitation", "summed bibcoupling", 
     #     "summed insubcomponent", "summed outsubcomponent", "summed injaccard", "summed outjaccard"]
     
-    weighted_features = ["authority", "hub", "eigenvector_centrality", "constraint", "pagerank", "incloseness", "outcloseness",
-        "instrength", "outstrength"]
+    # weighted_features = ["authority", "hub", "eigenvector_centrality", "constraint", "pagerank", "incloseness", "outcloseness",
+    #     "instrength", "outstrength"]
 
-    mnn = None
-    mutual = False
-    fig, axs = plt.subplots(3, 3, figsize = (16, 13))
-    for idx, ax in enumerate(axs.flatten()):
-        try:
-            plot_measure_timeseries(weighted_features[idx], 3, 'approaches', False, mnn = mnn, mutual = mutual, ax = ax)
-        except:
-            continue
-    # plt.tight_layout()
-    title = f"mnn = {mnn}" if mutual else f"nn = {mnn}"
-    fig.suptitle(title)
+    # mnn = None
+    # mutual = False
+    # fig, axs = plt.subplots(3, 3, figsize = (16, 13))
+    # for idx, ax in enumerate(axs.flatten()):
+    #     try:
+    #         plot_measure_timeseries(weighted_features[idx], 3, 'approaches', False, mnn = mnn, mutual = mutual, ax = ax)
+    #     except:
+    #         continue
+    # # plt.tight_layout()
+    # title = f"mnn = {mnn}" if mutual else f"nn = {mnn}"
+    # fig.suptitle(title)
+    
+    
+    plot_persistance(True, 3, "approaches", False, None, False, None)
     
     # plot_measure_timeseries("incloseness", 3, 'approaches', False, mnn = None, mutual = False)
 

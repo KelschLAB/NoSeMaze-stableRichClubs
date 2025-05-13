@@ -12,7 +12,6 @@ sys.path.append('..\\src\\')
 from read_graph import read_graph
 from collections import Counter
 
-
 # plt.rc('text', usetex=True)
 # plt.rc('font', family='serif')
     

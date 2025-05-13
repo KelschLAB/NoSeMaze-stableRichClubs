@@ -272,18 +272,21 @@ def k_core_weights(data, k, min_val = 0.05):
     -------
     A list of nodes weights where each member of the rich-club is 1 and others are 'min_val'
     """
-
+    
+    if type(data) != np.ndarray:
+        data = np.array(data.get_adjacency(attribute="weight").data)
+    
     weights = []
     # First figure out rich-club within data matrix
     binary_data = copy(data)
     binary_data[data > min_val] = 1
     binary_data[data <= min_val] = 0
-    rich_club_matrix = binary_data
-    rich_club_matrix[np.sum(binary_data, 1) < k, :] = 0
-    rich_club_matrix[:, np.sum(binary_data, 0) < k] = 0
+    core_matrix = binary_data
+    core_matrix[np.sum(binary_data, 1) < k, :] = 0
+    core_matrix[:, np.sum(binary_data, 0) < k] = 0
     # Then, figure out if members of rich-club are connected enough
-    for i in range(rich_club_matrix.shape[0]):
-        if np.sum(rich_club_matrix[i, :]) >= k:
+    for i in range(core_matrix.shape[0]):
+        if np.sum(core_matrix[i, :]) >= k:
             weights.append(1)
         else:
             weights.append(min_val)
@@ -299,6 +302,20 @@ def rich_club_size(graph, k, min_val = 0.05):
         if s > 0.1:
             core_size += 1
     return core_size
+
+
+def k_core_size(graph, k, min_val = 0.05):
+    """
+    Returns the size of the k core of input graph for degree = k.
+    """
+    sizes =  k_core_weights(graph, k)
+    core_size = 0
+    for s in sizes:
+        if s > 0.1:
+            core_size += 1
+    return core_size
+
+
 
 def rich_club_p_value(path_to_file, k, percentage_threshold, mnn, affinity = True, bootstrap_iter = 250, mutual = True):
     """
