@@ -74,22 +74,16 @@ def add_significance(data, ax, bp):
         text_height = bar_height + (y_range * 0.01)
         plt.text((x1 + x2) * 0.5, text_height, sig_symbol, ha='center', va='bottom', c='k')
 
-## Graph theory measures
-all_rc =  [[0,6], [3, 8, 9], [2, 3, 6], [2, 4], [1, 6], [0, 1], [3, 4, 6], [3, 5, 7, 8], [7, 8], [5, 8], [0, 2], [], [], [2, 8, 9], [], [0, 2]]
-# all_mutants = [[6], [2], [6], [5], [2, 4], [7], [0, 5], [3], [2], [0,2,3], [5,7], [2,3,9], [3,9], [0,2,3], [2,3,8,9], [3, 9]] #took out mutants with weak histology
-all_mutants = [[4, 6], [2, 6], [4, 6], [0, 5], [3, 5], [7, 9], [0, 5], [2, 3], [2, 3], [0, 2, 3, 6], [4, 5, 6, 7, 9], [2, 3, 9], [1,3,9], [0,2,3, 6], [2,3,8,9], [3, 9]] #full histology
-
-# labels = ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G10"]
 labels = ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G10", "G11", "G12", "G13", "G14", "G15", "G16", "G17"]
 
-def measures(graph_idx, day, window = 3, measure = "hub", variable = "interactions", transpose = False):
+def measures(graph_idx, day, window = 3, measure = "hub", variable = "approaches", mnn = None, mutual = True):
     """
     Returns the measurement specified by input argument for mutants, rc and in wt in graph specified by input index.
     graph_idx specifies the cohort number, day specifies the specific timepoint (depends on window) and window specifies 
     the size of the window of averaging for the graph representation.        
     """
-    genotype_info_path = "..\\data\\genotype_info.csv"
-    genotype_df = pd.read_csv(genotype_info_path)
+    metadata_path = "..\\data\\meta_data.csv"
+    metadata_df = pd.read_csv(metadata_path)
     if window == 1:
         datapath = "..\\data\\both_cohorts_1day\\"+labels[graph_idx]+"\\"+variable+"_resD1_"+str(day)+".csv"
     elif window == 3:
@@ -100,7 +94,7 @@ def measures(graph_idx, day, window = 3, measure = "hub", variable = "interactio
         print("Incorrect time window")
         return
     try:
-        data = read_graph([datapath], percentage_threshold = 0)[0]
+        data = read_graph([datapath], percentage_threshold = 0, mnn = mnn, mutual = mutual)[0]
         arr = np.loadtxt(datapath, delimiter=",", dtype=str)
         RFIDs = arr[0, 1:].astype(str)
     except Exception as e:
@@ -113,40 +107,89 @@ def measures(graph_idx, day, window = 3, measure = "hub", variable = "interactio
         mode = 'directed'
     else:
         raise NameError("Incorrect input argument for 'variable'.")
-    if transpose:
-        g = ig.Graph.Weighted_Adjacency(np.transpose(data), mode=mode)
-    else:
-        g = ig.Graph.Weighted_Adjacency(data, mode=mode)
+        
+    data = np.where(data > 0.01, data, 0)
+
+    g = ig.Graph.Weighted_Adjacency(data, mode=mode)
+
+    curr_metadata_df = metadata_df.loc[metadata_df["Group_ID"] == int(labels[graph_idx][1:]), :]
+    # figuring out index of true mutants in current group
+    is_mutant = []#[True if curr_metadata_df.loc[metadata_df["Mouse_RFID"] == rfid, "mutant"].values else False for rfid in RFIDs]
+    for rfid in RFIDs:
+        if len(metadata_df.loc[metadata_df["Mouse_RFID"] == rfid, "mutant"].values) != 0 and metadata_df.loc[metadata_df["Mouse_RFID"] == rfid, "mutant"].values[0]:
+            histology = metadata_df.loc[metadata_df["Mouse_RFID"] == rfid, "histology"].values[0]
+            if histology != 'weak':
+                # mouse is a mutant and histology is strong or unknown
+                is_mutant.append(True)
+            else:
+                is_mutant.append(False)
+        elif len(metadata_df.loc[metadata_df["Mouse_RFID"] == rfid, "mutant"].values) != 0 and not metadata_df.loc[metadata_df["Mouse_RFID"] == rfid, "mutant"].values[0]:
+            is_mutant.append(False)
+        elif len(metadata_df.loc[metadata_df["Mouse_RFID"] == rfid, "mutant"].values) == 0: 
+            print("Mouse not found, treat as WT")
+            is_mutant.append(False)
+
+    is_RC = [True if curr_metadata_df.loc[curr_metadata_df["Mouse_RFID"] == rfid, "RC"].values else False for rfid in RFIDs] # list of boolean stating which mice are RC
     graph_length = len(g.vs())
-    mutants = all_mutants[graph_idx]
-    rc = all_rc[graph_idx]
-    others = np.arange(graph_length)[np.logical_and(~np.isin(np.arange(graph_length), all_rc[graph_idx]), ~np.isin(np.arange(graph_length), all_mutants[graph_idx]))]
-    wt = np.arange(graph_length)[~np.isin(np.arange(graph_length), all_mutants[graph_idx])]
+    mutants = np.where(is_mutant)[0] if len(np.where(is_mutant)) != 0 else [] # indices of mutants in this group
+    rc = np.where(is_RC)[0] if len(np.where(is_mutant)) != 0 else [] # indices of RC in this group
+    others = np.arange(graph_length)[np.logical_and(~np.isin(np.arange(graph_length), rc), ~np.isin(np.arange(graph_length), mutants))]
+    wt = np.arange(graph_length)[~np.isin(np.arange(graph_length), mutants)]
+    
     if measure == "hub":
         scores_mutants = [g.hub_score(weights = [e['weight'] for e in g.es()])[i] for i in mutants]
         scores_rc = [g.hub_score(weights = [e['weight'] for e in g.es()])[i] for i in rc]
         scores_rest = [g.hub_score(weights = [e['weight'] for e in g.es()])[i] for i in others]
         scores_wt = [g.hub_score(weights = [e['weight'] for e in g.es()])[i] for i in wt]
+        
     elif measure == "indegree":
         scores_mutants = [g.degree(mode="in")[i] for i in mutants]
         scores_rc = [g.degree(mode="in")[i] for i in rc]
         scores_rest = [g.degree(mode="in")[i] for i in others]
         scores_wt = [g.degree(mode="in")[i] for i in wt]    
+        
     elif measure == "outdegree":
         scores_mutants = [g.degree(mode="out")[i] for i in mutants]
         scores_rc = [g.degree(mode="out")[i] for i in rc]
         scores_rest = [g.degree(mode="out")[i] for i in others]
         scores_wt = [g.degree(mode="out")[i] for i in wt]    
+        
+    elif measure == "summed insubcomponent":
+        scores_mutants = [np.sum(g.subcomponent(i, mode="in")) for i in mutants]
+        scores_rc = [np.sum(g.subcomponent(i, mode="in")) for i in rc]
+        scores_rest = [np.sum(g.subcomponent(i, mode="in")) for i in others]
+        scores_wt = [np.sum(g.subcomponent(i, mode="in")) for i in wt]    
+        
+    elif measure == "summed outsubcomponent":
+        scores_mutants = [np.sum(g.subcomponent(i, mode="out")) for i in mutants]
+        scores_rc = [np.sum(g.subcomponent(i, mode="out")) for i in rc]
+        scores_rest = [np.sum(g.subcomponent(i, mode="out")) for i in others]
+        scores_wt = [np.sum(g.subcomponent(i, mode="out")) for i in wt]    
+
+    elif measure == "summed injaccard":
+        scores_mutants = [np.sum(g.similarity_jaccard(mode="in")[i]) for i in mutants]
+        scores_rc = [np.sum(g.similarity_jaccard(mode="in")[i]) for i in rc]
+        scores_rest = [np.sum(g.similarity_jaccard(mode="in")[i]) for i in others]
+        scores_wt = [np.sum(g.similarity_jaccard(mode="in")[i]) for i in wt]    
+        
+    elif measure == "summed outjaccard":
+        scores_mutants = [np.sum(g.similarity_jaccard(mode="out")[i]) for i in mutants]
+        scores_rc = [np.sum(g.similarity_jaccard(mode="out")[i]) for i in rc]
+        scores_rest = [np.sum(g.similarity_jaccard(mode="out")[i]) for i in others]
+        scores_wt = [np.sum(g.similarity_jaccard(mode="out")[i]) for i in wt]     
+        
     elif measure == "instrength":
-        scores_mutants = [g.strength(mode="in", weights = [e['weight'] for e in g.es()])[i] for i in mutants]
-        scores_rc = [g.strength(mode="in", weights = [e['weight'] for e in g.es()])[i] for i in rc]
-        scores_rest = [g.strength(mode="in", weights = [e['weight'] for e in g.es()])[i] for i in others]
-        scores_wt = [g.strength(mode="in", weights = [e['weight'] for e in g.es()])[i] for i in wt]     
+        scores_mutants = [np.sum([g.es[edge]["weight"] for edge in g.incident(i, mode="in")]) for i in mutants]
+        scores_rc = [np.sum([g.es[edge]["weight"] for edge in g.incident(i, mode="in")]) for i in rc]
+        scores_rest = [np.sum([g.es[edge]["weight"] for edge in g.incident(i, mode="in")]) for i in others]
+        scores_wt = [np.sum([g.es[edge]["weight"] for edge in g.incident(i, mode="in")]) for i in wt]    
+        
     elif measure == "outstrength":
-        scores_mutants = [g.strength(mode="out", weights = [e['weight'] for e in g.es()])[i] for i in mutants]
-        scores_rc = [g.strength(mode="out", weights = [e['weight'] for e in g.es()])[i] for i in rc]
-        scores_rest = [g.strength(mode="out", weights = [e['weight'] for e in g.es()])[i] for i in others]
-        scores_wt = [g.strength(mode="out", weights = [e['weight'] for e in g.es()])[i] for i in wt]    
+        scores_mutants = [np.sum([g.es[edge]["weight"] for edge in g.incident(i, mode="out")]) for i in mutants]
+        scores_rc = [np.sum([g.es[edge]["weight"] for edge in g.incident(i, mode="out")]) for i in rc]
+        scores_rest = [np.sum([g.es[edge]["weight"] for edge in g.incident(i, mode="out")]) for i in others]
+        scores_wt = [np.sum([g.es[edge]["weight"] for edge in g.incident(i, mode="out")]) for i in wt]    
+        
     elif measure == "outcloseness":
         scores_mutants = [g.closeness(mode="out", weights = [e['weight'] for e in g.es()])[i] for i in mutants]
         scores_rc = [g.closeness(mode="out", weights = [e['weight'] for e in g.es()])[i] for i in rc]
@@ -156,27 +199,32 @@ def measures(graph_idx, day, window = 3, measure = "hub", variable = "interactio
         scores_mutants = [g.closeness(mode="in", weights = [e['weight'] for e in g.es()])[i] for i in mutants]
         scores_rc = [g.closeness(mode="in", weights = [e['weight'] for e in g.es()])[i] for i in rc]
         scores_rest = [g.closeness(mode="in", weights = [e['weight'] for e in g.es()])[i] for i in others]
-        scores_wt = [g.closeness(mode="in", weights = [e['weight'] for e in g.es()])[i] for i in wt]    
+        scores_wt = [g.closeness(mode="in", weights = [e['weight'] for e in g.es()])[i] for i in wt]  
+            
     elif measure == "pagerank":
         scores_mutants = [g.pagerank(weights = [e['weight'] for e in g.es()])[i] for i in mutants]
         scores_rc = [g.pagerank(weights = [e['weight'] for e in g.es()])[i] for i in rc]
         scores_rest = [g.pagerank(weights = [e['weight'] for e in g.es()])[i] for i in others]
         scores_wt = [g.pagerank(weights = [e['weight'] for e in g.es()])[i] for i in wt]
+        
     elif measure == "authority":
         scores_mutants = [g.authority_score(weights = [e['weight'] for e in g.es()])[i] for i in mutants]
         scores_rc = [g.authority_score(weights = [e['weight'] for e in g.es()])[i] for i in rc]
         scores_rest = [g.authority_score(weights = [e['weight'] for e in g.es()])[i] for i in others]
         scores_wt = [g.authority_score(weights = [e['weight'] for e in g.es()])[i] for i in wt]
+        
     elif measure == "eigenvector_centrality":
         scores_mutants = [g.eigenvector_centrality(weights = [e['weight'] for e in g.es()])[i] for i in mutants]
         scores_rc = [g.eigenvector_centrality(weights = [e['weight'] for e in g.es()])[i] for i in rc]
         scores_rest = [g.eigenvector_centrality(weights = [e['weight'] for e in g.es()])[i] for i in others]
         scores_wt = [g.eigenvector_centrality(weights = [e['weight'] for e in g.es()])[i] for i in wt]
+        
     elif measure == "harmonic_centrality":
         scores_mutants = [g.harmonic_centrality(weights = [e['weight'] for e in g.es()])[i] for i in mutants]
         scores_rc = [g.harmonic_centrality(weights = [e['weight'] for e in g.es()])[i] for i in rc]
         scores_rest = [g.harmonic_centrality(weights = [e['weight'] for e in g.es()])[i] for i in others]
         scores_wt = [g.harmonic_centrality(weights = [e['weight'] for e in g.es()])[i] for i in wt]
+        
     elif measure == "betweenness":
          scores_mutants = [g.betweenness(weights = [1/e['weight'] for e in g.es()])[i] for i in mutants]
          scores_rc = [g.betweenness(weights = [1/e['weight'] for e in g.es()])[i] for i in rc]
@@ -187,12 +235,36 @@ def measures(graph_idx, day, window = 3, measure = "hub", variable = "interactio
          scores_rc = [g.closeness(weights = [1/e['weight'] for e in g.es()])[i] for i in rc]
          scores_rest = [g.closeness(weights = [1/e['weight'] for e in g.es()])[i] for i in others]  
          scores_wt = [g.closeness(weights = [1/e['weight'] for e in g.es()])[i] for i in wt]  
+         
+    elif measure == "constraint":
+         scores_mutants = [g.constraint(weights = [1/e['weight'] for e in g.es()])[i] for i in mutants]
+         scores_rc = [g.constraint(weights = [1/e['weight'] for e in g.es()])[i] for i in rc]
+         scores_rest = [g.constraint(weights = [1/e['weight'] for e in g.es()])[i] for i in others]  
+         scores_wt = [g.constraint(weights = [1/e['weight'] for e in g.es()])[i] for i in wt]  
+         
+    elif measure == "summed cocitation":
+         scores_mutants = [np.sum(g.cocitation()[i]) for i in mutants]
+         scores_rc = [np.sum(g.cocitation()[i]) for i in rc]
+         scores_rest = [np.sum(g.cocitation()[i]) for i in others]  
+         scores_wt = [np.sum(g.cocitation()[i]) for i in wt]  
+         
+    elif measure == "summed bibcoupling":
+         scores_mutants = [np.sum(g.bibcoupling()[i]) for i in mutants]
+         scores_rc = [np.sum(g.bibcoupling()[i]) for i in rc]
+         scores_rest = [np.sum(g.bibcoupling()[i]) for i in others]  
+         scores_wt = [np.sum(g.bibcoupling()[i]) for i in wt]  
+         
+    elif measure == "transitivity":
+         scores_mutants = [g.transitivity_local_undirected()[i] for i in mutants]
+         scores_rc = [g.transitivity_local_undirected()[i] for i in rc]
+         scores_rest = [g.transitivity_local_undirected()[i] for i in others]  
+         scores_wt = [g.transitivity_local_undirected()[i] for i in wt]  
     else:
         raise Exception("Unknown or misspelled input measurement.") 
 
     return scores_mutants, scores_rc, scores_rest, scores_wt, RFIDs
 
-def plot_measure_timeseries(measure = "hub", window = 3, variable = "interactions", transpose = False, separate_wt = False):
+def plot_measure_timeseries(measure = "hub", window = 3, variable = "approaches", separate_wt = False, mnn = None, mutual = True, ax = None):
     """
     Box plot of graph theory measurement specified by input argument for all graphs in dataset, separated in mutants and WT, or 
     mutants, RC and others (using separate_wt argument).
@@ -201,8 +273,6 @@ def plot_measure_timeseries(measure = "hub", window = 3, variable = "interaction
         - window: how many days of averaging should be used to display the results. 
             Defaults to 3, meaning one graph is the average of three days of experiment. 
         - variable: which kind of variable should be displayed. Shoud be "interactions" or "approaches".
-        - transpose: (bool) this variable specifies if the data should be transposed before analysing the graph.
-            in the case where directed data is studied, this effectively changes the point of focus from outgoing to ingoing.
         - separate_wt: whether or not the display of WT should be separated in the RC and others.
     """
     value_mutants, value_rc, value_rest, value_wt = [], [], [], []
@@ -210,7 +280,7 @@ def plot_measure_timeseries(measure = "hub", window = 3, variable = "interaction
     for d in range(15//window):
         scores_mutants, scores_rc, scores_rest, scores_wt = [], [], [], []
         for j in range(len(labels)):
-            scores = measures(j, d+1, window, measure, variable, transpose)
+            scores = measures(j, d+1, window, measure, variable, mnn, mutual)
             scores_mutants.extend(scores[0])
             scores_rc.extend(scores[1])
             scores_rest.extend(scores[2])
@@ -227,43 +297,29 @@ def plot_measure_timeseries(measure = "hub", window = 3, variable = "interaction
     t = np.arange(1, 1+15//window)
     value_mutants, value_rc, value_rest, value_wt = np.array(value_mutants), np.array(value_rc), np.array(value_rest), np.array(value_wt)
     std_mutants, std_rc, std_rest, std_wt = np.array(std_mutants), np.array(std_rc), np.array(std_rest), np.array(std_wt) 
-    plt.figure()
+    if ax is None:
+        fig, ax = plt.subplots(1, 1)
+    
     if separate_wt:
-        plt.plot(t, value_mutants, lw = 2, c = "red", label = "Mutants")
-        plt.fill_between(t, value_mutants - std_mutants, value_mutants + std_mutants, color="red", alpha=0.2)
-        plt.plot(t, value_rc, lw = 2, c = "green", label = "RC members")
-        plt.fill_between(t, value_rc - std_rc, value_rc + std_rc, color="green", alpha=0.2)
-        plt.plot(t, value_rest, lw = 2, c = "blue", label = "Others")
-        plt.fill_between(t, value_rest - std_rest, value_rest + std_rest, color="blue", alpha=0.2)
+        ax.plot(t, value_mutants, lw = 2, c = "red", label = "Mutants")
+        ax.fill_between(t, value_mutants - std_mutants, value_mutants + std_mutants, color="red", alpha=0.2)
+        ax.plot(t, value_rc, lw = 2, c = "green", label = "RC members")
+        ax.fill_between(t, value_rc - std_rc, value_rc + std_rc, color="green", alpha=0.2)
+        ax.plot(t, value_rest, lw = 2, c = "blue", label = "Others")
+        ax.fill_between(t, value_rest - std_rest, value_rest + std_rest, color="blue", alpha=0.2)
     else:
-        plt.plot(t, value_mutants, lw = 2, c = "red", label = "Mutants")
-        plt.fill_between(t, value_mutants - std_mutants, value_mutants + std_mutants, color="red", alpha=0.2)
-        plt.plot(t, value_wt, lw = 2, c = "green", label = "WT")
-        plt.fill_between(t, value_wt - std_wt, value_wt + std_wt, color="green", alpha=0.2)
+        ax.plot(t, value_mutants, lw = 2, c = "red", label = "Mutants")
+        ax.fill_between(t, value_mutants - std_mutants, value_mutants + std_mutants, color="red", alpha=0.2)
+        ax.plot(t, value_wt, lw = 2, c = "green", label = "WT")
+        ax.fill_between(t, value_wt - std_wt, value_wt + std_wt, color="green", alpha=0.2)
         
-    plt.legend()
-    plt.title(measure, fontsize = 18)
-    plt.xlabel("Day", fontsize = 15)
-    plt.ylabel("Value", fontsize = 15)
-    plt.xticks(range(1, 15//window+1, 1)) 
-    plt.tick_params(axis='both', which='major', labelsize=15)  # Adjust major tick labels
-    plt.show()
-    # plt.figure()
-    # ax = plt.axes()
-    # if separate_wt:
-    #     bp = ax.boxplot([value_rc, value_mutants, value_wt], widths=0.6, patch_artist=True)
-    #     format_plot(ax, bp) # set x_axis, and colors of each bar
-    #     add_significance([value_rc, value_mutants, value_wt], ax, bp)
-    # else:
-    #     mutants = np.array(scores_mutants).flatten()
-    #     wt = np.array(scores_wt).flatten()
-    #     # bp = ax.boxplot([value_mutants[~np.isnan(value_mutants)], value_wt[~np.isnan(value_wt)]], widths=0.6, patch_artist=True)
-    #     bp = ax.boxplot([mutants[~np.isnan(mutants)], wt[~np.isnan(wt)]], widths=0.6, patch_artist=True) 
-    #     format_plot(ax, bp, ["Mutants", "WT"]) # set x_axis, and colors of each bar
-    #     add_significance([value_mutants, value_wt], ax, bp)
-    # plt.title("Averaging across"+str(window)+"days")
-    # plt.ylabel(measure, fontsize = 15)
-    # plt.show()
+    ax.set_title(measure, fontsize = 15)
+    ax.set_xlabel("Day", fontsize = 13)
+    ax.set_ylabel("Value", fontsize = 13)
+    ax.set_xticks(range(1, 15//window+1, 1)) 
+    ax.tick_params(axis='both', which='major', labelsize=12)  # Adjust major tick labels
+    if ax is None:
+        ax.legend()
     
 def format_measure(measure = "hub", window = 3):
     """Formats the measures made on the graphs into a csv file readable by matlab or R to run LME analysis
@@ -332,12 +388,29 @@ if __name__ == "__main__":
     # plot_measure_timeseries("hub")
     # plot_measure_timeseries("hub", 3)
     # format_measure("pagerank", 1)
-    plot_measure_timeseries("pagerank", 3, 'interactions', False)
-    # plot_measure_timeseries("incloseness", 3, 'approaches', False) #outgoing approaches
-    # plot_measure_timeseries("outcloseness", 3, 'approaches', False) #outgoing approaches
-    # plot_measure_timeseries("instrength", 3, 'approaches', False) #outgoing approaches
-    # plot_measure_timeseries("outstrength", 3, 'approaches', False) #outgoing approaches
+    
+    
+    # unweighted_features = ["indegree", "outdegree", "transitivity", "summed cocitation", "summed bibcoupling", 
+    #     "summed insubcomponent", "summed outsubcomponent", "summed injaccard", "summed outjaccard"]
+    
+    # weighted_features = ["authority", "hub", "eigenvector_centrality", "constraint", "pagerank", "incloseness", "outcloseness",
+    #     "instrength", "outstrength"]
 
+    # mnn = 3
+    # mutual = False
+    # fig, axs = plt.subplots(3, 3, figsize = (16, 13))
+    # for idx, ax in enumerate(axs.flatten()):
+    #     try:
+    #         plot_measure_timeseries(unweighted_features[idx], 3, 'approaches', False, mnn = mnn, mutual = mutual, ax = ax)
+    #     except:
+    #         continue
+    # # plt.tight_layout()
+    # title = f"mnn = {mnn}" if mutual else f"nn = {mnn}"
+    # fig.suptitle(title)
+    
+    plot_measure_timeseries("incloseness", 3, 'approaches', False, mnn = None, mutual = False)
+
+    # plt.savefig(f"..\\plots\\graph_features\\unweighted_mnn_{mnn}_mutual_{mutual}.png", dpi = 150)
     # plot_measure_timeseries("hub", 3, 'approaches', True) # ingoing approaches
 
 
