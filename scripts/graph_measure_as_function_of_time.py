@@ -323,7 +323,75 @@ def plot_measure_timeseries(measure = "hub", window = 3, variable = "approaches"
     if ax is None:
         ax.legend()
         
+def plot_derivative_timeseries(measure = "hub", window = 3, variable = "approaches", separate_wt = False, mnn = None, mutual = True, ax = None):
+    """
+    Box plot of graph theory measurement specified by input argument for all graphs in dataset, separated in mutants and WT, or 
+    mutants, RC and others (using separate_wt argument).
+    Inputs:
+        - measure: the type of graph measurment to display. Default to hub score.
+        - window: how many days of averaging should be used to display the results. 
+            Defaults to 3, meaning one graph is the average of three days of experiment. 
+        - variable: which kind of variable should be displayed. Shoud be "interactions" or "approaches".
+        - separate_wt: whether or not the display of WT should be separated in the RC and others.
+    """
+    value_mutants, value_rc, value_rest, value_wt = [], [], [], []
+    std_mutants, std_rc, std_rest, std_wt = [], [], [], []
+    for d in range(15//window):
+        scores_mutants, scores_rc, scores_rest, scores_wt = [], [], [], []
+        for j in range(len(labels)):
+            scores_t1 = measures(j, d+1, window, measure, variable, mnn, mutual)
+            scores_t2 = measures(j, d+2, window, measure, variable, mnn, mutual)
+            if scores_t1 is None or scores_t2 is None:
+                continue
+            scores_mutants.extend(np.array(scores_t2[0]) - np.array(scores_t1[0]))
+            scores_rc.extend(np.array(scores_t2[1]) - np.array(scores_t1[1]))
+            scores_rest.extend(np.array(scores_t2[2]) - np.array(scores_t1[2]))
+            scores_wt.extend(np.array(scores_t2[3]) - np.array(scores_t1[3]))
+        value_mutants.append(np.nanmean(scores_mutants)) 
+        value_rc.append(np.nanmean(scores_rc))
+        value_rest.append(np.nanmean(scores_rest))
+        value_wt.append(np.nanmean(scores_wt))
+        scores_mutants, scores_rc, scores_rest, scores_wt = np.array(scores_mutants), np.array(scores_rc), np.array(scores_rest), np.array(scores_wt)
+        std_mutants.append(sem(scores_mutants[~np.isnan(scores_mutants)]))
+        std_rc.append(sem(scores_rc[~np.isnan(scores_rc)]))
+        std_rest.append(sem(scores_rest[~np.isnan(scores_rest)]))
+        std_wt.append(sem(scores_wt[~np.isnan(scores_wt)]))
+        
+    t = np.arange(1, 1+15//window)
+    value_mutants, value_rc, value_rest, value_wt = np.array(value_mutants), np.array(value_rc), np.array(value_rest), np.array(value_wt)
+    std_mutants, std_rc, std_rest, std_wt = np.array(std_mutants), np.array(std_rc), np.array(std_rest), np.array(std_wt) 
+    if ax is None:
+        fig, ax = plt.subplots(1, 1)
+    
+    if separate_wt:
+        ax.plot(t, value_mutants, lw = 2, c = "red", label = "Mutants")
+        ax.fill_between(t, value_mutants - std_mutants, value_mutants + std_mutants, color="red", alpha=0.2)
+        ax.plot(t, value_rc, lw = 2, c = "green", label = "RC members")
+        ax.fill_between(t, value_rc - std_rc, value_rc + std_rc, color="green", alpha=0.2)
+        ax.plot(t, value_rest, lw = 2, c = "blue", label = "Others")
+        ax.fill_between(t, value_rest - std_rest, value_rest + std_rest, color="blue", alpha=0.2)
+    else:
+        ax.plot(t, value_mutants, lw = 2, c = "red", label = "Mutants")
+        ax.fill_between(t, value_mutants - std_mutants, value_mutants + std_mutants, color="red", alpha=0.2)
+        ax.plot(t, value_wt, lw = 2, c = "green", label = "WT")
+        ax.fill_between(t, value_wt - std_wt, value_wt + std_wt, color="green", alpha=0.2)
+        
+    ax.set_title("Time derivative of "+ measure, fontsize = 15)
+    ax.set_xlabel("Day", fontsize = 13)
+    ax.set_ylabel("Value", fontsize = 13)
+    ax.set_xticks(range(1, 15//window, 1)) 
+    ax.tick_params(axis='both', which='major', labelsize=12)  # Adjust major tick labels
+    if ax is None:
+        ax.legend()
+        
 def plot_persistance(out = True, window = 3, variable = "approaches", separate_wt = False, mnn = None, mutual = True, ax = None):
+    """
+    Computes the average persistance of the animal over all graphs defined in the different cohort.
+    The persistance rewards active edges that are preserved, meaning that an absence of edge does NOT 
+    influence the value of the persistance. The persistance of a node is the sum of preserved existing edges
+    over two time points. Again, an absence of edge does NOT influence this value.
+    """
+    
     metadata_path = "..\\data\\meta_data.csv"
     metadata_df = pd.read_csv(metadata_path)
     value_mutants, value_rc, value_rest, value_wt = [], [], [], []
@@ -360,10 +428,15 @@ def plot_persistance(out = True, window = 3, variable = "approaches", separate_w
             else:
                 raise NameError("Incorrect input argument for 'variable'.")
     
-            # data_t1 = np.where(data_t1 > 0.01, 1, 0) # replacing remaining connections by 1
-            # data_t2 = np.where(data_t2 > 0.01, 1, 0)
+            if mnn is not None:
+                data_t1 = np.where(data_t1 > 0.01, 1, 0) # replacing remaining connections by 1
+                data_t2 = np.where(data_t2 > 0.01, 1, 0)
+            else:
+                data_t1 = np.where(data_t1 > 0.01, data_t1, 0) # replacing remaining connections by 1
+                data_t2 = np.where(data_t2 > 0.01, data_t2, 0)
+                
             axis = 1 if out else 0
-            persistance = np.sum((np.abs(data_t2 - data_t1)/data_t1) <= 0.2, axis = axis)
+            persistance = np.sum((2*np.abs(data_t2 - data_t1)/(data_t1+data_t2)) <= 0.5, axis = axis)
 
             curr_metadata_df = metadata_df.loc[metadata_df["Group_ID"] == int(labels[j][1:]), :]
             # figuring out index of true mutants in current group
@@ -501,28 +574,29 @@ if __name__ == "__main__":
     # format_measure("pagerank", 1)
     
     
-    # unweighted_features = ["indegree", "outdegree", "transitivity", "summed cocitation", "summed bibcoupling", 
-    #     "summed insubcomponent", "summed outsubcomponent", "summed injaccard", "summed outjaccard"]
+    unweighted_features = ["indegree", "outdegree", "transitivity", "summed cocitation", "summed bibcoupling", 
+        "summed insubcomponent", "summed outsubcomponent", "summed injaccard", "summed outjaccard"]
     
-    # weighted_features = ["authority", "hub", "eigenvector_centrality", "constraint", "pagerank", "incloseness", "outcloseness",
-    #     "instrength", "outstrength"]
+    weighted_features = ["authority", "hub", "eigenvector_centrality", "constraint", "pagerank", "incloseness", "outcloseness",
+        "instrength", "outstrength"]
 
-    # mnn = None
-    # mutual = False
-    # fig, axs = plt.subplots(3, 3, figsize = (16, 13))
-    # for idx, ax in enumerate(axs.flatten()):
-    #     try:
-    #         plot_measure_timeseries(weighted_features[idx], 3, 'approaches', False, mnn = mnn, mutual = mutual, ax = ax)
-    #     except:
-    #         continue
-    # # plt.tight_layout()
-    # title = f"mnn = {mnn}" if mutual else f"nn = {mnn}"
-    # fig.suptitle(title)
+    mnn = 5
+    mutual = False
+    fig, axs = plt.subplots(3, 3, figsize = (16, 13))
+    for idx, ax in enumerate(axs.flatten()):
+        try:
+            plot_derivative_timeseries(unweighted_features[idx], 1, 'approaches', False, mnn = mnn, mutual = mutual, ax = ax)
+        except:
+            continue
+    # plt.tight_layout()
+    title = f"mnn = {mnn}" if mutual else f"nn = {mnn}"
+    fig.suptitle(title)
     
     
-    plot_persistance(True, 3, "approaches", False, None, False, None)
+    # plot_persistance(True, 1, "approaches", False, 4, False, None)
+    # plot_persistance(False, 3, "approaches", False, 3, False, None)
     
-    # plot_measure_timeseries("incloseness", 3, 'approaches', False, mnn = None, mutual = False)
+    # plot_derivative_timeseries("incloseness", 3, 'approaches', False, mnn = None, mutual = False)
 
     # plt.savefig(f"..\\plots\\graph_features\\unweighted_mnn_{mnn}_mutual_{mutual}.png", dpi = 150)
     # plot_measure_timeseries("hub", 3, 'approaches', True) # ingoing approaches
