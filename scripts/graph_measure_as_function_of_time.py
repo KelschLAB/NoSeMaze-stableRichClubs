@@ -580,21 +580,22 @@ if __name__ == "__main__":
     weighted_features = ["authority", "hub", "eigenvector_centrality", "constraint", "pagerank", "incloseness", "outcloseness",
         "instrength", "outstrength"]
 
-    mnn = 5
-    mutual = False
-    fig, axs = plt.subplots(3, 3, figsize = (16, 13))
-    for idx, ax in enumerate(axs.flatten()):
-        try:
-            plot_derivative_timeseries(unweighted_features[idx], 1, 'approaches', False, mnn = mnn, mutual = mutual, ax = ax)
-        except:
-            continue
-    # plt.tight_layout()
-    title = f"mnn = {mnn}" if mutual else f"nn = {mnn}"
-    fig.suptitle(title)
+    # mnn = 5
+    # mutual = False
+    # fig, axs = plt.subplots(3, 3, figsize = (16, 13))
+    # for idx, ax in enumerate(axs.flatten()):
+    #     try:
+    #         plot_measure_timeseries(unweighted_features[idx], 1, 'approaches', False, mnn = mnn, mutual = mutual, ax = ax)
+    #         # plot_derivative_timeseries(unweighted_features[idx], 1, 'approaches', False, mnn = mnn, mutual = mutual, ax = ax)
+    #     except:
+    #         continue
+    # # plt.tight_layout()
+    # title = f"mnn = {mnn}" if mutual else f"nn = {mnn}"
+    # fig.suptitle(title)
     
     
-    # plot_persistance(True, 1, "approaches", False, 4, False, None)
-    # plot_persistance(False, 3, "approaches", False, 3, False, None)
+    plot_persistance(True, 1, "approaches", False, 6, False, None)
+    plot_persistance(False, 1, "approaches", False, 5, False, None)
     
     # plot_derivative_timeseries("incloseness", 3, 'approaches', False, mnn = None, mutual = False)
 

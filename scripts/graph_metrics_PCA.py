@@ -11,7 +11,7 @@ from scipy.stats import sem
 from sklearn.decomposition import PCA
 from sklearn.svm import SVC
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, MinMaxScaler, MaxAbsScaler, normalize
 from sklearn.metrics import classification_report, accuracy_score
 from sklearn.inspection import permutation_importance
 from imblearn.under_sampling import RandomUnderSampler
@@ -443,10 +443,10 @@ def mk_derivatives_dataframe(variable = "approaches", window = 3, mnn = 4, mutua
     save_name = f"{save_name}_rm_weak.csv" if rm_weak_histo else f"{save_name}_all_muts.csv" 
     features_df.to_csv(f"..\\data\\{save_name}", index = False)
     return features_df
-
-def run_tsne_and_plot(df_path, dim = 2, pred_var = "mutant", subset = None, avg = True):
+    
+def SE_and_plot(df_path, dim = 2, nn = 10, subset = None, show_RC = True, avg = False):
     """
-    Reads the dataframe, performs t-SNE dimensionality reduction on selected features,
+    Reads the dataframe, performs spectral embedding dimensionality reduction on selected features,
     and plots the results in 3D, coloring points based on the 'mutant' column.
     
     Args:
@@ -464,44 +464,62 @@ def run_tsne_and_plot(df_path, dim = 2, pred_var = "mutant", subset = None, avg 
           })
         df = df.dropna()
         
-    
     # Select features from columns 6 to 23 (Python indexing starts at 0, so columns 5 to 22)
     features = df.iloc[:, 5:23]
     if subset is not None:
         features = df.loc[:, subset]
-        
+    
     scaler = StandardScaler()
     features_normalized = scaler.fit_transform(features)
     
     if dim == 2:
-        # Perform t-SNE dimensionality reduction to 3 components
-        tsne = TSNE(n_components=2, perplexity=30, n_iter = 500)
-        results = tsne.fit_transform(features)
+        results = (manifold.SpectralEmbedding(
+                n_components=2, n_neighbors=nn
+            )
+            .fit_transform(features_normalized)
+        )
+        
+        fig, ax = plt.subplots(1, 1, figsize=(4.5, 4.5))
+        if not show_RC:
+            ax.scatter(results[~df["mutant"].values, 0], results[~df["mutant"].values, 1],
+                                 c="k", alpha=0.9, s = 100, label = "control")
+        if show_RC:
+            other_idx = np.logical_and(~df["mutant"], ~df["RC"]) 
+            RC_idx = np.logical_and(~df["mutant"], df["RC"])
+            ax.scatter(results[other_idx, 0], results[other_idx, 1],
+                                 c="k", alpha=0.9, s = 100, label = "non-members")
+            ax.scatter(results[RC_idx, 0], results[RC_idx, 1],
+                                 c="green", alpha=0.9, s = 100, label = "RC")
+            
+        ax.scatter(results[df["mutant"].values, 0], results[df["mutant"].values, 1],
+                             c="red", alpha=0.9, s = 100, label = "mutant")
+        
 
-        fig, ax = plt.subplots(1, 1, figsize=(10, 8))
-        ax.scatter(results[:, 0], results[:, 1],
-                             c=df['mutant'], alpha=0.9)
         
     if dim == 3:
-        # Perform t-SNE dimensionality reduction to 3 components
-        tsne = TSNE(n_components=3, perplexity=30, n_iter = 500)
-        results = tsne.fit_transform(features)
+        results = (manifold.SpectralEmbedding(
+                n_components=3, n_neighbors=nn
+            )
+            .fit_transform(features_normalized)
+        )
         
-        # Plot the t-SNE results in 3D
         fig = plt.figure(figsize=(10, 8))
         ax = fig.add_subplot(111, projection='3d')
-        scatter = ax.scatter(results[:, 0], results[:, 1], results[:, 2],
-                             c=df['mutant'], alpha=0.9)
+        ax.scatter(results[~df["mutant"].values, 0], results[~df["mutant"].values, 1], results[~df["mutant"].values, 2],
+                             c="k", alpha=0.9, s = 100, label = "control")
+        ax.scatter(results[df["mutant"].values, 0], results[df["mutant"].values, 1], results[df["mutant"].values, 2],
+                             c="red", alpha=0.9, s = 100, label = "mutant")
     
-    ax.set_title('t-SNE reduction', fontsize=15)
-    ax.set_xlabel('TSNE1', fontsize=12)
-    ax.set_ylabel('TSNE2', fontsize=12)
+    ax.set_title(f'Spectral embedding reduction', fontsize=15)
+    ax.set_xlabel('SE1', fontsize=12)
+    ax.set_ylabel('SE2', fontsize=12)
     if dim == 3:
-        ax.set_zlabel('TSNE3', fontsize=12)
-    
+        ax.set_zlabel('SE3', fontsize=12)
+    ax.legend()
+    plt.tight_layout()
     plt.show()
     
-def SE_and_plot(df_path, dim = 2, nn = 10, color_var = "mutant", subset = None, avg = False):
+def manual_plot(df_path, dim = 2, variables = None, show_RC = True, avg = True):
     """
     Reads the dataframe, performs spectral embedding dimensionality reduction on selected features,
     and plots the results in 3D, coloring points based on the 'mutant' column.
@@ -522,49 +540,57 @@ def SE_and_plot(df_path, dim = 2, nn = 10, color_var = "mutant", subset = None, 
         df = df.dropna()
         
     
-    # Select features from columns 6 to 23 (Python indexing starts at 0, so columns 5 to 22)
-    features = df.iloc[:, 5:23]
-    if subset is not None:
-        features = df.loc[:, subset]
+    results = df[variables].values
     
-    scaler = StandardScaler()
-    features_normalized = features# scaler.fit_transform(features)
+    pca = PCA(n_components=dim)
+    results = pca.fit_transform(results)
     
-    if dim == 2:
-        results = (manifold.SpectralEmbedding(
-                n_components=2, n_neighbors=nn
-            )
-            .fit_transform(features_normalized)
-        )
+    # scaler = MaxAbsScaler()
+    # results = scaler.fit_transform(results)
+    
+    if results.shape[1] == 2:
+        fig, ax = plt.subplots(1, 1, figsize=(4.5, 4.5))
+        if not show_RC:
+            ax.scatter(results[~df["mutant"].values, 0], results[~df["mutant"].values, 1],
+                                 c="k", alpha=0.9, s = 100, label = "control")
+        if show_RC:
+            other_idx = np.logical_and(~df["mutant"], ~df["RC"]) 
+            RC_idx = np.logical_and(~df["mutant"], df["RC"])
+            ax.scatter(results[other_idx, 0], results[other_idx, 1],
+                                 c="k", alpha=0.9, s = 100, label = "non-members")
+            ax.scatter(results[RC_idx, 0], results[RC_idx, 1],
+                                 c="green", alpha=0.9, s = 100, label = "RC")
+            
+        ax.scatter(results[df["mutant"].values, 0], results[df["mutant"].values, 1],
+                             c="red", alpha=0.9, s = 100, label = "mutant")
         
-        fig, ax = plt.subplots(1, 1, figsize=(10, 8))
-        ax.scatter(results[:, 0], results[:, 1],
-                             c=df[color_var], alpha=0.9)
-        
-    if dim == 3:
-        results = (manifold.SpectralEmbedding(
-                n_components=3, n_neighbors=nn
-            )
-            .fit_transform(features_normalized)
-        )
-        
-        fig = plt.figure(figsize=(10, 8))
+    if results.shape[1] == 3:
+        fig, ax = plt.subplots(1, 1, figsize=(4.5, 4.5))
         ax = fig.add_subplot(111, projection='3d')
-        scatter = ax.scatter(results[:, 0], results[:, 1], results[:, 2],
-                             c=df[color_var], alpha=0.9)
+
+        if not show_RC:
+            ax.scatter(results[~df["mutant"].values, 0], results[~df["mutant"].values, 1], results[~df["mutant"].values, 2],
+                                 c="k", alpha=0.9, s = 100, label = "control")
+        if show_RC:
+            other_idx = np.logical_and(~df["mutant"], ~df["RC"]) 
+            RC_idx = np.logical_and(~df["mutant"], df["RC"])
+            ax.scatter(results[other_idx, 0], results[other_idx, 1], results[other_idx, 2],
+                                 c="k", alpha=0.9, s = 100, label = "non-members")
+            ax.scatter(results[RC_idx, 0], results[RC_idx, 1], results[RC_idx, 2],
+                                 c="green", alpha=0.9, s = 100, label = "RC")
+            
+        ax.scatter(results[df["mutant"].values, 0], results[df["mutant"].values, 1], results[df["mutant"].values, 2],
+                             c="red", alpha=0.9, s = 100, label = "mutant")
     
-    ax.set_title(f'Spectral embedding reduction\ncoloring {color_var}', fontsize=15)
-    ax.set_xlabel('SE1', fontsize=12)
-    ax.set_ylabel('SE2', fontsize=12)
-    if dim == 3:
-        ax.set_zlabel('SE3', fontsize=12)
-    
+    ax.set_xlabel(f"Transformed {variables[0]}", fontsize=12)
+    ax.set_ylabel(f"Transformed {variables[1]}", fontsize=12)
+    if len(variables) == 3:
+        ax.set_zlabel(f"Transformed {variables[2]}", fontsize=12)
+    ax.legend()
+    plt.tight_layout()
     plt.show()
     
 
-    
-
-    
 def isomap_and_plot(df_path, dim = 2, nn = 10, color_var = "mutant", subset = None, avg = False):
     # Read the dataframe
     df = pd.read_csv(df_path)
@@ -595,8 +621,10 @@ def isomap_and_plot(df_path, dim = 2, nn = 10, color_var = "mutant", subset = No
         )
         
         fig, ax = plt.subplots(1, 1, figsize=(10, 8))
-        ax.scatter(results[:, 0], results[:, 1],
-                             c=df[color_var], alpha=0.9)
+        ax.scatter(results[~df[color_var].values, 0], results[~df[color_var].values, 1],
+                             c="k", alpha=0.9, s = 100, label = "control")
+        ax.scatter(results[df[color_var].values, 0], results[df[color_var].values, 1],
+                             c="red", alpha=0.9, s = 100, label = "mutant")
         
     if dim == 3:
         results = (
@@ -614,49 +642,58 @@ def isomap_and_plot(df_path, dim = 2, nn = 10, color_var = "mutant", subset = No
     ax.set_ylabel('iso 2', fontsize=12)
     if dim == 3:
         ax.set_zlabel('iso 3', fontsize=12)
-    
+    ax.legend()
     plt.show()
 
-def statistic(x, y, axis):
-    return np.mean(x, axis=axis) - np.mean(y, axis=axis)
+def statistic(x, y):
+    x = np.concatenate(x)
+    y = np.concatenate(y)
+    return np.mean(x) - np.mean(y)
 
-def add_significance(data, ax, bp):
+def add_significance(data, var, ax, bp):
     """Computes and adds p-value significance to input ax and boxplot"""
-    # Initialise a list of combinations of groups that are significantly different
-    significant_combinations = []
     # Check from the outside pairs of boxes inwards
     ls = list(range(1, len(data) + 1))
-    combinations = [(ls[x], ls[x + y]) for y in reversed(ls) for x in range((len(ls) - y))]
-    for combination in combinations:
-        data1 = data[combination[0] - 1]
-        data2 = data[combination[1] - 1]
-        # Significance
-        # U, p = stats.mannwhitneyu(data1, data2, alternative='two-sided')
-        # U, p = stats.ttest_ind(data1, data2,equal_var=False)
-        result = stats.permutation_test((data1, data2), statistic)
-        U = result.statistic  # This gives the test statistic
-        p = result.pvalue      # This gives the p-value
-        print(p)
-        if p < 0.05:
-            significant_combinations.append([combination, p])
-    for i, significant_combination in enumerate(significant_combinations):
-        # Columns corresponding to the datasets of interest
-        x1 = significant_combination[0][0]
-        x2 = significant_combination[0][1]
-        # What level is this bar among the bars above the plot?
-        level = len(significant_combinations) - i
-        # Plot the bar
-        # Get the y-axis limits
+    rfids1 = data[0]["Mouse_RFID"].values
+    rfids2 = data[1]["Mouse_RFID"].values
+    data1, data2 = data[0], data[1]
+
+    # Group data by RFID
+    grouped_data1 = [data1.loc[data1["Mouse_RFID"] == rfid, var].values for rfid in np.unique(rfids1)]
+    grouped_data1 = [list(d) for d in grouped_data1]
+    grouped_data2 = [data2.loc[data2["Mouse_RFID"] == rfid, var].values for rfid in np.unique(rfids2)]
+    grouped_data2 = [list(d) for d in grouped_data2]
+    
+    combined_data = grouped_data1 + grouped_data2
+    labels = [0] * len(grouped_data1) + [1] * len(grouped_data2)
+
+    ## custom permutation test
+    observed_stat = statistic(grouped_data1, grouped_data2)
+
+    # Generate permutations
+    permuted_stats = []
+    for _ in tqdm(range(10000)):
+        np.random.shuffle(labels)
+        permuted_group1 = [combined_data[i] for i in range(len(labels)) if labels[i] == 0]
+        permuted_group2 = [combined_data[i] for i in range(len(labels)) if labels[i] == 1]
+        permuted_stats.append(statistic(permuted_group1, permuted_group2))
+
+    # Compute p-value
+    permuted_stats = np.array(permuted_stats)
+    p = np.mean(np.abs(permuted_stats) >= np.abs(observed_stat))
+
+    if p < 0.05:
+        x1 = 1
+        x2 = 2
         bottom, top = ax.get_ylim()
         y_range = top - bottom
-        bar_height = (y_range * 0.05 * level) + top
+        bar_height = (y_range * 0.05 * 1) + top
         bar_tips = bar_height - (y_range * 0.02)
         ax.plot(
             [x1, x1, x2, x2],
             [bar_tips, bar_height, bar_height, bar_tips], lw=1, c='k'
         )
-        # Significance level
-        p = significant_combination[1]
+    
         if p < 0.001:
             sig_symbol = '***'
         elif p < 0.01:
@@ -666,7 +703,7 @@ def add_significance(data, ax, bp):
         text_height = bar_height + (y_range * 0.01)
         ax.text((x1 + x2) * 0.5, text_height, sig_symbol, ha='center', va='bottom', c='k')
     
-def plot_std(df_path, var, avg = False, ax = None):
+def plot_std(df_path, var, avg = False, show_RC = False, ax = None):
     # Read the dataframe
     df = pd.read_csv(df_path)
     df = df.dropna()
@@ -678,21 +715,27 @@ def plot_std(df_path, var, avg = False, ax = None):
           **{col: 'std' for col in df.select_dtypes(include='number').columns if col not in ['Group_ID']}
           })
         df = df.dropna()
-        
+    
     data = [
-        df.loc[df["mutant"], var].values,  # Mutants
-        df.loc[np.logical_and(~df["mutant"], ~df["RC"]), var].values  # Non-mutants
+        df.loc[df["mutant"], ['Mouse_RFID', var]],  # Mutants
+        df.loc[np.logical_and(~df["mutant"], ~df["RC"]), ['Mouse_RFID', var]]  # Non-mutants
     ]
+    
+    if show_RC:
+        data = [
+            df.loc[df["mutant"], ['Mouse_RFID', var]],  # Mutants
+            df.loc[~df["mutant"], ['Mouse_RFID', var]]  # Non-mutants
+        ]
     
     if ax is None:
         fig, ax = plt.subplots(1, 1, figsize=(4, 6))
         
     size = 100
     alpha = 0.5
-    bp = ax.boxplot(data, labels=["Mutants", "Non-members WT"], showfliers = False)
+    numeric_data = [data[i].drop("Mouse_RFID", axis = 1, inplace = False).values for i in range(2)]
+    numeric_data = [np.concatenate(d) for d in numeric_data]
+    bp = ax.boxplot(numeric_data, labels=["Mutants", "Non-members WT"], showfliers = False)
     
-    t_stat, p_value = ttest_ind(data[0], data[1], equal_var=False)
-
 
     # # standard deviation of mutants across time
     ax.scatter([1 + np.random.normal()*0.05 for i in range(len(df.loc[df["mutant"],var].values))], 
@@ -701,18 +744,19 @@ def plot_std(df_path, var, avg = False, ax = None):
     ax.scatter([2 + np.random.normal()*0.05 for i in range(len(df.loc[np.logical_and(~df["mutant"], ~df["RC"]), var].values))], 
                 df.loc[np.logical_and(~df["mutant"], ~df["RC"]), var], alpha = alpha, s = size, color = "gray", label = "Non-member"); 
     
-    # ax.scatter([2 + np.random.normal()*0.05 for i in range(len(df.loc[np.logical_and(~df["mutant"], df["RC"]), var].values))], 
-    #             df.loc[np.logical_and(~df["mutant"], df["RC"]), var], alpha = alpha, s = size, color = "green", label = "RC member"); 
+    if show_RC:
+        ax.scatter([2 + np.random.normal()*0.05 for i in range(len(df.loc[np.logical_and(~df["mutant"], df["RC"]), var].values))], 
+                    df.loc[np.logical_and(~df["mutant"], df["RC"]), var], alpha = alpha, s = size, color = "green", label = "RC member"); 
     
-    add_significance(data, ax, bp)
+    add_significance(data, var, ax, bp)
 
     # ax.set_ylabel("σ (V(t)/dt)")
     ax.set_ylabel("σ (V(t))")
-
+    ax.set_yscale("log")
     ax.set_title(f"{var}")
    
     
-def train_mlp_classifier(df_path, window = 3, pred_var = "mutant", subset=None, avg = False):
+def train_mlp_classifier(df_path, pred_var = "mutant", subset=None, avg = False):
     """
     Trains a simple feed-forward neural network using sklearn's MLPClassifier.
     
@@ -722,76 +766,50 @@ def train_mlp_classifier(df_path, window = 3, pred_var = "mutant", subset=None, 
     """
     # Read the dataframe
     df = pd.read_csv(df_path)
-    # df = df.dropna()
-    df = df.fillna(-1)
+    df = df.dropna()
+    # df = df.fillna(-1)
     
-    # if avg:
-    #     df = df.groupby(['Mouse_RFID', 'Group_ID'], as_index=False).agg({
-    #       'mutant': 'first',  # Keep the first value (or use another aggregation function)
-    #       'RC': 'first',      # Keep the first value (or use another aggregation function)
-    #       **{col: 'mean' for col in df.select_dtypes(include='number').columns if col not in ['Group_ID']}
-    #       })
-        
-     # Reshape the data: Group by Mouse_RFID and Group_ID
-    if subset is not None:
-        features = subset
-    else:
-        features = df.columns[5:23]  # Default feature columns (adjust as needed)
-    grouped = df.groupby(['Mouse_RFID', 'Group_ID'])
-    X = []
-    y = []
-    for (rfid, group_id), group_data in grouped:
-        tmp_X = []
-        for timepoint in range(15//window):
-            features_t = group_data.loc[group_data["Timestamp_base"+str(window)] == timepoint, features]
-            if len(features_t) > 0: # if the data for this day exists, add all features value
-                tmp_X.append(list(features_t.values.flatten()))
-            else: # if no data was available for this day, add non informative value to keep size consistent
-                continue
-              #  tmp_X.extend([-1 for i in range(len(features))])
-              
-        X.append(np.std(np.array(tmp_X), axis = 0))
-        y.append(group_data[pred_var].iloc[0])  # Use the first value of the target (assumes it's consistent)
+    if avg:
+        df = df.groupby(['Mouse_RFID', 'Group_ID'], as_index=False).agg({
+          'mutant': 'first',  # Keep the first value (or use another aggregation function)
+          'RC': 'first',      # Keep the first value (or use another aggregation function)
+          **{col: 'std' for col in df.select_dtypes(include='number').columns if col not in ['Group_ID']}
+          })
+        df = df.dropna()
     
-    # Convert to numpy arrays
-    X = np.array(X)
-    y = np.array(y)
-    
-
     
     # Select features (columns 6 to 23) and target ('mutant')
-    # X = df.iloc[:, 5:23]
-    # if subset is not None:
-    #     X = df.loc[:, subset]
-    # y = df[pred_var]
+    X = df.iloc[:, 5:23]
+    if subset is not None:
+        X = df.loc[:, subset]
+    y = df[pred_var]
     
     accuracies, mlps = [], []
     
     # rus = RandomUnderSampler()
     # X_balanced, y_balanced = rus.fit_resample(X, y)
-    X, X_gt, y, y_gt= train_test_split(X, y, test_size=0.2)
-    print(f"Portion of mutants in GT : {np.sum(y_gt)/len(y_gt)}")
-    rus = RandomUnderSampler()
-    X_gt, y_gt = rus.fit_resample(X_gt, y_gt)
+
     
     for i in tqdm(range(20)):
         # rus = RandomUnderSampler()
         # X_balanced, y_balanced = rus.fit_resample(X, y)
+        X_i, X_gt, y_i, y_gt = train_test_split(X, y, stratify = y, test_size=0.05)
+        rus = RandomUnderSampler()
+        X_gt, y_gt = rus.fit_resample(X_gt, y_gt)
         
-        
-        smote = SMOTE()
-        X_train, y_train = smote.fit_resample(X, y)
+        # smote = SMOTE()
+        X_train, y_train = rus.fit_resample(X_i, y_i)
         
         # X_train, X_test, y_train, y_test = train_test_split(X_balanced, y_balanced, test_size=0.01)
         
         # Normalize the features
         scaler = StandardScaler()
-       # X_train = scaler.fit_transform(X_train)
-       # X_test = scaler.transform(X_gt)
+        # X_train = scaler.fit_transform(X_train)
+        # X_test = scaler.transform(X_gt)
         X_test = X_gt
         
         # Train a feed-forward neural network
-        mlp = MLPClassifier(hidden_layer_sizes=(100, 50, 50, 25, 25), activation = "relu", max_iter=1000, random_state=42)
+        mlp = MLPClassifier(hidden_layer_sizes=(10, 5), solver = "lbfgs", activation = "tanh", max_iter=3000)
         mlp.fit(X_train, y_train)
         mlps.append(mlp)
         y_pred = mlp.predict(X_test)
@@ -826,7 +844,7 @@ if __name__ == "__main__":
     # SE_and_plot("..\\data\\metrics_derivative_approaches_d1_nn5_rm_weak.csv", 2, 30,  "mutant", None, True)
     # MDS_and_plot("..\\data\\graph_features_approaches_d3_nn4.csv", 3, "mutant")
     # LLE_and_plot("..\\data\\graph_features_approaches_d3.csv", 2, 100, "mutant")
-    subset = ["summed outsubcomponent"]#, "transitivity", "outdegree"] #"outdegree", "outcloseness", "summed outsubcomponent"
+
     
     unweighted_features = ["indegree", "outdegree", "summed cocitation", "summed bibcoupling", 
                            "summed injaccard", "summed outjaccard"]
@@ -836,9 +854,15 @@ if __name__ == "__main__":
     
     fig, axs = plt.subplots(2, 3, figsize = (16, 13))
     for idx, ax in enumerate(axs.flatten()):
-        # plot_std("..\\data\\metrics_derivative_approaches_d1_nn5_rm_weak.csv", weighted_features[idx], True, ax)
-        plot_std("..\\data\\graph_features_approaches_d1_nn5_rm_weak.csv", unweighted_features[idx], True, ax)
-    plt.suptitle("graph_features_approaches_d1_nn5_rm_weak")
+        plot_std("..\\data\\processed_metrics\\metrics_derivative_approaches_d1_nn5_rm_weak.csv", unweighted_features[idx], True, True, ax)
+        # plot_std("..\\data\\processed_metrics\\graph_features_approaches_d1_nn5_rm_weak.csv", weighted_features[idx], True, False, ax)
+    # plt.suptitle("graph_features_approaches_d1_nn5_rm_weak")
+    plt.suptitle("metrics_derivative_approaches_d1_nn3_rm_weak")
+
+    # SE_and_plot("..\\data\\processed_metrics\\metrics_derivative_approaches_d1_nn5_rm_weak.csv", 2, 6, ["indegree", "outdegree"], True, True)
+    # SE_and_plot("..\\data\\processed_metrics\\metrics_derivative_approaches_d1_nn5_rm_weak.csv", 2, 6, unweighted_features, True, True)
+
+    # manual_plot("..\\data\\processed_metrics\\graph_features_approaches_d1_nn5_rm_weak.csv", 3, unweighted_features, False, True)
 
 
     # plot_std("..\\data\\metrics_derivative_approaches_d1_nn5_rm_weak.csv", "indegree", True)#,subset)
@@ -846,9 +870,9 @@ if __name__ == "__main__":
 
 
     # print("############################### prediction on metrics ts #######################################")
-    # train_mlp_classifier("..\\data\\graph_features_approaches_d1_nn3_rm_weak.csv", 1, "mutant", None, True)
+    # train_mlp_classifier("..\\data\\processed_metrics\graph_features_approaches_d1_nn5_rm_weak.csv", "mutant", unweighted_features, True)
     # print("############################### prediction on derivative ts #######################################")
-    # train_mlp_classifier("..\\data\\metrics_derivative_approaches_d1_nn3_rm_weak.csv",1, "mutant", None, True)
+    # train_mlp_classifier("..\\data\\processed_metrics\metrics_derivative_approaches_d1_nn5_rm_weak.csv", "mutant", unweighted_features, True)
 
     # mlp, x_test, y_test, feature_names = train_mlp_classifier("..\\data\\graph_features_approaches_d3_nn5_rm_weak.csv", "mutant", subset, False)
     # evaluate_feature_importance(mlp, x_test, y_test, feature_names)
