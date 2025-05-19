@@ -436,7 +436,11 @@ def plot_persistance(out = True, window = 3, variable = "approaches", separate_w
                 data_t2 = np.where(data_t2 > 0.01, data_t2, 0)
                 
             axis = 1 if out else 0
-            persistance = np.sum((2*np.abs(data_t2 - data_t1)/(data_t1+data_t2)) <= 0.5, axis = axis)
+            # persistance = np.sum((2*np.abs(data_t2 - data_t1)/(data_t1+data_t2)) <= 0.5, axis = axis)
+            cond = np.abs(data_t2 - data_t1) <= 0.5*data_t1
+            persistance = np.sum(cond, axis = axis)
+ 
+
 
             curr_metadata_df = metadata_df.loc[metadata_df["Group_ID"] == int(labels[j][1:]), :]
             # figuring out index of true mutants in current group
@@ -580,8 +584,8 @@ if __name__ == "__main__":
     weighted_features = ["authority", "hub", "eigenvector_centrality", "constraint", "pagerank", "incloseness", "outcloseness",
         "instrength", "outstrength"]
 
-    # mnn = 5
-    # mutual = False
+    mnn = 5
+    mutual = False
     # fig, axs = plt.subplots(3, 3, figsize = (16, 13))
     # for idx, ax in enumerate(axs.flatten()):
     #     try:
@@ -592,10 +596,19 @@ if __name__ == "__main__":
     # # plt.tight_layout()
     # title = f"mnn = {mnn}" if mutual else f"nn = {mnn}"
     # fig.suptitle(title)
+    # plot_derivative_timeseries("instrength", 1, 'approaches', False, mnn = mnn, mutual = mutual)
     
+    plot_measure_timeseries("summed injaccard", 1, 'approaches', False, mnn = mnn, mutual = mutual)
+    plot_derivative_timeseries("summed injaccard", 1, 'approaches', False, mnn = mnn, mutual = mutual)
     
-    plot_persistance(True, 1, "approaches", False, 6, False, None)
-    plot_persistance(False, 1, "approaches", False, 5, False, None)
+    plot_measure_timeseries("outstrength", 1, 'approaches', False, mnn = mnn, mutual = mutual)
+    plot_derivative_timeseries("outstrength", 1, 'approaches', False, mnn = mnn, mutual = mutual)
+
+    
+    plot_persistance(True, 1, "approaches", False, None, False, None)
+    plot_persistance(False, 1, "approaches", False, None, False, None)
+
+    # plot_persistance(False,1, "approaches", False, None, False, None)
     
     # plot_derivative_timeseries("incloseness", 3, 'approaches', False, mnn = None, mutual = False)
 

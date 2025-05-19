@@ -34,6 +34,13 @@ datapath = "..\\data\\averaged\\"
 #plt.rc('text', usetex=True)
 plt.rc('font', family='serif')
 
+def rescale(arr):
+    if len(arr) > 0:
+        normalized_arr = (arr - np.min(arr))/(np.max(arr)-np.min(arr))
+    else:
+        return 
+    return normalized_arr
+
 labels = ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G10", "G11", "G12", "G13", "G14", "G15", "G16", "G17"]
 
 def measures(graph_idx, day, window = 3, measure = "hub", variable = "approaches", mnn = None, mutual = True, rm_weak_histo = True):
@@ -128,6 +135,13 @@ def measures(graph_idx, day, window = 3, measure = "hub", variable = "approaches
         scores_rest = [g.degree(mode="out")[i] for i in others]
         scores_wt = [g.degree(mode="out")[i] for i in wt]    
         scores_all = [g.degree(mode="out")[i] for i in range(len(RFIDs))]
+        
+    elif measure == "degree":
+        scores_mutants = [g.degree(mode="all")[i] for i in mutants]
+        scores_rc = [g.degree(mode="all")[i] for i in rc]
+        scores_rest = [g.degree(mode="all")[i] for i in others]
+        scores_wt = [g.degree(mode="all")[i] for i in wt]    
+        scores_all = [g.degree(mode="all")[i] for i in range(len(RFIDs))]
 
     elif measure == "summed insubcomponent":
         scores_mutants = [np.sum(g.subcomponent(i, mode="in")) for i in mutants]
@@ -144,13 +158,20 @@ def measures(graph_idx, day, window = 3, measure = "hub", variable = "approaches
         scores_all = [np.sum(g.subcomponent(i, mode="out")) for i in range(len(RFIDs))]
 
     elif measure == "summed injaccard":
-        scores_mutants = [np.sum(g.similarity_jaccard(mode="in")[i]) for i in mutants]
-        scores_rc = [np.sum(g.similarity_jaccard(mode="in")[i]) for i in rc]
-        scores_rest = [np.sum(g.similarity_jaccard(mode="in")[i]) for i in others]
-        scores_wt = [np.sum(g.similarity_jaccard(mode="in")[i]) for i in wt]  
-        scores_all = [np.sum(g.similarity_jaccard(mode="in")[i]) for i in range(len(RFIDs))]
+        scores_mutants = [np.sum(g.similarity_jaccard(mode="all")[i]) for i in mutants]
+        scores_rc = [np.sum(g.similarity_jaccard(mode="all")[i]) for i in rc]
+        scores_rest = [np.sum(g.similarity_jaccard(mode="all")[i]) for i in others]
+        scores_wt = [np.sum(g.similarity_jaccard(mode="all")[i]) for i in wt]  
+        scores_all = [np.sum(g.similarity_jaccard(mode="all")[i]) for i in range(len(RFIDs))]
 
     elif measure == "summed outjaccard":
+        scores_mutants = [np.sum(g.similarity_jaccard(mode="out")[i]) for i in mutants]
+        scores_rc = [np.sum(g.similarity_jaccard(mode="out")[i]) for i in rc]
+        scores_rest = [np.sum(g.similarity_jaccard(mode="out")[i]) for i in others]
+        scores_wt = [np.sum(g.similarity_jaccard(mode="out")[i]) for i in wt]     
+        scores_all = [np.sum(g.similarity_jaccard(mode="out")[i]) for i in range(len(RFIDs))]
+        
+    elif measure == "summed jaccard":
         scores_mutants = [np.sum(g.similarity_jaccard(mode="out")[i]) for i in mutants]
         scores_rc = [np.sum(g.similarity_jaccard(mode="out")[i]) for i in rc]
         scores_rest = [np.sum(g.similarity_jaccard(mode="out")[i]) for i in others]
@@ -170,6 +191,20 @@ def measures(graph_idx, day, window = 3, measure = "hub", variable = "approaches
         scores_rest = [np.sum([g.es[edge]["weight"] for edge in g.incident(i, mode="out")]) for i in others]
         scores_wt = [np.sum([g.es[edge]["weight"] for edge in g.incident(i, mode="out")]) for i in wt]    
         scores_all = [np.sum([g.es[edge]["weight"] for edge in g.incident(i, mode="out")]) for i in range(len(RFIDs))]
+        
+    elif measure == "normed instrength":
+        scores_mutants = rescale([np.sum([g.es[edge]["weight"] for edge in g.incident(i, mode="in")]) for i in mutants])
+        scores_rc = rescale([np.sum([g.es[edge]["weight"] for edge in g.incident(i, mode="in")]) for i in rc])
+        scores_rest = rescale([np.sum([g.es[edge]["weight"] for edge in g.incident(i, mode="in")]) for i in others])
+        scores_wt = rescale([np.sum([g.es[edge]["weight"] for edge in g.incident(i, mode="in")]) for i in wt])
+        scores_all = rescale([np.sum([g.es[edge]["weight"] for edge in g.incident(i, mode="in")]) for i in range(len(RFIDs))])
+        
+    elif measure == "normed outstrength":
+        scores_mutants = rescale([np.sum([g.es[edge]["weight"] for edge in g.incident(i, mode="out")]) for i in mutants])
+        scores_rc = rescale([np.sum([g.es[edge]["weight"] for edge in g.incident(i, mode="out")]) for i in rc])
+        scores_rest = rescale([np.sum([g.es[edge]["weight"] for edge in g.incident(i, mode="out")]) for i in others])
+        scores_wt = rescale([np.sum([g.es[edge]["weight"] for edge in g.incident(i, mode="out")]) for i in wt])    
+        scores_all = rescale([np.sum([g.es[edge]["weight"] for edge in g.incident(i, mode="out")]) for i in range(len(RFIDs))])
 
     elif measure == "outcloseness":
         scores_mutants = [g.closeness(mode="out", weights = [e['weight'] for e in g.es()])[i] for i in mutants]
@@ -247,6 +282,15 @@ def measures(graph_idx, day, window = 3, measure = "hub", variable = "approaches
          scores_rest = [np.sum(g.bibcoupling()[i]) for i in others]  
          scores_wt = [np.sum(g.bibcoupling()[i]) for i in wt]  
          scores_all = [np.sum(g.bibcoupling()[i]) for i in range(len(RFIDs))]
+         
+    elif measure == "summed common neighbors":
+         n = len(RFIDs)
+         scores_mutants = [np.sum(g.bibcoupling()[i]) + np.sum(g.cocitation()[i]) for i in mutants]
+         scores_rc = [np.sum(g.bibcoupling()[i]) + np.sum(g.cocitation()[i]) for i in rc]
+         scores_rest = [np.sum(g.bibcoupling()[i]) + np.sum(g.cocitation()[i]) for i in others]  
+         scores_wt = [np.sum(g.bibcoupling()[i]) + np.sum(g.cocitation()[i]) for i in wt]  
+         scores_all = [np.sum(g.bibcoupling()[i]) + np.sum(g.cocitation()[i]) for i in range(n)]
+        
 
     elif measure == "transitivity":
          scores_mutants = [g.transitivity_local_undirected()[i] for i in mutants]
@@ -255,7 +299,7 @@ def measures(graph_idx, day, window = 3, measure = "hub", variable = "approaches
          scores_wt = [g.transitivity_local_undirected()[i] for i in wt]  
          scores_all = [g.transitivity_local_undirected()[i] for i in range(len(RFIDs))]
          
-    elif measure == "out persistance":
+    elif measure == "out persistance" or measure == "in persistance":
         if window == 1:
             datapath2 = "..\\data\\both_cohorts_1day\\"+labels[graph_idx]+"\\"+variable+"_resD1_"+str(day+1)+".csv"
         elif window == 3:
@@ -283,16 +327,16 @@ def measures(graph_idx, day, window = 3, measure = "hub", variable = "approaches
             mode = 'directed'
         else:
             raise NameError("Incorrect input argument for 'variable'.")
-        # For computing persistance
-        if mnn is not None:
-            data = np.where(data > 0.01, 1, 0) # replacing remaining connections by 1
-            data2 = np.where(data2 > 0.01, 1, 0)
-        else:
-            data= np.where(data > 0.01, data, 0) # replacing remaining connections by 1
-            data2 = np.where(data2 > 0.01, data2, 0)
+
+        data= np.where(data > 0.01, data, 0) 
+        data2 = np.where(data2 > 0.01, data2, 0)
             
-        axis = 1 
-        persistance = np.sum((2*np.abs(data2 - data)/(data+data2)) <= 0.5, axis = axis)
+        axis = 1 if measure[:3] == 'out' else 0
+        cond1 = np.abs(data2 - data) + data <= 1.5*data
+     #   cond2 = np.abs(data2 - data) + data2 <= 1.5*data2
+      #  persistance = np.sum(np.logical_or(cond1, cond2), axis = axis)
+        persistance = np.sum(cond1, axis = axis)
+
         scores_mutants = [persistance[i] for i in mutants]
         scores_rc = [persistance[i] for i in rc]
         scores_rest = [persistance[i] for i in others]  
@@ -304,19 +348,17 @@ def measures(graph_idx, day, window = 3, measure = "hub", variable = "approaches
 
     return scores_mutants, scores_rc, scores_rest, scores_wt, scores_all, {"Mouse_RFID": RFIDs, "mutant": is_mutant, "RC": is_RC, "Group_ID": int(labels[graph_idx][1:])}
     
-def mk_measures_dataframe(variable = "approaches", window = 3, mnn = 4, mutual = False, rm_weak_histo = True, avg = False):
+def mk_measures_dataframe(variable = "approaches", window = 3, mnn = 4, mutual = False, rm_weak_histo = True):
     """
     Formats the measures made on the graphs into a pandas dataframe and saves to a csv file
     """
 
-    unweighted_features = ["indegree", "outdegree", "transitivity", "summed cocitation", "summed bibcoupling", 
-        "summed insubcomponent", "summed outsubcomponent", "summed injaccard", "summed outjaccard", "out persistance"]
+    unweighted_features = ["indegree", "outdegree", "degree", "transitivity", "summed cocitation", "summed bibcoupling", 
+        "summed common neighbors", "summed insubcomponent", "summed outsubcomponent", "summed injaccard", "summed outjaccard",
+        "summed jaccard"]
     
     weighted_features = ["authority", "hub", "eigenvector_centrality", "constraint", "pagerank", "incloseness", "outcloseness",
-        "instrength", "outstrength"]
-    
-    metadata_path = "..\\data\\meta_data.csv"
-    metadata_df = pd.read_csv(metadata_path)
+        "normed instrength", "normed outstrength", "instrength", "outstrength", "out persistance", "in persistance"]
     
     features_df = pd.DataFrame()
     
@@ -368,22 +410,20 @@ def mk_measures_dataframe(variable = "approaches", window = 3, mnn = 4, mutual =
             
     save_name = f"graph_features_{variable}_d{window}_mnn{mnn}" if mutual else f"graph_features_{variable}_d{window}_nn{mnn}"
     save_name = f"{save_name}_rm_weak.csv" if rm_weak_histo else f"{save_name}_all_muts.csv" 
-    features_df.to_csv(f"..\\data\\{save_name}", index = False)
+    features_df.to_csv(f"..\\data\\processed_metrics\\{save_name}", index = False)
     return features_df
 
-def mk_derivatives_dataframe(variable = "approaches", window = 3, mnn = 4, mutual = False, rm_weak_histo = True, avg = False):
+def mk_derivatives_dataframe(variable = "approaches", window = 3, mnn = 4, mutual = False, rm_weak_histo = True):
     """
     Formats the derivative of the measures made on the graphs as a function of time into a pandas dataframe and saves to a csv file
     """
 
-    unweighted_features = ["indegree", "outdegree", "transitivity", "summed cocitation", "summed bibcoupling", 
-        "summed insubcomponent", "summed outsubcomponent", "summed injaccard", "summed outjaccard"]
+    unweighted_features = ["indegree", "outdegree", "degree", "transitivity", "summed cocitation", "summed bibcoupling", 
+        "summed common neighbors", "summed insubcomponent", "summed outsubcomponent", "summed injaccard", "summed outjaccard",
+        "summed jaccard", "out persistance"]
     
     weighted_features = ["authority", "hub", "eigenvector_centrality", "constraint", "pagerank", "incloseness", "outcloseness",
-        "instrength", "outstrength"]
-    
-    metadata_path = "..\\data\\meta_data.csv"
-    metadata_df = pd.read_csv(metadata_path)
+        "normed instrength", "normed outstrength","instrength", "outstrength", "out persistance", "in persistance"]
     
     features_df = pd.DataFrame()
     
@@ -399,6 +439,8 @@ def mk_derivatives_dataframe(variable = "approaches", window = 3, mnn = 4, mutua
                 scores_t1, metadata = np.array(res_t1[4]), res_t2[5]
                 scores_t2, _ = np.array(res_t2[4]), res_t1[5]
                 scores = scores_t2 - scores_t1
+                if feature == "in persistance" or feature == "out persistance": # persistance is already a derivative!
+                    scores = scores_t1
                 tags, is_mutant, is_RC, group = metadata["Mouse_RFID"], metadata["mutant"], metadata["RC"], metadata["Group_ID"]
                 all_scores.extend(scores)
                 day.extend([d]*len(tags))
@@ -441,7 +483,7 @@ def mk_derivatives_dataframe(variable = "approaches", window = 3, mnn = 4, mutua
             
     save_name = f"metrics_derivative_{variable}_d{window}_mnn{mnn}" if mutual else f"metrics_derivative_{variable}_d{window}_nn{mnn}"
     save_name = f"{save_name}_rm_weak.csv" if rm_weak_histo else f"{save_name}_all_muts.csv" 
-    features_df.to_csv(f"..\\data\\{save_name}", index = False)
+    features_df.to_csv(f"..\\data\\processed_metrics\\{save_name}", index = False)
     return features_df
     
 def SE_and_plot(df_path, dim = 2, nn = 10, subset = None, show_RC = True, avg = False):
@@ -589,66 +631,14 @@ def manual_plot(df_path, dim = 2, variables = None, show_RC = True, avg = True):
     ax.legend()
     plt.tight_layout()
     plt.show()
-    
 
-def isomap_and_plot(df_path, dim = 2, nn = 10, color_var = "mutant", subset = None, avg = False):
-    # Read the dataframe
-    df = pd.read_csv(df_path)
-    df = df.dropna()
-    
-    if avg:
-        df = df.groupby(['Mouse_RFID', 'Group_ID'], as_index=False).agg({
-          'mutant': 'first',  # Keep the first value (or use another aggregation function)
-          'RC': 'first',      # Keep the first value (or use another aggregation function)
-          **{col: 'std' for col in df.select_dtypes(include='number').columns if col not in ['Group_ID']}
-          })
-        df = df.dropna()
-        
-    
-    # Select features from columns 6 to 23 (Python indexing starts at 0, so columns 5 to 22)
-    features = df.iloc[:, 5:23]
-    if subset is not None:
-        features = df.loc[:, subset]
-    
-
-    scaler = StandardScaler()
-    features_normalized = features#scaler.fit_transform(features)
-    
-    if dim == 2:
-        results = (
-            manifold.Isomap(n_neighbors=nn, n_components=2)
-            .fit_transform(features_normalized)
-        )
-        
-        fig, ax = plt.subplots(1, 1, figsize=(10, 8))
-        ax.scatter(results[~df[color_var].values, 0], results[~df[color_var].values, 1],
-                             c="k", alpha=0.9, s = 100, label = "control")
-        ax.scatter(results[df[color_var].values, 0], results[df[color_var].values, 1],
-                             c="red", alpha=0.9, s = 100, label = "mutant")
-        
-    if dim == 3:
-        results = (
-            manifold.Isomap(n_neighbors=nn, n_components=3)
-            .fit_transform(features_normalized)
-        )
-        
-        fig = plt.figure(figsize=(10, 8))
-        ax = fig.add_subplot(111, projection='3d')
-        scatter = ax.scatter(results[:, 0], results[:, 1], results[:, 2],
-                             s = 100, c=df[color_var], alpha=0.9)
-    
-    ax.set_title(f'Isomap reduction\ncoloring {color_var}', fontsize=15)
-    ax.set_xlabel('iso 1', fontsize=12)
-    ax.set_ylabel('iso 2', fontsize=12)
-    if dim == 3:
-        ax.set_zlabel('iso 3', fontsize=12)
-    ax.legend()
-    plt.show()
 
 def statistic(x, y):
     x = np.concatenate(x)
     y = np.concatenate(y)
-    return np.mean(x) - np.mean(y)
+    # return np.mean(x) - np.mean(y)
+    return np.median(x) - np.median(y)
+
 
 def add_significance(data, var, ax, bp):
     """Computes and adds p-value significance to input ax and boxplot"""
@@ -703,28 +693,46 @@ def add_significance(data, var, ax, bp):
         text_height = bar_height + (y_range * 0.01)
         ax.text((x1 + x2) * 0.5, text_height, sig_symbol, ha='center', va='bottom', c='k')
     
-def plot_std(df_path, var, avg = False, show_RC = False, ax = None):
+def plot_std(df_path, var, std = False, show_RC = False, sep_RC = False, ax = None):
     # Read the dataframe
     df = pd.read_csv(df_path)
+    # df = df.dropna()
+
+    # isolating the variable of interest in order not to drop rows with valid data with .dropna()
+    df = df.loc[:, ["mutant", "Timestamp_base1", "Group_ID", "RC", "Mouse_RFID", var]]
     df = df.dropna()
     
-    if avg:
+    if var == "instrength" or var == "outstrength" or var == "normed outstrength" or var == "normed outstrength":
+        df = df[df["Timestamp_base1"] != 0] 
+        #df = df[df["Timestamp_base1"] != 1] 
+        # df = df[df["Timestamp_base1"] != 2] 
+
+
+    if std:
         df = df.groupby(['Mouse_RFID', 'Group_ID'], as_index=False).agg({
           'mutant': 'first',  # Keep the first value (or use another aggregation function)
           'RC': 'first',      # Keep the first value (or use another aggregation function)
           **{col: 'std' for col in df.select_dtypes(include='number').columns if col not in ['Group_ID']}
           })
-        df = df.dropna()
-    
+        # df = df.dropna()
+        # if var == "instrength" or var == "outstrength":
+        #     df = df.loc[df[var] < 170, :]
+
     data = [
-        df.loc[df["mutant"], ['Mouse_RFID', var]],  # Mutants
-        df.loc[np.logical_and(~df["mutant"], ~df["RC"]), ['Mouse_RFID', var]]  # Non-mutants
+        df.loc[df["mutant"], ['Mouse_RFID', var]],  
+        df.loc[np.logical_and(~df["mutant"], ~df["RC"]), ['Mouse_RFID', var]]  
     ]
     
     if show_RC:
         data = [
-            df.loc[df["mutant"], ['Mouse_RFID', var]],  # Mutants
-            df.loc[~df["mutant"], ['Mouse_RFID', var]]  # Non-mutants
+            df.loc[df["mutant"], ['Mouse_RFID', var]],  
+            df.loc[~df["mutant"], ['Mouse_RFID', var]] 
+        ]
+        
+    if sep_RC:
+        data = [
+            df.loc[df["RC"], ['Mouse_RFID', var]], 
+            df.loc[~df["RC"], ['Mouse_RFID', var]]  
         ]
     
     if ax is None:
@@ -734,25 +742,37 @@ def plot_std(df_path, var, avg = False, show_RC = False, ax = None):
     alpha = 0.5
     numeric_data = [data[i].drop("Mouse_RFID", axis = 1, inplace = False).values for i in range(2)]
     numeric_data = [np.concatenate(d) for d in numeric_data]
-    bp = ax.boxplot(numeric_data, labels=["Mutants", "Non-members WT"], showfliers = False)
-    
+    if not sep_RC:
+        bp = ax.boxplot(numeric_data, labels=["Mutants", "Non-members WT"], showfliers = False)
+    elif sep_RC:
+        bp = ax.boxplot(numeric_data, labels=["RC", "Non-members"], showfliers = False)
 
-    # # standard deviation of mutants across time
-    ax.scatter([1 + np.random.normal()*0.05 for i in range(len(df.loc[df["mutant"],var].values))], 
-                df.loc[df["mutant"],var], alpha = alpha, s = size, color = "red"); 
+    if not sep_RC:
+        ax.scatter([1 + np.random.normal()*0.05 for i in range(len(df.loc[df["mutant"],var].values))], 
+                    df.loc[df["mutant"],var], alpha = alpha, s = size, color = "red"); 
+        
+        ax.scatter([2 + np.random.normal()*0.05 for i in range(len(df.loc[np.logical_and(~df["mutant"], ~df["RC"]), var].values))], 
+                    df.loc[np.logical_and(~df["mutant"], ~df["RC"]), var], alpha = alpha, s = size, color = "gray", label = "Non-member"); 
+        
+        if show_RC:
+            ax.scatter([1 + np.random.normal()*0.05 for i in range(len(df.loc[np.logical_and(df["mutant"], df["RC"]), var].values))], 
+                        df.loc[np.logical_and(df["mutant"], df["RC"]), var], alpha = alpha, s = size, color = "green", label = "RC member"); 
+            
+            ax.scatter([2 + np.random.normal()*0.05 for i in range(len(df.loc[np.logical_and(~df["mutant"], df["RC"]), var].values))], 
+                        df.loc[np.logical_and(~df["mutant"], df["RC"]), var], alpha = alpha, s = size, color = "green", label = "RC member"); 
+    elif sep_RC:
+        ax.scatter([1 + np.random.normal()*0.05 for i in range(len(df.loc[df["RC"],var].values))], 
+                    df.loc[df["RC"],var], alpha = alpha, s = size, color = "green"); 
+        
+        ax.scatter([2 + np.random.normal()*0.05 for i in range(len(df.loc[~df["RC"], var].values))], 
+                    df.loc[~df["RC"], var], alpha = alpha, s = size, color = "gray", label = "Non-member"); 
+        
     
-    ax.scatter([2 + np.random.normal()*0.05 for i in range(len(df.loc[np.logical_and(~df["mutant"], ~df["RC"]), var].values))], 
-                df.loc[np.logical_and(~df["mutant"], ~df["RC"]), var], alpha = alpha, s = size, color = "gray", label = "Non-member"); 
-    
-    if show_RC:
-        ax.scatter([2 + np.random.normal()*0.05 for i in range(len(df.loc[np.logical_and(~df["mutant"], df["RC"]), var].values))], 
-                    df.loc[np.logical_and(~df["mutant"], df["RC"]), var], alpha = alpha, s = size, color = "green", label = "RC member"); 
     
     add_significance(data, var, ax, bp)
 
-    # ax.set_ylabel("σ (V(t)/dt)")
-    ax.set_ylabel("σ (V(t))")
-    ax.set_yscale("log")
+    ax.set_ylabel("σ (dV(t)/dt)")
+    # ax.set_yscale("log")
     ax.set_title(f"{var}")
    
     
@@ -775,7 +795,7 @@ def train_mlp_classifier(df_path, pred_var = "mutant", subset=None, avg = False)
           'RC': 'first',      # Keep the first value (or use another aggregation function)
           **{col: 'std' for col in df.select_dtypes(include='number').columns if col not in ['Group_ID']}
           })
-        df = df.dropna()
+        # df = df.dropna()
     
     
     # Select features (columns 6 to 23) and target ('mutant')
@@ -838,35 +858,44 @@ def evaluate_feature_importance(mlp, X_test, y_test, feature_names):
     plt.show()
 
 if __name__ == "__main__":
-    # df = mk_measures_dataframe("approaches", 1, 3, False, True)
-    # df = mk_derivatives_dataframe("approaches", 1, 3, False, True)
+    # df = mk_measures_dataframe("approaches", 1, 5, mutual = False, rm_weak_histo = True)
+    # df = mk_derivatives_dataframe("approaches", 1, 5, mutual = False, rm_weak_histo = True)
+    # df = mk_derivatives_dataframe("approaches", 1, 5, mutual = False, rm_weak_histo = True)
     # run_tsne_and_plot("..\\data\\graph_features_approaches_d3.csv", 3)
     # SE_and_plot("..\\data\\metrics_derivative_approaches_d1_nn5_rm_weak.csv", 2, 30,  "mutant", None, True)
     # MDS_and_plot("..\\data\\graph_features_approaches_d3_nn4.csv", 3, "mutant")
     # LLE_and_plot("..\\data\\graph_features_approaches_d3.csv", 2, 100, "mutant")
 
+
     
-    unweighted_features = ["indegree", "outdegree", "summed cocitation", "summed bibcoupling", 
-                           "summed injaccard", "summed outjaccard"]
+    unweighted_features = ["indegree", "outdegree", "degree", "summed cocitation", "summed bibcoupling", 
+                          "summed common neighbors", "summed injaccard", "summed outjaccard", "summed jaccard"]
     
     weighted_features = ["eigenvector_centrality", "pagerank", "incloseness", "outcloseness",
         "instrength", "outstrength"]
     
-    fig, axs = plt.subplots(2, 3, figsize = (16, 13))
-    for idx, ax in enumerate(axs.flatten()):
-        plot_std("..\\data\\processed_metrics\\metrics_derivative_approaches_d1_nn5_rm_weak.csv", unweighted_features[idx], True, True, ax)
-        # plot_std("..\\data\\processed_metrics\\graph_features_approaches_d1_nn5_rm_weak.csv", weighted_features[idx], True, False, ax)
-    # plt.suptitle("graph_features_approaches_d1_nn5_rm_weak")
-    plt.suptitle("metrics_derivative_approaches_d1_nn3_rm_weak")
+    # fig, axs = plt.subplots(3, 3, figsize = (16, 13))
+    # for idx, ax in enumerate(axs.flatten()):
+    #     plot_std("..\\data\\processed_metrics\\metrics_derivative_approaches_d1_nn3_rm_weak.csv", unweighted_features[idx], True, False, False, ax)
+    #     # plot_std("..\\data\\processed_metrics\\graph_features_approaches_d1_nn5_rm_weak.csv", unweighted_features[idx], True, False, False, ax)
+    # # plt.suptitle("graph_features_approaches_d1_nn5_rm_weak")
+    # plt.suptitle("metrics_derivative_approaches_d1_nn3_rm_weak")
 
-    # SE_and_plot("..\\data\\processed_metrics\\metrics_derivative_approaches_d1_nn5_rm_weak.csv", 2, 6, ["indegree", "outdegree"], True, True)
+    # SE_and_plot("..\\data\\processed_metrics\\metrics_derivative_approaches_d1_nn5_rm_weak.csv", 2, 7, ["indegree", "summed jaccard", "summed common neighbors", "transitivity"], True, True)
     # SE_and_plot("..\\data\\processed_metrics\\metrics_derivative_approaches_d1_nn5_rm_weak.csv", 2, 6, unweighted_features, True, True)
 
-    # manual_plot("..\\data\\processed_metrics\\graph_features_approaches_d1_nn5_rm_weak.csv", 3, unweighted_features, False, True)
+    # manual_plot("..\\data\\processed_metrics\\metrics_derivative_approaches_d1_nn5_rm_weak.csv", 2, ["degree", "summed jaccard", "instrength"], True, True)
 
 
-    # plot_std("..\\data\\metrics_derivative_approaches_d1_nn5_rm_weak.csv", "indegree", True)#,subset)
-    # plot_std("..\\data\\metrics_derivative_approaches_d1_nn5_rm_weak.csv", "summed injaccard", True)#,subset)
+    fig, axs = plt.subplots(1, 2, figsize = (10, 10))
+    plot_std("..\\data\\processed_metrics\\metrics_derivative_approaches_d1_nn3_rm_weak.csv", "summed injaccard", std =True, show_RC=False, sep_RC =False, ax =axs[0])#,subset)
+    plot_std("..\\data\\processed_metrics\\metrics_derivative_approaches_d1_nn3_rm_weak.csv", "summed injaccard", True, True, False, axs[1])#,subset)
+        
+    # plot_std("..\\data\\processed_metrics\\metrics_derivative_approaches_d1_nn5_rm_weak.csv", "instrength", True, False, False, axs[0, 0])#,subset)
+    # plot_std("..\\data\\processed_metrics\\metrics_derivative_approaches_d1_nn5_rm_weak.csv", "outstrength", True, False, False, axs[0, 1])#,subset)
+    # plot_std("..\\data\\processed_metrics\\metrics_derivative_approaches_d1_nn5_rm_weak.csv", "instrength", True, True, False, axs[1, 0])#,subset)
+    # plot_std("..\\data\\processed_metrics\\metrics_derivative_approaches_d1_nn5_rm_weak.csv", "outstrength", True, True, False, axs[1, 1])#,subset)
+    plt.suptitle("nn cut = 3, permutation test on the mean")
 
 
     # print("############################### prediction on metrics ts #######################################")
