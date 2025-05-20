@@ -636,8 +636,8 @@ def manual_plot(df_path, dim = 2, variables = None, show_RC = True, avg = True):
 def statistic(x, y):
     x = np.concatenate(x)
     y = np.concatenate(y)
-    # return np.mean(x) - np.mean(y)
-    return np.median(x) - np.median(y)
+    return np.mean(x) - np.mean(y)
+    # return np.median(x) - np.median(y)
 
 
 def add_significance(data, var, ax, bp):
@@ -677,7 +677,7 @@ def add_significance(data, var, ax, bp):
         x2 = 2
         bottom, top = ax.get_ylim()
         y_range = top - bottom
-        bar_height = (y_range * 0.05 * 1) + top
+        bar_height = (y_range * 0.05 * 1) + top #- 20
         bar_tips = bar_height - (y_range * 0.02)
         ax.plot(
             [x1, x1, x2, x2],
@@ -768,10 +768,97 @@ def plot_std(df_path, var, std = False, show_RC = False, sep_RC = False, ax = No
                     df.loc[~df["RC"], var], alpha = alpha, s = size, color = "gray", label = "Non-member"); 
         
     
-    
+    # ax.set_ylim([-10, 150])
+
     add_significance(data, var, ax, bp)
 
     ax.set_ylabel("σ (dV(t)/dt)")
+    # ax.set_ylabel("σ V(t)")
+
+    # ax.set_yscale("log")
+    ax.set_title(f"{var}")
+    
+    
+    
+def plot_mean(df_path, var, std = False, show_RC = False, sep_RC = False, ax = None):
+    # Read the dataframe
+    df = pd.read_csv(df_path)
+    # df = df.dropna()
+
+    # isolating the variable of interest in order not to drop rows with valid data with .dropna()
+    df = df.loc[:, ["mutant", "Timestamp_base1", "Group_ID", "RC", "Mouse_RFID", var]]
+    df = df.dropna()
+    
+    if var == "instrength" or var == "outstrength" or var == "normed outstrength" or var == "normed outstrength":
+        df = df[df["Timestamp_base1"] != 0] 
+        #df = df[df["Timestamp_base1"] != 1] 
+        # df = df[df["Timestamp_base1"] != 2] 
+
+
+    if std:
+        df = df.groupby(['Mouse_RFID', 'Group_ID'], as_index=False).agg({
+          'mutant': 'first',  # Keep the first value (or use another aggregation function)
+          'RC': 'first',      # Keep the first value (or use another aggregation function)
+          **{col: 'mean' for col in df.select_dtypes(include='number').columns if col not in ['Group_ID']}
+          })
+        # df = df.dropna()
+        # if var == "instrength" or var == "outstrength":
+        #     df = df.loc[df[var] < 170, :]
+
+    data = [
+        df.loc[df["mutant"], ['Mouse_RFID', var]],  
+        df.loc[np.logical_and(~df["mutant"], ~df["RC"]), ['Mouse_RFID', var]]  
+    ]
+    
+    if show_RC:
+        data = [
+            df.loc[df["mutant"], ['Mouse_RFID', var]],  
+            df.loc[~df["mutant"], ['Mouse_RFID', var]] 
+        ]
+        
+    if sep_RC:
+        data = [
+            df.loc[df["RC"], ['Mouse_RFID', var]], 
+            df.loc[~df["RC"], ['Mouse_RFID', var]]  
+        ]
+    
+    if ax is None:
+        fig, ax = plt.subplots(1, 1, figsize=(4, 6))
+        
+    size = 100
+    alpha = 0.5
+    numeric_data = [data[i].drop("Mouse_RFID", axis = 1, inplace = False).values for i in range(2)]
+    numeric_data = [np.concatenate(d) for d in numeric_data]
+    if not sep_RC:
+        bp = ax.boxplot(numeric_data, labels=["Mutants", "Non-members WT"], showfliers = False)
+    elif sep_RC:
+        bp = ax.boxplot(numeric_data, labels=["RC", "Non-members"], showfliers = False)
+
+    if not sep_RC:
+        ax.scatter([1 + np.random.normal()*0.05 for i in range(len(df.loc[df["mutant"],var].values))], 
+                    df.loc[df["mutant"],var], alpha = alpha, s = size, color = "red"); 
+        
+        ax.scatter([2 + np.random.normal()*0.05 for i in range(len(df.loc[np.logical_and(~df["mutant"], ~df["RC"]), var].values))], 
+                    df.loc[np.logical_and(~df["mutant"], ~df["RC"]), var], alpha = alpha, s = size, color = "gray", label = "Non-member"); 
+        
+        if show_RC:
+            ax.scatter([1 + np.random.normal()*0.05 for i in range(len(df.loc[np.logical_and(df["mutant"], df["RC"]), var].values))], 
+                        df.loc[np.logical_and(df["mutant"], df["RC"]), var], alpha = alpha, s = size, color = "green", label = "RC member"); 
+            
+            ax.scatter([2 + np.random.normal()*0.05 for i in range(len(df.loc[np.logical_and(~df["mutant"], df["RC"]), var].values))], 
+                        df.loc[np.logical_and(~df["mutant"], df["RC"]), var], alpha = alpha, s = size, color = "green", label = "RC member"); 
+    elif sep_RC:
+        ax.scatter([1 + np.random.normal()*0.05 for i in range(len(df.loc[df["RC"],var].values))], 
+                    df.loc[df["RC"],var], alpha = alpha, s = size, color = "green"); 
+        
+        ax.scatter([2 + np.random.normal()*0.05 for i in range(len(df.loc[~df["RC"], var].values))], 
+                    df.loc[~df["RC"], var], alpha = alpha, s = size, color = "gray", label = "Non-member"); 
+        
+    
+    add_significance(data, var, ax, bp)
+
+    ax.set_ylabel("avg. V(t)")
+
     # ax.set_yscale("log")
     ax.set_title(f"{var}")
    
@@ -888,14 +975,22 @@ if __name__ == "__main__":
 
 
     fig, axs = plt.subplots(1, 2, figsize = (10, 10))
-    plot_std("..\\data\\processed_metrics\\metrics_derivative_approaches_d1_nn3_rm_weak.csv", "summed injaccard", std =True, show_RC=False, sep_RC =False, ax =axs[0])#,subset)
-    plot_std("..\\data\\processed_metrics\\metrics_derivative_approaches_d1_nn3_rm_weak.csv", "summed injaccard", True, True, False, axs[1])#,subset)
+    # plot_std("..\\data\\processed_metrics\\metrics_derivative_approaches_d1_nn3_rm_weak.csv", "outstrength", std =True, show_RC=False, sep_RC =False, ax =axs[0])#,subset)
+    # plot_std("..\\data\\processed_metrics\\metrics_derivative_approaches_d1_nn3_rm_weak.csv", "outstrength", std =True, show_RC=True, sep_RC =False, ax =axs[0, 1])#,subset)
+    # plot_std("..\\data\\processed_metrics\\metrics_derivative_approaches_d1_nn3_rm_weak.csv", "instrength", True, False, False, axs[1])#,subset)
+    # plot_std("..\\data\\processed_metrics\\metrics_derivative_approaches_d1_nn3_rm_weak.csv", "instrength", True, True, False, axs[1, 1])#,subset)
+
+    plot_mean("..\\data\\processed_metrics\\graph_features_approaches_d1_nn3_rm_weak.csv", "outstrength", std =True, show_RC=False, sep_RC =False, ax =axs[0])#,subset)
+    plot_mean("..\\data\\processed_metrics\\graph_features_approaches_d1_nn3_rm_weak.csv", "instrength", True, True, False, axs[1])#,subset)
         
+   
+    
+   
     # plot_std("..\\data\\processed_metrics\\metrics_derivative_approaches_d1_nn5_rm_weak.csv", "instrength", True, False, False, axs[0, 0])#,subset)
     # plot_std("..\\data\\processed_metrics\\metrics_derivative_approaches_d1_nn5_rm_weak.csv", "outstrength", True, False, False, axs[0, 1])#,subset)
     # plot_std("..\\data\\processed_metrics\\metrics_derivative_approaches_d1_nn5_rm_weak.csv", "instrength", True, True, False, axs[1, 0])#,subset)
     # plot_std("..\\data\\processed_metrics\\metrics_derivative_approaches_d1_nn5_rm_weak.csv", "outstrength", True, True, False, axs[1, 1])#,subset)
-    plt.suptitle("nn cut = 3, permutation test on the mean")
+    # plt.suptitle("nn cut = 3, permutation test on the mean")
 
 
     # print("############################### prediction on metrics ts #######################################")

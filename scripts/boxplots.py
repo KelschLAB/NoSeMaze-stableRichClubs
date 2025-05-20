@@ -114,34 +114,86 @@ def boxplot_chasing(out = True):
     # bottom, top = ax.get_ylim()
     plt.show()
     
-def boxplot_approaches():
+def boxplot_approaches(out = True, sep = False, all_wt = False):
     """
     Compares the number of approaches made by RC members, mutants and others.
     """
     all_rc =  [[0,6], [3, 8, 9], [2, 3, 6], [2, 4], [1, 6], [0, 1], [3, 4, 6], [3, 5, 7, 8], [7, 8], [5, 8], [0, 2], [], [], [2, 8, 9], []]
     all_mutants = [[6], [2], [6], [5], [2, 4], [7], [0, 5], [3], [2], [0,2,3], [5,7], [2,3,9], [3,9], [0,2,3], [2,3,8,9]] #took out mutants with weak histology
     labels = ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G10", "G11", "G12", "G13", "G14", "G15", "G16"]
-    
+        
     approaches_rc, approaches_mutants, approaches_others = [], [], [] 
     for idx, g in enumerate(labels):
         data = read_graph(["..\\data\\averaged\\"+g+"\\approaches_resD7_1.csv"], percentage_threshold = 0)[0] + read_graph(["..\\data\\averaged\\"+g+"\\approaches_resD7_2.csv"], percentage_threshold = 0)[0]
         for rc in all_rc[idx]:
-            approaches_rc.append(np.sum(data[:, rc]))
+            if out:
+                approaches_rc.append(np.sum(data[:, rc]))
+            else:
+                approaches_rc.append(np.sum(data[rc, :]))
+
         for mutant in all_mutants[idx]:
-            approaches_mutants.append(np.sum(data[mutant, :]))
+            if out:
+                approaches_mutants.append(np.sum(data[mutant, :]))
+            else:
+                approaches_mutants.append(np.sum(data[:, mutant]))
+
         others = np.arange(10)[np.logical_and(~np.isin(np.arange(10), all_rc[idx]), ~np.isin(np.arange(10), all_mutants[idx]))]
         for other in others:
             try:
-                approaches_others.append(np.sum(data[other, :]))
+                if out:
+                    approaches_others.append(np.sum(data[other, :]))
+                else:
+                    approaches_others.append(np.sum(data[:, other]))
+
             except:
                 pass
             
-    data = [approaches_rc, approaches_mutants, approaches_others]
+
+            
+    if sep:
+        data = [approaches_rc, approaches_mutants, approaches_others]
+    else:
+        if not all_wt:
+            data = [approaches_mutants, approaches_others]
+        else:
+            data = [approaches_mutants, approaches_others + approaches_rc]
+
+
     ax = plt.axes()
-    bp = ax.boxplot(data, widths=0.6, patch_artist=True)
-    ax.set_ylabel("Outgoing approaches", fontsize = 20)
-    format_plot(ax, bp) # set x_axis, and colors of each bar
-    add_significance(data, ax, bp)
+    bp = ax.boxplot(data, widths=0.6, patch_artist=True, showfliers = False, zorder=1)
+    
+    alpha = 1
+    size = 40
+    if not sep:
+        ax.scatter([1 + np.random.normal()*0.05 for i in range(len(data[0]))], 
+                    data[0], alpha = alpha, s = size, label = "mutant", zorder=2); 
+        
+        ax.scatter([2 + np.random.normal()*0.05 for i in range(len(data[1]))], 
+                    data[1], alpha = alpha, s = size, label = "non-member", zorder=2); 
+    
+    elif sep:
+         ax.scatter([1 + np.random.normal()*0.05 for i in range(len(data[1]))], 
+                     data[1], alpha = alpha, s = size, label = "mutant"); 
+         
+         ax.scatter([2 + np.random.normal()*0.05 for i in range(len(data[2]))], 
+                     data[2], alpha = alpha, s = size, label = "non-member"); 
+         
+         ax.scatter([3 + np.random.normal()*0.05 for i in range(len(data[0]))], 
+                     data[0], alpha = alpha, s = size, label = "RC"); 
+
+    if out:
+        ax.set_ylabel("Outgoing approaches", fontsize = 20)
+    else:
+        ax.set_ylabel("Ingoing approaches", fontsize = 20)
+    if sep:
+        format_plot(ax, bp, xticklabels = ["RC", "Mutants", "Non-members"]) # set x_axis, and colors of each bar
+    else:
+        if not all_wt:
+            format_plot(ax, bp, xticklabels = ["Mutants", "Non-members"]) # set x_axis, and colors of each bar
+        else:
+            format_plot(ax, bp, xticklabels = ["Mutants", "WT"]) # set x_axis, and colors of each bar
+
+
     # bottom, top = ax.get_ylim()
     # ax.set_title("Week 1", fontsize = 25, weight='bold')
     plt.show()
@@ -378,7 +430,10 @@ def boxplot_measures(measure = "hub", separate_wt = False):
     
 if __name__ == "__main__":
     # boxplot_chasing(False)
-    # boxplot_approaches() 
+    boxplot_approaches(True, False, True) 
+    plt.figure()
+    boxplot_approaches(False, False, True) 
+
     # boxplot_interactions()
     # time_in_arena(True)
     # social_time()
@@ -386,7 +441,7 @@ if __name__ == "__main__":
     # boxplot_measures("authority")
     # boxplot_measures("pagerank")
     # boxplot_measures("pagerank", True)
-    boxplot_measures("eigenvector_centrality")
+    # boxplot_measures("eigenvector_centrality")
     # boxplot_measures("eigenvector_centrality", True)
 
     # boxplot_measures("harmonic_centrality")

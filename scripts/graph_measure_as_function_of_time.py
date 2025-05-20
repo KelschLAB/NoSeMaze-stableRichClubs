@@ -361,8 +361,11 @@ def plot_derivative_timeseries(measure = "hub", window = 3, variable = "approach
     value_mutants, value_rc, value_rest, value_wt = np.array(value_mutants), np.array(value_rc), np.array(value_rest), np.array(value_wt)
     std_mutants, std_rc, std_rest, std_wt = np.array(std_mutants), np.array(std_rc), np.array(std_rest), np.array(std_wt) 
     if ax is None:
+        add_legend = True
         fig, ax = plt.subplots(1, 1)
-    
+    else:
+        add_legend = False
+
     if separate_wt:
         ax.plot(t, value_mutants, lw = 2, c = "red", label = "Mutants")
         ax.fill_between(t, value_mutants - std_mutants, value_mutants + std_mutants, color="red", alpha=0.2)
@@ -381,8 +384,69 @@ def plot_derivative_timeseries(measure = "hub", window = 3, variable = "approach
     ax.set_ylabel("Value", fontsize = 13)
     ax.set_xticks(range(1, 15//window, 1)) 
     ax.tick_params(axis='both', which='major', labelsize=12)  # Adjust major tick labels
-    if ax is None:
+    if add_legend:
         ax.legend()
+        
+def plot_derivative_all(measure = "hub", window = 3, variable = "approaches", separate_wt = False, mnn = None, mutual = True, ax = None):
+    """
+    Box plot of graph theory measurement specified by input argument for all graphs in dataset, separated in mutants and WT, or 
+    mutants, RC and others (using separate_wt argument).
+    Inputs:
+        - measure: the type of graph measurment to display. Default to hub score.
+        - window: how many days of averaging should be used to display the results. 
+            Defaults to 3, meaning one graph is the average of three days of experiment. 
+        - variable: which kind of variable should be displayed. Shoud be "interactions" or "approaches".
+        - separate_wt: whether or not the display of WT should be separated in the RC and others.
+    """
+    value_mutants, value_rest, value_rc = [], [], []
+    std_mutants, std_rc, std_rest, std_wt = [], [], [], []
+    for d in range(15//window):
+        scores_mutants, scores_rc, scores_rest, _ = [], [], [], []
+        for j in range(len(labels)):
+            scores_t1 = measures(j, d+1, window, measure, variable, mnn, mutual)
+            scores_t2 = measures(j, d+2, window, measure, variable, mnn, mutual)
+            if scores_t1 is None or scores_t2 is None:
+                continue
+            scores_mutants.extend(np.array(scores_t2[0]) - np.array(scores_t1[0]))
+            scores_rest.extend(np.array(scores_t2[2]) - np.array(scores_t1[2]))
+            scores_rc.extend(np.array(scores_t2[1]) - np.array(scores_t1[1]))
+
+        value_rc.append(scores_rc) 
+        value_rest.append(scores_rest) 
+        value_mutants.append(scores_mutants) 
+        
+    t = np.arange(1, 1+15//window)
+    value_mutants= np.array(value_mutants[:-3])
+    value_rest= np.array(value_rest[:-3])
+    value_rc= np.array(value_rc[:-3])
+
+
+    if ax is None:
+        add_legend = True
+        fig, ax = plt.subplots(1, 1)
+    else:
+        add_legend = False
+
+    if separate_wt:
+        idx = 3
+        t = np.arange(1, 13//window)
+      #  value_mutants[0, 14] = -65
+        ax.plot(t, value_mutants[:, :], lw = 2, c = "red", label = "Mutant", alpha = 1)
+        ax.plot(t, value_rest[:, :], lw = 2, c = "k", label = "Non-member WT", alpha = 1)
+        ax.plot(t, value_rc[:, :], lw = 2, c = "green", label = "sRC")
+      #  plt.ylim([-70, 45])
+        plt.ylabel("dS(t)/dt")
+       # ax.legend()
+
+
+    ax.set_title("Time derivative of "+ measure, fontsize = 15)
+    ax.set_xlabel("Day", fontsize = 13)
+    ax.set_ylabel("Value", fontsize = 13)
+    # ax.set_xticks(range(1, 15//window, 1)) 
+    ax.tick_params(axis='both', which='major', labelsize=12)  # Adjust major tick labels
+    
+    
+
         
 def plot_persistance(out = True, window = 3, variable = "approaches", separate_wt = False, mnn = None, mutual = True, ax = None):
     """
@@ -598,15 +662,17 @@ if __name__ == "__main__":
     # fig.suptitle(title)
     # plot_derivative_timeseries("instrength", 1, 'approaches', False, mnn = mnn, mutual = mutual)
     
-    plot_measure_timeseries("summed injaccard", 1, 'approaches', False, mnn = mnn, mutual = mutual)
-    plot_derivative_timeseries("summed injaccard", 1, 'approaches', False, mnn = mnn, mutual = mutual)
+    # plot_measure_timeseries("summed injaccard", 1, 'approaches', True, mnn = mnn, mutual = mutual)
+    # plot_derivative_timeseries("outstrength", 1, 'approaches', True, mnn = mnn, mutual = mutual)
     
-    plot_measure_timeseries("outstrength", 1, 'approaches', False, mnn = mnn, mutual = mutual)
-    plot_derivative_timeseries("outstrength", 1, 'approaches', False, mnn = mnn, mutual = mutual)
+    plot_derivative_all("outstrength", 1, 'approaches', True, mnn = mnn, mutual = mutual)
 
     
-    plot_persistance(True, 1, "approaches", False, None, False, None)
-    plot_persistance(False, 1, "approaches", False, None, False, None)
+    # plot_measure_timeseries("outstrength", 1, 'approaches', False, mnn = mnn, mutual = mutual)
+    # plot_derivative_timeseries("outstrength", 1, 'approaches', False, mnn = mnn, mutual = mutual)
+
+    # plot_persistance(True, 1, "approaches", False, None, False, None)
+    # plot_persistance(False, 1, "approaches", False, None, False, None)
 
     # plot_persistance(False,1, "approaches", False, None, False, None)
     
@@ -618,8 +684,6 @@ if __name__ == "__main__":
 
     # boxplot_measures("harmonic_centrality")
     # boxplot_measures("closeness")
-
-
 
 
     
