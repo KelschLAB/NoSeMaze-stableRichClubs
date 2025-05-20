@@ -9,30 +9,19 @@ from scipy import stats
 import pandas as pd
 from scipy.stats import sem
 from sklearn.decomposition import PCA
-from sklearn.svm import SVC
-from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, MaxAbsScaler, normalize
-from sklearn.metrics import classification_report, accuracy_score
-from sklearn.inspection import permutation_importance
-from imblearn.under_sampling import RandomUnderSampler
-from sklearn.neural_network import MLPClassifier
-from imblearn.over_sampling import SMOTE
-from imblearn.combine import SMOTEENN
 from tqdm import tqdm 
 from sklearn.manifold import TSNE
 from sklearn import manifold
 sys.path.append('..\\src\\')
 from read_graph import read_graph, read_labels
+from utils import get_category_indices
 import mpl_toolkits.mplot3d  # noqa: F401
 from scipy.stats import ttest_ind
 from scipy import stats
 
-
-
 datapath = "..\\data\\chasing\\single\\"
 datapath = "..\\data\\averaged\\"
-#plt.rc('text', usetex=True)
-plt.rc('font', family='serif')
 
 def rescale(arr):
     if len(arr) > 0:
@@ -43,11 +32,37 @@ def rescale(arr):
 
 labels = ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G10", "G11", "G12", "G13", "G14", "G15", "G16", "G17"]
 
+def default_on_error(graph_idx, variable, window, rm_weak_histo = True):
+    """
+    If the data for a graph on a specific day is not available because of detection issue, nans should be returned. 
+    To preserve the structure of the data array, the number of returned nans should reflect the number of mutants, rc members and wt in the cohort. 
+    """
+    mutants, rc, others, wt, RFIDs = get_category_indices(0, "approaches", rm_weak_histo) # load data from exp day 1 as a template, because all group were properly detected.
+    return [np.nan]*len(mutants), [np.nan]*len(rc), [np.nan]*len(others), [np.nan]*len(wt), [np.nan]*len(RFIDs)
+
 def measures(graph_idx, day, window = 3, measure = "hub", variable = "approaches", mnn = None, mutual = True, rm_weak_histo = True):
     """
-    Returns the measurement specified by input argument for mutants, rc and in wt in graph specified by input index.
-    graph_idx specifies the cohort number, day specifies the specific timepoint (depends on window) and window specifies 
-    the size of the window of averaging for the graph representation.        
+    Computes specified graph-theoretical metric for a given cohort, day, and time window.
+
+    Parameters:
+        graph_idx (int): Index of the group/cohort to analyze (corresponds to an entry in the 'labels' list).
+        day (int): The day or timepoint for which to compute the measure (depends on the window size).
+        window (int, optional): Size of the time window for averaging the graph representation (default is 3).
+        metric (str, optional): Name of the graph-theoretical measure to compute (e.g., "hub", "degree", "pagerank").
+        variable (str, optional): Type of interaction to analyze ("approaches" or "interactions").
+        mnn (int or None, optional): Minimum number of neighbors for graph thresholding (used for unweighted measures).
+        mutual (bool, optional): Whether to use mutual nearest neighbors for graph construction.
+            if mnn is None (used for weighted metrics), mutual is ignored.
+        rm_weak_histo (bool, optional): If True, removes mutants with weak histology from analysis.
+
+    Returns:
+        tuple: (scores_mutants, scores_rc, scores_rest, scores_wt, scores_all, metadata)
+            - scores_mutants: List of measure values for mutant mice.
+            - scores_rc: List of measure values for RC (rich club) mice.
+            - scores_rest: List of measure values for other mice (not mutant or RC).
+            - scores_wt: List of measure values for wild-type mice.
+            - scores_all: List of measure values for all mice in the group.
+            - metadata: Dictionary with keys "Mouse_RFID", "mutant", "RC", and "Group_ID" for the current group.
     """
     metadata_path = "..\\data\\meta_data.csv"
     metadata_df = pd.read_csv(metadata_path)
@@ -59,14 +74,14 @@ def measures(graph_idx, day, window = 3, measure = "hub", variable = "approaches
         datapath = "..\\data\\averaged\\"+labels[graph_idx]+"\\"+variable+"_resD7_"+str(day)+".csv"
     else:
         print("Incorrect time window")
-        return
+        return 
     try:
         data = read_graph([datapath], percentage_threshold = 0, mnn = mnn, mutual = mutual)[0]
         arr = np.loadtxt(datapath, delimiter=",", dtype=str)
         RFIDs = arr[0, 1:].astype(str)
     except Exception as e:
         print(e)
-        return None
+        return default_on_error(graph_idx, variable, window, rm_weak_histo)
     if variable == "interactions":
         mode = 'undirected'
         data = (data + np.transpose(data))/2 # ensure symmetry
@@ -291,7 +306,6 @@ def measures(graph_idx, day, window = 3, measure = "hub", variable = "approaches
          scores_wt = [np.sum(g.bibcoupling()[i]) + np.sum(g.cocitation()[i]) for i in wt]  
          scores_all = [np.sum(g.bibcoupling()[i]) + np.sum(g.cocitation()[i]) for i in range(n)]
         
-
     elif measure == "transitivity":
          scores_mutants = [g.transitivity_local_undirected()[i] for i in mutants]
          scores_rc = [g.transitivity_local_undirected()[i] for i in rc]
@@ -485,95 +499,80 @@ def mk_derivatives_dataframe(variable = "approaches", window = 3, mnn = 4, mutua
     save_name = f"{save_name}_rm_weak.csv" if rm_weak_histo else f"{save_name}_all_muts.csv" 
     features_df.to_csv(f"..\\data\\processed_metrics\\{save_name}", index = False)
     return features_df
-    
-def SE_and_plot(df_path, dim = 2, nn = 10, subset = None, show_RC = True, avg = False):
-    """
-    Reads the dataframe, performs spectral embedding dimensionality reduction on selected features,
-    and plots the results in 3D, coloring points based on the 'mutant' column.
-    
-    Args:
-        df_path (str): Path to the CSV file containing the dataframe.
-    """
-    # Read the dataframe
-    df = pd.read_csv(df_path)
-    df = df.dropna()
-    
-    if avg:
-        df = df.groupby(['Mouse_RFID', 'Group_ID'], as_index=False).agg({
-          'mutant': 'first',  # Keep the first value (or use another aggregation function)
-          'RC': 'first',      # Keep the first value (or use another aggregation function)
-          **{col: 'std' for col in df.select_dtypes(include='number').columns if col not in ['Group_ID']}
-          })
-        df = df.dropna()
-        
-    # Select features from columns 6 to 23 (Python indexing starts at 0, so columns 5 to 22)
-    features = df.iloc[:, 5:23]
-    if subset is not None:
-        features = df.loc[:, subset]
-    
-    scaler = StandardScaler()
-    features_normalized = scaler.fit_transform(features)
-    
-    if dim == 2:
-        results = (manifold.SpectralEmbedding(
-                n_components=2, n_neighbors=nn
-            )
-            .fit_transform(features_normalized)
-        )
-        
-        fig, ax = plt.subplots(1, 1, figsize=(4.5, 4.5))
-        if not show_RC:
-            ax.scatter(results[~df["mutant"].values, 0], results[~df["mutant"].values, 1],
-                                 c="k", alpha=0.9, s = 100, label = "control")
-        if show_RC:
-            other_idx = np.logical_and(~df["mutant"], ~df["RC"]) 
-            RC_idx = np.logical_and(~df["mutant"], df["RC"])
-            ax.scatter(results[other_idx, 0], results[other_idx, 1],
-                                 c="k", alpha=0.9, s = 100, label = "non-members")
-            ax.scatter(results[RC_idx, 0], results[RC_idx, 1],
-                                 c="green", alpha=0.9, s = 100, label = "RC")
-            
-        ax.scatter(results[df["mutant"].values, 0], results[df["mutant"].values, 1],
-                             c="red", alpha=0.9, s = 100, label = "mutant")
-        
 
-        
-    if dim == 3:
-        results = (manifold.SpectralEmbedding(
-                n_components=3, n_neighbors=nn
-            )
-            .fit_transform(features_normalized)
-        )
-        
-        fig = plt.figure(figsize=(10, 8))
-        ax = fig.add_subplot(111, projection='3d')
-        ax.scatter(results[~df["mutant"].values, 0], results[~df["mutant"].values, 1], results[~df["mutant"].values, 2],
-                             c="k", alpha=0.9, s = 100, label = "control")
-        ax.scatter(results[df["mutant"].values, 0], results[df["mutant"].values, 1], results[df["mutant"].values, 2],
-                             c="red", alpha=0.9, s = 100, label = "mutant")
-    
-    ax.set_title(f'Spectral embedding reduction', fontsize=15)
-    ax.set_xlabel('SE1', fontsize=12)
-    ax.set_ylabel('SE2', fontsize=12)
-    if dim == 3:
-        ax.set_zlabel('SE3', fontsize=12)
-    ax.legend()
-    plt.tight_layout()
-    plt.show()
-    
-def manual_plot(df_path, dim = 2, variables = None, show_RC = True, avg = True):
+def get_metric_df(metric, variable = "approaches", derivative = False, window = 1, mnn = 4, mutual = False, rm_weak_histo = True):
     """
-    Reads the dataframe, performs spectral embedding dimensionality reduction on selected features,
-    and plots the results in 3D, coloring points based on the 'mutant' column.
+    Extracts the values of the input metric as a function of time and returns it as a pandas dataframe 
+    along with useful meta data used for plotting.
+    """
+    unweighted_features = ["indegree", "outdegree", "degree", "transitivity", "summed cocitation", "summed bibcoupling", 
+        "summed common neighbors", "summed insubcomponent", "summed outsubcomponent", "summed injaccard", "summed outjaccard",
+        "summed jaccard", "out persistance"]
+    
+    weighted_features = ["authority", "hub", "eigenvector_centrality", "constraint", "pagerank", "incloseness", "outcloseness",
+        "normed instrength", "normed outstrength","instrength", "outstrength", "out persistance", "in persistance"]
+    
+    assert metric in weighted_features or metric in unweighted_features, "Unknown input metric"
+    is_weighted = True if metric in weighted_features else False
+    if is_weighted:
+        mnn = None
+    
+    features_df = pd.DataFrame()
+    
+    all_scores, day, RFIDs, Group_ID, mutants, RCs = [], [], [], [], [], []
+    for d in range(15//window):
+        for j in range(len(labels)):
+            res_t1 = measures(j, d+1, window, metric, variable, mnn, mutual, rm_weak_histo) 
+            if res_t1 is None:
+                continue
+            scores, metadata = np.array(res_t1[4]), res_t1[5]
+            if derivative:
+                res_t2 = measures(j, d+2, window, metric, variable, mnn, mutual, rm_weak_histo) # weighted edge measures do not need graph cut : mnn = None
+                if res_t2 is None:
+                    continue
+                scores_t1, metadata = np.array(res_t1[4]), res_t2[5]
+                scores_t2, _ = np.array(res_t2[4]), res_t1[5]
+                scores = scores_t2 - scores_t1
+                if metric == "in persistance" or metric == "out persistance": # persistance is already a derivative!
+                    scores = scores_t1
+                
+            tags, is_mutant, is_RC, group = metadata["Mouse_RFID"], metadata["mutant"], metadata["RC"], metadata["Group_ID"]
+            all_scores.extend(scores)
+            day.extend([d]*len(tags))
+            RFIDs.extend(tags)
+            mutants.extend(is_mutant)
+            RCs.extend(is_RC)
+            Group_ID.extend([group]*len(tags))
+            
+    features_df["Mouse_RFID"] = RFIDs
+    features_df["Group_ID"] = Group_ID
+    features_df["mutant"] = mutants
+    features_df[f"Timestamp_base{window}"] = day
+    features_df["RC"] = RCs
+    features_df[metric] = all_scores
+        
+    return features_df
+
+def manual_plot(df_path, dim = 2, variables = None, show_RC = True, std = True):
+    """
+    Reads the dataframe, and plots the input variables specified in 'variables' against each other.
+    Var should contain at least 2 variables. Then, a PCA round is applied to transform the data,
+    remove potential covariance and rescale the data by variance, which makes the plots look nicer.
     
     Args:
         df_path (str): Path to the CSV file containing the dataframe.
+        dim (int): dimension for the PCA reduction / covariance suppression
+        variables (list): list of variable names (strings) of grpah metrices.
+        show_RC (bool): whether or not to color the points associated to the RC.
+        std (bool): whether or not to group the repeated points associated to each day by 
+            their std, i.e. whether or not we plot one point per day, or if the points 
+            represent the fluctuations in the timeseries.
     """
     # Read the dataframe
     df = pd.read_csv(df_path)
     df = df.dropna()
     
-    if avg:
+    if std:
         df = df.groupby(['Mouse_RFID', 'Group_ID'], as_index=False).agg({
           'mutant': 'first',  # Keep the first value (or use another aggregation function)
           'RC': 'first',      # Keep the first value (or use another aggregation function)
@@ -632,13 +631,11 @@ def manual_plot(df_path, dim = 2, variables = None, show_RC = True, avg = True):
     plt.tight_layout()
     plt.show()
 
-
 def statistic(x, y):
     x = np.concatenate(x)
     y = np.concatenate(y)
     return np.mean(x) - np.mean(y)
     # return np.median(x) - np.median(y)
-
 
 def add_significance(data, var, ax, bp):
     """Computes and adds p-value significance to input ax and boxplot"""
@@ -671,334 +668,172 @@ def add_significance(data, var, ax, bp):
     # Compute p-value
     permuted_stats = np.array(permuted_stats)
     p = np.mean(np.abs(permuted_stats) >= np.abs(observed_stat))
+    print(p)
 
-    if p < 0.05:
-        x1 = 1
-        x2 = 2
-        bottom, top = ax.get_ylim()
-        y_range = top - bottom
-        bar_height = (y_range * 0.05 * 1) + top #- 20
-        bar_tips = bar_height - (y_range * 0.02)
-        ax.plot(
-            [x1, x1, x2, x2],
-            [bar_tips, bar_height, bar_height, bar_tips], lw=1, c='k'
-        )
-    
-        if p < 0.001:
-            sig_symbol = '***'
-        elif p < 0.01:
-            sig_symbol = '**'
-        elif p < 0.05:
-            sig_symbol = '*'
-        text_height = bar_height + (y_range * 0.01)
-        ax.text((x1 + x2) * 0.5, text_height, sig_symbol, ha='center', va='bottom', c='k')
-    
-def plot_std(df_path, var, std = False, show_RC = False, sep_RC = False, ax = None):
-    # Read the dataframe
-    df = pd.read_csv(df_path)
-    # df = df.dropna()
+    x1 = 1
+    x2 = 2
+    bottom, top = ax.get_ylim()
+    y_range = top - bottom
+    bar_height = (y_range * 0.05 * 1) + top #- 20
+    bar_tips = bar_height - (y_range * 0.02)
+    ax.plot(
+        [x1, x1, x2, x2],
+        [bar_tips, bar_height, bar_height, bar_tips], lw=1, c='k'
+    )
 
-    # isolating the variable of interest in order not to drop rows with valid data with .dropna()
-    df = df.loc[:, ["mutant", "Timestamp_base1", "Group_ID", "RC", "Mouse_RFID", var]]
+    if p < 0.001:
+        sig_symbol = '***'
+    elif p < 0.01:
+        sig_symbol = '**'
+    elif p < 0.05:
+        sig_symbol = '*'
+    else:
+        sig_symbol = f"p = {np.round(p, 3)}"
+    text_height = bar_height + (y_range * 0.01)
+    ax.text((x1 + x2) * 0.5, text_height, sig_symbol, ha='center', va='bottom', c='k')
+    
+def boxplot_metric_mutant(var, derivative = False, aggregation = None, window = 1, mnn = 4, mutual = False, overlay_RC = False, ax = None):
+    """
+     Plots a boxplot comparing the specified graph-theoretical metric between mutant and wild-type mice. By Default, RC members
+     are excluded from the comparison unless 'overlay_RC' is True. The function aggregates the metric per mouse using the specified method, 
+     then plots the distribution for mutants and wild-type mice, and performs a statistical test to indicate significance.
+    
+     Parameters:
+         measure (str): The graph-theoretical metric to plot (e.g., "hub", "degree", "outstrength").
+         window (int): The time window size used for averaging the graph representation.
+         aggregation: Aggregation method for repeated measures per mouse. Can be None, "mean" or "std".
+     """
+     
+    df = get_metric_df(var, "approaches", derivative, window, mnn, mutual, True)
     df = df.dropna()
     
     if var == "instrength" or var == "outstrength" or var == "normed outstrength" or var == "normed outstrength":
-        df = df[df["Timestamp_base1"] != 0] 
-        #df = df[df["Timestamp_base1"] != 1] 
-        # df = df[df["Timestamp_base1"] != 2] 
+        df = df[df[f"Timestamp_base{window}"] != 0]  # first time point is strong outlier for strength, for some reason
 
-
-    if std:
+    if aggregation is not None:
+        assert aggregation == "std" or aggregation == "mean", "aggregation should be mean or std"
         df = df.groupby(['Mouse_RFID', 'Group_ID'], as_index=False).agg({
           'mutant': 'first',  # Keep the first value (or use another aggregation function)
           'RC': 'first',      # Keep the first value (or use another aggregation function)
-          **{col: 'std' for col in df.select_dtypes(include='number').columns if col not in ['Group_ID']}
+          **{col: aggregation for col in df.select_dtypes(include='number').columns if col not in ['Group_ID']}
           })
-        # df = df.dropna()
-        # if var == "instrength" or var == "outstrength":
-        #     df = df.loc[df[var] < 170, :]
-
-    data = [
-        df.loc[df["mutant"], ['Mouse_RFID', var]],  
-        df.loc[np.logical_and(~df["mutant"], ~df["RC"]), ['Mouse_RFID', var]]  
-    ]
-    
-    if show_RC:
-        data = [
-            df.loc[df["mutant"], ['Mouse_RFID', var]],  
-            df.loc[~df["mutant"], ['Mouse_RFID', var]] 
-        ]
         
-    if sep_RC:
-        data = [
-            df.loc[df["RC"], ['Mouse_RFID', var]], 
-            df.loc[~df["RC"], ['Mouse_RFID', var]]  
-        ]
+    # RC are exluded for the comparison, unless overlay RC is True
+    data = [df.loc[np.logical_and(df["mutant"], ~df["RC"]),  ['Mouse_RFID', var]],  df.loc[np.logical_and(~df["mutant"], ~df["RC"]),  ['Mouse_RFID', var]] ]
     
-    if ax is None:
-        fig, ax = plt.subplots(1, 1, figsize=(4, 6))
+    if overlay_RC: # if we compare whole population, and show RC as green overlay
+        data = [df.loc[df["mutant"], ['Mouse_RFID', var]],   df.loc[~df["mutant"], ['Mouse_RFID', var]]]
         
-    size = 100
-    alpha = 0.5
+    # convert the dataframe data to a list of np.array that can be passed to plt.boxplot
     numeric_data = [data[i].drop("Mouse_RFID", axis = 1, inplace = False).values for i in range(2)]
     numeric_data = [np.concatenate(d) for d in numeric_data]
-    if not sep_RC:
-        bp = ax.boxplot(numeric_data, labels=["Mutants", "Non-members WT"], showfliers = False)
-    elif sep_RC:
-        bp = ax.boxplot(numeric_data, labels=["RC", "Non-members"], showfliers = False)
-
-    if not sep_RC:
-        ax.scatter([1 + np.random.normal()*0.05 for i in range(len(df.loc[df["mutant"],var].values))], 
-                    df.loc[df["mutant"],var], alpha = alpha, s = size, color = "red"); 
-        
-        ax.scatter([2 + np.random.normal()*0.05 for i in range(len(df.loc[np.logical_and(~df["mutant"], ~df["RC"]), var].values))], 
-                    df.loc[np.logical_and(~df["mutant"], ~df["RC"]), var], alpha = alpha, s = size, color = "gray", label = "Non-member"); 
-        
-        if show_RC:
-            ax.scatter([1 + np.random.normal()*0.05 for i in range(len(df.loc[np.logical_and(df["mutant"], df["RC"]), var].values))], 
-                        df.loc[np.logical_and(df["mutant"], df["RC"]), var], alpha = alpha, s = size, color = "green", label = "RC member"); 
             
-            ax.scatter([2 + np.random.normal()*0.05 for i in range(len(df.loc[np.logical_and(~df["mutant"], df["RC"]), var].values))], 
-                        df.loc[np.logical_and(~df["mutant"], df["RC"]), var], alpha = alpha, s = size, color = "green", label = "RC member"); 
-    elif sep_RC:
-        ax.scatter([1 + np.random.normal()*0.05 for i in range(len(df.loc[df["RC"],var].values))], 
-                    df.loc[df["RC"],var], alpha = alpha, s = size, color = "green"); 
-        
-        ax.scatter([2 + np.random.normal()*0.05 for i in range(len(df.loc[~df["RC"], var].values))], 
-                    df.loc[~df["RC"], var], alpha = alpha, s = size, color = "gray", label = "Non-member"); 
-        
-    
-    # ax.set_ylim([-10, 150])
-
+    if ax is None:
+        fig, ax = plt.subplots(1, 1, figsize=(4, 6))
+    size, alpha = 100, 0.5
+    bp = ax.boxplot(numeric_data, labels=["Mutants", "Non-members WT"], showfliers = False)
     add_significance(data, var, ax, bp)
-
-    ax.set_ylabel("σ (dV(t)/dt)")
-    # ax.set_ylabel("σ V(t)")
-
-    # ax.set_yscale("log")
+    ax.scatter([1 + np.random.normal()*0.05 for i in range(len(df.loc[np.logical_and(df["mutant"], ~df["RC"]),var].values))], 
+                df.loc[np.logical_and(df["mutant"], ~df["RC"]),var], alpha = alpha, s = size, color = "red"); 
+    ax.scatter([2 + np.random.normal()*0.05 for i in range(len(df.loc[np.logical_and(~df["mutant"], ~df["RC"]), var].values))], 
+                df.loc[np.logical_and(~df["mutant"], ~df["RC"]), var], alpha = alpha, s = size, color = "gray", label = "Non-member"); 
+    if overlay_RC: # Overlay the dots associated to RC on top of plot
+        ax.scatter([1 + np.random.normal()*0.05 for i in range(len(df.loc[np.logical_and(df["mutant"], df["RC"]), var].values))], 
+                    df.loc[np.logical_and(df["mutant"], df["RC"]), var], alpha = alpha, s = size, color = "green", label = "RC member"); 
+        ax.scatter([2 + np.random.normal()*0.05 for i in range(len(df.loc[np.logical_and(~df["mutant"], df["RC"]), var].values))], 
+                    df.loc[np.logical_and(~df["mutant"], df["RC"]), var], alpha = alpha, s = size, color = "green", label = "RC member"); 
+    if derivative:
+        if aggregation == "std":
+            ax.set_ylabel("σ (dV(t)/dt)")
+        elif aggregation == "mean":
+            ax.set_ylabel("μ (dV(t)/dt)")
+        elif aggregation is None:
+            ax.set_ylabel("dV(t)/dt")
+    else:
+        if aggregation == "std":
+            ax.set_ylabel("σ [V(t)]")
+        elif aggregation == "mean":
+            ax.set_ylabel("μ [V(t)]")
+        elif aggregation is None:
+            ax.set_ylabel("V(t)")
     ax.set_title(f"{var}")
     
+def boxplot_metric_RC(var, derivative = False, aggregation = None, window = 1, mnn = 4, mutual = False, ax = None):
+    """
+    Plots a boxplot comparing the specified graph-theoretical metric between RC (rich club) members and non-members. 
+    Non distinction of mutant or WT mice is made here. The function aggregates the metric per mouse using the specified method, 
+    then plots the distribution for RC members and non-members, and performs a statistical test to indicate significance.
     
+    Parameters:
+        measure (str): The graph-theoretical metric to plot (e.g., "hub", "degree", "outstrength").
+        window (int): The time window size used for averaging the graph representation.
+        aggregation: Aggregation method for repeated measures per mouse. Can be None, "mean" or "std".
+    """
     
-def plot_mean(df_path, var, std = False, show_RC = False, sep_RC = False, ax = None):
-    # Read the dataframe
-    df = pd.read_csv(df_path)
-    # df = df.dropna()
-
-    # isolating the variable of interest in order not to drop rows with valid data with .dropna()
-    df = df.loc[:, ["mutant", "Timestamp_base1", "Group_ID", "RC", "Mouse_RFID", var]]
+    df = get_metric_df(var, "approaches", derivative, window, mnn, mutual, True)
     df = df.dropna()
     
     if var == "instrength" or var == "outstrength" or var == "normed outstrength" or var == "normed outstrength":
-        df = df[df["Timestamp_base1"] != 0] 
-        #df = df[df["Timestamp_base1"] != 1] 
-        # df = df[df["Timestamp_base1"] != 2] 
+        df = df[df[f"Timestamp_base{window}"] != 0]  # first time point is strong outlier for strength, for some reason
 
-
-    if std:
+    if aggregation is not None:
+        assert aggregation == "std" or aggregation == "mean", "aggregation should be mean or std"
         df = df.groupby(['Mouse_RFID', 'Group_ID'], as_index=False).agg({
           'mutant': 'first',  # Keep the first value (or use another aggregation function)
           'RC': 'first',      # Keep the first value (or use another aggregation function)
-          **{col: 'mean' for col in df.select_dtypes(include='number').columns if col not in ['Group_ID']}
+          **{col: aggregation for col in df.select_dtypes(include='number').columns if col not in ['Group_ID']}
           })
-        # df = df.dropna()
-        # if var == "instrength" or var == "outstrength":
-        #     df = df.loc[df[var] < 170, :]
-
-    data = [
-        df.loc[df["mutant"], ['Mouse_RFID', var]],  
-        df.loc[np.logical_and(~df["mutant"], ~df["RC"]), ['Mouse_RFID', var]]  
-    ]
+    data = [df.loc[df["RC"],  ['Mouse_RFID', var]],  df.loc[~df["RC"],  ['Mouse_RFID', var]]]
     
-    if show_RC:
-        data = [
-            df.loc[df["mutant"], ['Mouse_RFID', var]],  
-            df.loc[~df["mutant"], ['Mouse_RFID', var]] 
-        ]
-        
-    if sep_RC:
-        data = [
-            df.loc[df["RC"], ['Mouse_RFID', var]], 
-            df.loc[~df["RC"], ['Mouse_RFID', var]]  
-        ]
+    # convert the dataframe data to a list of np.array that can be passed to plt.boxplot
+    numeric_data = [data[i].drop("Mouse_RFID", axis = 1, inplace = False).values for i in range(2)]
+    numeric_data = [np.concatenate(d) for d in numeric_data]
     
     if ax is None:
         fig, ax = plt.subplots(1, 1, figsize=(4, 6))
-        
-    size = 100
-    alpha = 0.5
-    numeric_data = [data[i].drop("Mouse_RFID", axis = 1, inplace = False).values for i in range(2)]
-    numeric_data = [np.concatenate(d) for d in numeric_data]
-    if not sep_RC:
-        bp = ax.boxplot(numeric_data, labels=["Mutants", "Non-members WT"], showfliers = False)
-    elif sep_RC:
-        bp = ax.boxplot(numeric_data, labels=["RC", "Non-members"], showfliers = False)
-
-    if not sep_RC:
-        ax.scatter([1 + np.random.normal()*0.05 for i in range(len(df.loc[df["mutant"],var].values))], 
-                    df.loc[df["mutant"],var], alpha = alpha, s = size, color = "red"); 
-        
-        ax.scatter([2 + np.random.normal()*0.05 for i in range(len(df.loc[np.logical_and(~df["mutant"], ~df["RC"]), var].values))], 
-                    df.loc[np.logical_and(~df["mutant"], ~df["RC"]), var], alpha = alpha, s = size, color = "gray", label = "Non-member"); 
-        
-        if show_RC:
-            ax.scatter([1 + np.random.normal()*0.05 for i in range(len(df.loc[np.logical_and(df["mutant"], df["RC"]), var].values))], 
-                        df.loc[np.logical_and(df["mutant"], df["RC"]), var], alpha = alpha, s = size, color = "green", label = "RC member"); 
-            
-            ax.scatter([2 + np.random.normal()*0.05 for i in range(len(df.loc[np.logical_and(~df["mutant"], df["RC"]), var].values))], 
-                        df.loc[np.logical_and(~df["mutant"], df["RC"]), var], alpha = alpha, s = size, color = "green", label = "RC member"); 
-    elif sep_RC:
-        ax.scatter([1 + np.random.normal()*0.05 for i in range(len(df.loc[df["RC"],var].values))], 
-                    df.loc[df["RC"],var], alpha = alpha, s = size, color = "green"); 
-        
-        ax.scatter([2 + np.random.normal()*0.05 for i in range(len(df.loc[~df["RC"], var].values))], 
-                    df.loc[~df["RC"], var], alpha = alpha, s = size, color = "gray", label = "Non-member"); 
-        
-    
+    size, alpha = 100, 0.5
+    bp = ax.boxplot(numeric_data, labels=["RC", "Non-members"], showfliers = False)
     add_significance(data, var, ax, bp)
-
-    ax.set_ylabel("avg. V(t)")
-
-    # ax.set_yscale("log")
+    ax.scatter([1 + np.random.normal()*0.05 for i in range(len(numeric_data[0]))], 
+                numeric_data[0], alpha = alpha, s = size, color = "green"); 
+    ax.scatter([2 + np.random.normal()*0.05 for i in range(len(numeric_data[1]))], 
+                numeric_data[1], alpha = alpha, s = size, color = "gray", label = "Non-member"); 
+    if derivative:
+        if aggregation == "std":
+            ax.set_ylabel("σ (dV(t)/dt)")
+        elif aggregation == "mean":
+            ax.set_ylabel("μ (dV(t)/dt)")
+        elif aggregation is None:
+            ax.set_ylabel("dV(t)/dt")
+    else:
+        if aggregation == "std":
+            ax.set_ylabel("σ [V(t)]")
+        elif aggregation == "mean":
+            ax.set_ylabel("μ [V(t)]")
+        elif aggregation is None:
+            ax.set_ylabel("V(t)")
     ax.set_title(f"{var}")
-   
-    
-def train_mlp_classifier(df_path, pred_var = "mutant", subset=None, avg = False):
-    """
-    Trains a simple feed-forward neural network using sklearn's MLPClassifier.
-    
-    Args:
-        df_path (str): Path to the CSV file containing the dataframe.
-        subset (list): Optional list of feature columns to use.
-    """
-    # Read the dataframe
-    df = pd.read_csv(df_path)
-    df = df.dropna()
-    # df = df.fillna(-1)
-    
-    if avg:
-        df = df.groupby(['Mouse_RFID', 'Group_ID'], as_index=False).agg({
-          'mutant': 'first',  # Keep the first value (or use another aggregation function)
-          'RC': 'first',      # Keep the first value (or use another aggregation function)
-          **{col: 'std' for col in df.select_dtypes(include='number').columns if col not in ['Group_ID']}
-          })
-        # df = df.dropna()
+      
     
     
-    # Select features (columns 6 to 23) and target ('mutant')
-    X = df.iloc[:, 5:23]
-    if subset is not None:
-        X = df.loc[:, subset]
-    y = df[pred_var]
-    
-    accuracies, mlps = [], []
-    
-    # rus = RandomUnderSampler()
-    # X_balanced, y_balanced = rus.fit_resample(X, y)
-
-    
-    for i in tqdm(range(20)):
-        # rus = RandomUnderSampler()
-        # X_balanced, y_balanced = rus.fit_resample(X, y)
-        X_i, X_gt, y_i, y_gt = train_test_split(X, y, stratify = y, test_size=0.05)
-        rus = RandomUnderSampler()
-        X_gt, y_gt = rus.fit_resample(X_gt, y_gt)
-        
-        # smote = SMOTE()
-        X_train, y_train = rus.fit_resample(X_i, y_i)
-        
-        # X_train, X_test, y_train, y_test = train_test_split(X_balanced, y_balanced, test_size=0.01)
-        
-        # Normalize the features
-        scaler = StandardScaler()
-        # X_train = scaler.fit_transform(X_train)
-        # X_test = scaler.transform(X_gt)
-        X_test = X_gt
-        
-        # Train a feed-forward neural network
-        mlp = MLPClassifier(hidden_layer_sizes=(10, 5), solver = "lbfgs", activation = "tanh", max_iter=3000)
-        mlp.fit(X_train, y_train)
-        mlps.append(mlp)
-        y_pred = mlp.predict(X_test)
-    
-        accuracies.append(accuracy_score(y_gt, y_pred))
-        
-    print(f"aveaged accuracy = {np.mean(accuracies)}")
-    
-    return #mlps[np.argmax(accuracies)], X_test, y_gt, features.to_list()
-
-def evaluate_feature_importance(mlp, X_test, y_test, feature_names):
-    result = permutation_importance(mlp, X_test, y_test, n_repeats=10, random_state=42)
-    importance = result.importances_mean
-    std = result.importances_std
-    sorted_idx = np.argsort(importance)[::-1]  # Sort in descending order of importance
-
-    # Ensure alignment of indices
-    y_positions = range(len(sorted_idx))  # Y-axis positions for the bars
-
-    # Plot the horizontal bar chart
-    plt.barh(y_positions, importance[sorted_idx], xerr=std[sorted_idx], align='center')
-    plt.yticks(y_positions, [feature_names[i] for i in sorted_idx])  # Set feature names as y-ticks
-    plt.xlabel("Permutation Importance")
-    plt.title("Feature Importance")
-    plt.tight_layout()
-    plt.show()
-
 if __name__ == "__main__":
     # df = mk_measures_dataframe("approaches", 1, 5, mutual = False, rm_weak_histo = True)
     # df = mk_derivatives_dataframe("approaches", 1, 5, mutual = False, rm_weak_histo = True)
     # df = mk_derivatives_dataframe("approaches", 1, 5, mutual = False, rm_weak_histo = True)
-    # run_tsne_and_plot("..\\data\\graph_features_approaches_d3.csv", 3)
-    # SE_and_plot("..\\data\\metrics_derivative_approaches_d1_nn5_rm_weak.csv", 2, 30,  "mutant", None, True)
-    # MDS_and_plot("..\\data\\graph_features_approaches_d3_nn4.csv", 3, "mutant")
-    # LLE_and_plot("..\\data\\graph_features_approaches_d3.csv", 2, 100, "mutant")
 
-
-    
     unweighted_features = ["indegree", "outdegree", "degree", "summed cocitation", "summed bibcoupling", 
                           "summed common neighbors", "summed injaccard", "summed outjaccard", "summed jaccard"]
     
     weighted_features = ["eigenvector_centrality", "pagerank", "incloseness", "outcloseness",
         "instrength", "outstrength"]
     
-    # fig, axs = plt.subplots(3, 3, figsize = (16, 13))
-    # for idx, ax in enumerate(axs.flatten()):
-    #     plot_std("..\\data\\processed_metrics\\metrics_derivative_approaches_d1_nn3_rm_weak.csv", unweighted_features[idx], True, False, False, ax)
-    #     # plot_std("..\\data\\processed_metrics\\graph_features_approaches_d1_nn5_rm_weak.csv", unweighted_features[idx], True, False, False, ax)
-    # # plt.suptitle("graph_features_approaches_d1_nn5_rm_weak")
-    # plt.suptitle("metrics_derivative_approaches_d1_nn3_rm_weak")
-
-    # SE_and_plot("..\\data\\processed_metrics\\metrics_derivative_approaches_d1_nn5_rm_weak.csv", 2, 7, ["indegree", "summed jaccard", "summed common neighbors", "transitivity"], True, True)
-    # SE_and_plot("..\\data\\processed_metrics\\metrics_derivative_approaches_d1_nn5_rm_weak.csv", 2, 6, unweighted_features, True, True)
-
     # manual_plot("..\\data\\processed_metrics\\metrics_derivative_approaches_d1_nn5_rm_weak.csv", 2, ["degree", "summed jaccard", "instrength"], True, True)
 
+    # fig, axs = plt.subplots(3, 3, figsize = (16, 13))
+    # for idx, ax in enumerate(axs.flatten()):
 
-    fig, axs = plt.subplots(1, 2, figsize = (10, 10))
-    # plot_std("..\\data\\processed_metrics\\metrics_derivative_approaches_d1_nn3_rm_weak.csv", "outstrength", std =True, show_RC=False, sep_RC =False, ax =axs[0])#,subset)
-    # plot_std("..\\data\\processed_metrics\\metrics_derivative_approaches_d1_nn3_rm_weak.csv", "outstrength", std =True, show_RC=True, sep_RC =False, ax =axs[0, 1])#,subset)
-    # plot_std("..\\data\\processed_metrics\\metrics_derivative_approaches_d1_nn3_rm_weak.csv", "instrength", True, False, False, axs[1])#,subset)
-    # plot_std("..\\data\\processed_metrics\\metrics_derivative_approaches_d1_nn3_rm_weak.csv", "instrength", True, True, False, axs[1, 1])#,subset)
-
-    plot_mean("..\\data\\processed_metrics\\graph_features_approaches_d1_nn3_rm_weak.csv", "outstrength", std =True, show_RC=False, sep_RC =False, ax =axs[0])#,subset)
-    plot_mean("..\\data\\processed_metrics\\graph_features_approaches_d1_nn3_rm_weak.csv", "instrength", True, True, False, axs[1])#,subset)
-        
-   
-    
-   
-    # plot_std("..\\data\\processed_metrics\\metrics_derivative_approaches_d1_nn5_rm_weak.csv", "instrength", True, False, False, axs[0, 0])#,subset)
-    # plot_std("..\\data\\processed_metrics\\metrics_derivative_approaches_d1_nn5_rm_weak.csv", "outstrength", True, False, False, axs[0, 1])#,subset)
-    # plot_std("..\\data\\processed_metrics\\metrics_derivative_approaches_d1_nn5_rm_weak.csv", "instrength", True, True, False, axs[1, 0])#,subset)
-    # plot_std("..\\data\\processed_metrics\\metrics_derivative_approaches_d1_nn5_rm_weak.csv", "outstrength", True, True, False, axs[1, 1])#,subset)
-    # plt.suptitle("nn cut = 3, permutation test on the mean")
-
-
-    # print("############################### prediction on metrics ts #######################################")
-    # train_mlp_classifier("..\\data\\processed_metrics\graph_features_approaches_d1_nn5_rm_weak.csv", "mutant", unweighted_features, True)
-    # print("############################### prediction on derivative ts #######################################")
-    # train_mlp_classifier("..\\data\\processed_metrics\metrics_derivative_approaches_d1_nn5_rm_weak.csv", "mutant", unweighted_features, True)
-
-    # mlp, x_test, y_test, feature_names = train_mlp_classifier("..\\data\\graph_features_approaches_d3_nn5_rm_weak.csv", "mutant", subset, False)
-    # evaluate_feature_importance(mlp, x_test, y_test, feature_names)
+    # fig, axs = plt.subplots(1, 2, figsize = (10, 10))
+    boxplot_metric_mutant("outstrength", derivative = False, aggregation = None, window = 7, mnn = 4, mutual = False, overlay_RC = False)
+    boxplot_metric_RC("outstrength", derivative = False, aggregation = None, window = 7, mnn = 4, mutual = False)
 
     
