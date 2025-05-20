@@ -44,8 +44,9 @@ def add_significance(data, ax, bp):
         U = result.statistic  # This gives the test statistic
         p = result.pvalue      # This gives the p-value
         print(p)
-        if p < 0.05:
-            significant_combinations.append([combination, p])
+        # if p < 0.05:
+        significant_combinations.append([combination, p])
+            
     for i, significant_combination in enumerate(significant_combinations):
         # Columns corresponding to the datasets of interest
         x1 = significant_combination[0][0]
@@ -70,6 +71,8 @@ def add_significance(data, ax, bp):
             sig_symbol = '**'
         elif p < 0.05:
             sig_symbol = '*'
+        else:
+            sig_symbol = f"p = {np.round(p, 3)}"
         text_height = bar_height + (y_range * 0.01)
         plt.text((x1 + x2) * 0.5, text_height, sig_symbol, ha='center', va='bottom', c='k')
 
@@ -119,7 +122,7 @@ def boxplot_approaches(out = True, sep = False, all_wt = False):
     Compares the number of approaches made by RC members, mutants and others.
     """
     all_rc =  [[0,6], [3, 8, 9], [2, 3, 6], [2, 4], [1, 6], [0, 1], [3, 4, 6], [3, 5, 7, 8], [7, 8], [5, 8], [0, 2], [], [], [2, 8, 9], []]
-    all_mutants = [[6], [2], [6], [5], [2, 4], [7], [0, 5], [3], [2], [0,2,3], [5,7], [2,3,9], [3,9], [0,2,3], [2,3,8,9]] #took out mutants with weak histology
+    all_mutants = [[], [2], [6], [5], [2, 4], [7], [0, 5], [3], [2], [0,2,3], [5,7], [2,3,9], [3,9], [0,3], [2,3,8,9]] #took out mutants with weak histology
     labels = ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G10", "G11", "G12", "G13", "G14", "G15", "G16"]
         
     approaches_rc, approaches_mutants, approaches_others = [], [], [] 
@@ -161,7 +164,8 @@ def boxplot_approaches(out = True, sep = False, all_wt = False):
 
     ax = plt.axes()
     bp = ax.boxplot(data, widths=0.6, patch_artist=True, showfliers = False, zorder=1)
-    
+    add_significance(data, ax, bp)
+
     alpha = 1
     size = 40
     if not sep:
@@ -430,9 +434,9 @@ def boxplot_measures(measure = "hub", separate_wt = False):
     
 if __name__ == "__main__":
     # boxplot_chasing(False)
-    boxplot_approaches(True, False, True) 
+    boxplot_approaches(True, False, False)
     plt.figure()
-    boxplot_approaches(False, False, True) 
+    boxplot_approaches(False, False, False) 
 
     # boxplot_interactions()
     # time_in_arena(True)
