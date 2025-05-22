@@ -234,7 +234,14 @@ def measures(graph_idx, day, window = 3, measure = "hub", variable = "approaches
         scores_rest = [g.closeness(mode="in", weights = [e['weight'] for e in g.es()])[i] for i in others]
         scores_wt = [g.closeness(mode="in", weights = [e['weight'] for e in g.es()])[i] for i in wt]  
         scores_all = [g.closeness(mode="in", weights = [e['weight'] for e in g.es()])[i] for i in range(len(RFIDs))]
-            
+        
+    elif measure == "closeness":
+        scores_mutants = [g.closeness(weights = [e['weight'] for e in g.es()])[i] for i in mutants]
+        scores_rc = [g.closeness(weights = [e['weight'] for e in g.es()])[i] for i in rc]
+        scores_rest = [g.closeness(weights = [e['weight'] for e in g.es()])[i] for i in others]
+        scores_wt = [g.closeness(weights = [e['weight'] for e in g.es()])[i] for i in wt]  
+        scores_all = [g.closeness(weights = [e['weight'] for e in g.es()])[i] for i in range(len(RFIDs))]
+                
     elif measure == "pagerank":
         scores_mutants = [g.pagerank(weights = [e['weight'] for e in g.es()])[i] for i in mutants]
         scores_rc = [g.pagerank(weights = [e['weight'] for e in g.es()])[i] for i in rc]
@@ -269,13 +276,6 @@ def measures(graph_idx, day, window = 3, measure = "hub", variable = "approaches
          scores_rest = [g.betweenness(weights = [1/e['weight'] for e in g.es()])[i] for i in others]  
          scores_wt = [g.betweenness(weights = [1/e['weight'] for e in g.es()])[i] for i in wt]  
          scores_all = [g.betweenness(weights = [1/e['weight'] for e in g.es()])[i] for i in range(len(RFIDs))]
-
-    elif measure == "closeness":
-         scores_mutants = [g.closeness(weights = [1/e['weight'] for e in g.es()])[i] for i in mutants]
-         scores_rc = [g.closeness(weights = [1/e['weight'] for e in g.es()])[i] for i in rc]
-         scores_rest = [g.closeness(weights = [1/e['weight'] for e in g.es()])[i] for i in others]  
-         scores_wt = [g.closeness(weights = [1/e['weight'] for e in g.es()])[i] for i in wt]  
-         scores_all = [g.closeness(weights = [1/e['weight'] for e in g.es()])[i] for i in range(len(RFIDs))]
 
     elif measure == "constraint":
          scores_mutants = [g.constraint(weights = [1/e['weight'] for e in g.es()])[i] for i in mutants]
@@ -510,7 +510,7 @@ def get_metric_df(metric, variable = "approaches", derivative = False, window = 
         "summed jaccard", "out persistance"]
     
     weighted_features = ["authority", "hub", "eigenvector_centrality", "constraint", "pagerank", "incloseness", "outcloseness",
-        "normed instrength", "normed outstrength","instrength", "outstrength", "out persistance", "in persistance"]
+        "closeness",  "betweenness", "normed instrength", "normed outstrength","instrength", "outstrength", "out persistance", "in persistance"]
     
     assert metric in weighted_features or metric in unweighted_features, "Unknown input metric"
     is_weighted = True if metric in weighted_features else False
@@ -692,7 +692,7 @@ def add_significance(data, var, ax, bp):
     text_height = bar_height + (y_range * 0.01)
     ax.text((x1 + x2) * 0.5, text_height, sig_symbol, ha='center', va='bottom', c='k')
     
-def boxplot_metric_mutant(var, derivative = False, aggregation = None, window = 1, mnn = 4, mutual = False, overlay_RC = False, ax = None):
+def boxplot_metric_mutant(var, derivative = False, aggregation = None, window = 1, mnn = 4, mutual = False, rm_RC = True, overlay_RC = False, ax = None):
     """
      Plots a boxplot comparing the specified graph-theoretical metric between mutant and wild-type mice. By Default, RC members
      are excluded from the comparison unless 'overlay_RC' is True. The function aggregates the metric per mouse using the specified method, 
@@ -719,8 +719,11 @@ def boxplot_metric_mutant(var, derivative = False, aggregation = None, window = 
           })
         
     # RC are exluded for the comparison, unless overlay RC is True
-    data = [df.loc[np.logical_and(df["mutant"], ~df["RC"]),  ['Mouse_RFID', var]],  df.loc[np.logical_and(~df["mutant"], ~df["RC"]),  ['Mouse_RFID', var]] ]
-    
+    if rm_RC:
+        data = [df.loc[np.logical_and(df["mutant"], ~df["RC"]),  ['Mouse_RFID', var]],  df.loc[np.logical_and(~df["mutant"], ~df["RC"]),  ['Mouse_RFID', var]] ]
+    else:
+        data = [df.loc[df["mutant"],  ['Mouse_RFID', var]],  df.loc[~df["mutant"],  ['Mouse_RFID', var]] ]
+
     if overlay_RC: # if we compare whole population, and show RC as green overlay
         data = [df.loc[df["mutant"], ['Mouse_RFID', var]],   df.loc[~df["mutant"], ['Mouse_RFID', var]]]
         
@@ -731,12 +734,23 @@ def boxplot_metric_mutant(var, derivative = False, aggregation = None, window = 
     if ax is None:
         fig, ax = plt.subplots(1, 1, figsize=(4, 6))
     size, alpha = 100, 0.5
-    bp = ax.boxplot(numeric_data, labels=["Mutants", "Non-members WT"], showfliers = False)
+    
+    if rm_RC:
+        bp = ax.boxplot(numeric_data, labels=["Mutants", "Non-members WT"], showfliers = False)
+    else:
+        bp = ax.boxplot(numeric_data, labels=["Mutants", "WT"], showfliers = False)
+
     add_significance(data, var, ax, bp)
-    ax.scatter([1 + np.random.normal()*0.05 for i in range(len(df.loc[np.logical_and(df["mutant"], ~df["RC"]),var].values))], 
-                df.loc[np.logical_and(df["mutant"], ~df["RC"]),var], alpha = alpha, s = size, color = "red"); 
-    ax.scatter([2 + np.random.normal()*0.05 for i in range(len(df.loc[np.logical_and(~df["mutant"], ~df["RC"]), var].values))], 
-                df.loc[np.logical_and(~df["mutant"], ~df["RC"]), var], alpha = alpha, s = size, color = "gray", label = "Non-member"); 
+    if rm_RC:
+        ax.scatter([1 + np.random.normal()*0.05 for i in range(len(df.loc[np.logical_and(df["mutant"], ~df["RC"]),var].values))], 
+                    df.loc[np.logical_and(df["mutant"], ~df["RC"]),var], alpha = alpha, s = size, color = "red"); 
+        ax.scatter([2 + np.random.normal()*0.05 for i in range(len(df.loc[np.logical_and(~df["mutant"], ~df["RC"]), var].values))], 
+                    df.loc[np.logical_and(~df["mutant"], ~df["RC"]), var], alpha = alpha, s = size, color = "gray", label = "Non-member"); 
+    elif not rm_RC:
+        ax.scatter([1 + np.random.normal()*0.05 for i in range(len(data[0][var].values))], 
+                    data[0][var].values, alpha = alpha, s = size, color = "red"); 
+        ax.scatter([2 + np.random.normal()*0.05 for i in range(len(data[1][var].values))], 
+                    data[1][var].values, alpha = alpha, s = size, color = "gray", label = "WT"); 
     if overlay_RC: # Overlay the dots associated to RC on top of plot
         ax.scatter([1 + np.random.normal()*0.05 for i in range(len(df.loc[np.logical_and(df["mutant"], df["RC"]), var].values))], 
                     df.loc[np.logical_and(df["mutant"], df["RC"]), var], alpha = alpha, s = size, color = "green", label = "RC member"); 
@@ -833,7 +847,10 @@ if __name__ == "__main__":
     # for idx, ax in enumerate(axs.flatten()):
 
     # fig, axs = plt.subplots(1, 2, figsize = (10, 10))
-    boxplot_metric_mutant("outstrength", derivative = False, aggregation = None, window = 7, mnn = 4, mutual = False, overlay_RC = False)
-    boxplot_metric_RC("outstrength", derivative = False, aggregation = None, window = 7, mnn = 4, mutual = False)
+    boxplot_metric_mutant("closeness", derivative = False, aggregation = None, window = 7, mnn = 4, mutual = False, rm_RC = False, overlay_RC = False)
+    boxplot_metric_mutant("betweenness", derivative = False, aggregation = None, window = 7, mnn = 4, mutual = False, rm_RC = False, overlay_RC = False)
+    boxplot_metric_mutant("eigenvector_centrality", derivative = False, aggregation = None, window = 7, mnn = 4, mutual = False, rm_RC = False, overlay_RC = False)
+    boxplot_metric_mutant("pagerank", derivative = False, aggregation = None, window = 7, mnn = 4, mutual = False, rm_RC = False, overlay_RC = False)
+    # boxplot_metric_RC("outstrength", derivative = False, aggregation = None, window = 7, mnn = 4, mutual = False)
 
     

@@ -11,7 +11,7 @@ import pandas as pd
 import seaborn as sns
 from scipy.stats import ttest_ind
 from scipy import stats
-
+import seaborn as sns
 
 sys.path.append('..\\src\\')
 from read_graph import read_graph
@@ -23,8 +23,8 @@ datapath = "..\\data\\averaged\\"
 plt.rc('font', family='serif')
 
 
-# path = "..\\data\\reduced_data.xlsx"
-# df = pd.read_excel(path)
+path = "..\\data\\reduced_data.xlsx"
+df = pd.read_excel(path)
 # sns.catplot(data=df, x = "mutant", y = "rank_by_tube", color=".9", kind="box", width = 0.33)
 # sns.swarmplot(data=df, x = "mutant",y = "rank_by_tube", size=5, hue = "mutant")
 # plt.title("Tube rank")
@@ -373,7 +373,7 @@ def time_in_arena(plot_both_cohorts = False):
         sample_size = len(dataset)
         ax.text(i + 1, 15000, fr'$n = {sample_size}$', ha='center', size='x-small')
         
-def social_time():
+def social_time(sep = False):
     path_to_first_cohort = "..\\data\\reduced_data.xlsx"
     path_to_second_cohort = "..\\data\\reduced_data.xlsx"
     
@@ -402,13 +402,22 @@ def social_time():
     muts = np.array([time_in_arena[~nan*mutants], social_time[~nan*mutants]])
     
     # plot params
-    data = [social_time[~nan*rc], 
-            social_time[~nan*mutants], 
-            social_time[~nan*~mutants*~rc]]
+    if sep:
+        data = [social_time[~nan*rc], 
+                social_time[~nan*mutants], 
+                social_time[~nan*~mutants*~rc]]
+    else:
+        data = [social_time[~nan*mutants], 
+                social_time[~nan*~mutants*~rc]]
+        
 
     ax = plt.axes()
     bp = ax.boxplot(data, widths=0.6, patch_artist=True)
-    format_plot(ax, bp) # set x_axis, and colors of each bar
+    if sep:
+        format_plot(ax, bp) # set x_axis, and colors of each bar
+    else:
+        format_plot(ax, bp, ["Mutants", "WT"]) # set x_axis, and colors of each bar
+
     add_significance(data, ax, bp)
     
  #   plt.rc('text', usetex=True)
@@ -437,8 +446,8 @@ def rc_size():
     plt.show()
     
 # rc_size()
-time_in_arena(True)
-# social_time()
+# time_in_arena(False)
+social_time()
 # chasings()
 # approaches()
 # interactions()
