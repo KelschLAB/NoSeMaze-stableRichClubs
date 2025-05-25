@@ -26,7 +26,7 @@ plt.rc('font', family='serif')
 
 labels = ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G10", "G11", "G12", "G13", "G14", "G15", "G16", "G17"]
 
-def get_category_indices(graph_idx, variable, rm_weak_histo = True):
+def get_category_indices(graph_idx, variable, window, rm_weak_histo = True):
     """
     Returns the indices of mutant, RC (rich club), other, and wild-type (WT) mice for a given group.
 
@@ -52,7 +52,7 @@ def get_category_indices(graph_idx, variable, rm_weak_histo = True):
     if variable == "chasing":
         datapath = "..\\data\\chasing\\single\\"+labels[graph_idx]+"_single_chasing.csv"
     else:
-        datapath = "..\\data\\both_cohorts_1day\\"+labels[graph_idx]+"\\"+variable+"_resD1_1.csv" # Day 1 as template
+        datapath = "..\\data\\both_cohorts_1day\\"+labels[graph_idx]+"\\"+f"{variable}_resD{window}_1.csv" # Day 1 as template
     
     arr = np.loadtxt(datapath, delimiter=",", dtype=str)
     RFIDs = arr[0, 1:].astype(str)
@@ -83,3 +83,4 @@ def get_category_indices(graph_idx, variable, rm_weak_histo = True):
     others = np.arange(graph_length)[np.logical_and(~np.isin(np.arange(graph_length), rc), ~np.isin(np.arange(graph_length), mutants))]
     wt = np.arange(graph_length)[~np.isin(np.arange(graph_length), mutants)]
     return mutants, rc, others, wt, RFIDs
+

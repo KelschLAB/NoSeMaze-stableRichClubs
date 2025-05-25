@@ -214,15 +214,18 @@ def plot_measure_all(measure, window = 3, variable = "approaches", separate_wt =
 
     if ax is None:
         add_legend = True
-        fig, ax = plt.subplots(1, 1)
+        fig, ax = plt.subplots(1, 3, sharey=True) if separate_wt else plt.subplots(1, 2, sharey=True)
     else:
         add_legend = False
 
     if separate_wt:
-        ax.plot(t, value_mutants[:, :], lw = 3, c = "red", label = "Mutant", alpha = 0.5)
-        ax.plot(t, value_rest[:, :], lw = 3, c = "k", label = "Non-member WT", alpha = 0.5)
-        ax.plot(t, value_rc[:, :], lw = 3, c = "green", label = "sRC", alpha = 0.5)
+        ax[0].plot(t, value_mutants[:, :], lw = 3, c = "red", label = "Mutant", alpha = 0.5)
+        ax[1].plot(t, value_rest[:, :], lw = 3, c = "k", label = "Non-member WT", alpha = 0.5)
+        ax[2].plot(t, value_rc[:, :], lw = 3, c = "green", label = "sRC", alpha = 0.5)
         plt.ylabel("S(t)")
+    else:
+        ax[0].plot(t, value_mutants[:, :], lw = 3, c = "red", label = "Mutant", alpha = 0.5)
+        ax[1].plot(t, value_rest[:, :], lw = 3, c = "k", label = "Non-member WT", alpha = 0.5)
 
     ax.set_title(measure, fontsize = 15)
     ax.set_xlabel("Day", fontsize = 13)
@@ -238,8 +241,6 @@ def plot_derivative_all(measure, window = 3, variable = "approaches", separate_w
         for j in range(len(labels)):
             scores_t1 = measures(j, d+1, window, measure, variable, mnn, mutual)
             scores_t2 = measures(j, d+2, window, measure, variable, mnn, mutual)
-            if scores_t1 is None or scores_t2 is None:
-                continue
             scores_mutants.extend(np.array(scores_t2[0]) - np.array(scores_t1[0]))
             scores_rest.extend(np.array(scores_t2[2]) - np.array(scores_t1[2]))
             scores_rc.extend(np.array(scores_t2[1]) - np.array(scores_t1[1]))
@@ -253,24 +254,29 @@ def plot_derivative_all(measure, window = 3, variable = "approaches", separate_w
     value_rest= np.array(value_rest)
     value_rc= np.array(value_rc)
 
+
     if ax is None:
         add_legend = True
-        fig, ax = plt.subplots(1, 1)
+        fig, ax = plt.subplots(1, 3, sharey=True) if separate_wt else plt.subplots(1, 2, sharey=True)
     else:
         add_legend = False
 
     if separate_wt:
-        idx = 3
-        ax.plot(t, value_mutants[:, :], lw = 3, c = "red", label = "Mutant", alpha = 0.5)
-        ax.plot(t, value_rest[:, :], lw = 3, c = "k", label = "Non-member WT", alpha = 0.5)
-        ax.plot(t, value_rc[:, :], lw = 3, c = "green", label = "sRC", alpha = 0.5)
-        plt.ylabel("dS(t)/dt")
+        ax[0].plot(t, value_mutants[:, :], lw = 3, c = "red", label = "Mutant", alpha = 0.2)
+        ax[1].plot(t, value_rest[:, :], lw = 3, c = "k", label = "Non-member WT", alpha = 0.2)
+        ax[2].plot(t, value_rc[:, :], lw = 3, c = "green", label = "sRC", alpha = 0.2)
+    else:
+        ax[0].plot(t, value_mutants[:, :], lw = 3, c = "red", label = "Mutant", alpha = 0.2)
+        ax[1].plot(t, value_rest[:, :], lw = 3, c = "k", label = "Non-member WT", alpha = 0.2)
+    plt.ylabel("dS(t)/dt")
        # ax.legend()
 
     ax.set_title("Time derivative of "+ measure, fontsize = 15)
     ax.set_xlabel("Day", fontsize = 13)
     ax.set_ylabel("Value", fontsize = 13)
     ax.tick_params(axis='both', which='major', labelsize=12)  # Adjust major tick labels
+
+   
     
   
 def plot_persistance(out = True, window = 3, variable = "approaches", separate_wt = False, mnn = None, mutual = True, ax = None):
@@ -395,6 +401,87 @@ def plot_persistance(out = True, window = 3, variable = "approaches", separate_w
     ax.tick_params(axis='both', which='major', labelsize=12)  # Adjust major tick labels
     ax.legend()
     plt.show()
+    
+    
+        
+def plot_raster(measure, derivative = True, window = 1, normalize = False, variable = "approaches", separate_wt = False, mnn = None, mutual = True, ax = None):
+    "plots the derivative of the timeseries of the specified measurment for all animals, without any aggregation"
+    value_mutants, value_rest, value_rc = [], [], []
+    for d in range(15//window):
+        scores_mutants, scores_rc, scores_rest, _ = [], [], [], []
+        id_mutants, id_rc, id_rest = [], [], []
+        for j in range(len(labels)):
+            scores_t1 = measures(j, d+1, window, measure, variable, mnn, mutual)
+            if derivative:
+                scores_t2 = measures(j, d+2, window, measure, variable, mnn, mutual)
+                v_mut = np.abs(np.array(scores_t2[0]) - np.array(scores_t1[0]))
+                v_rest = np.abs(np.array(scores_t2[2]) - np.array(scores_t1[2]))
+                v_rc = np.abs(np.array(scores_t2[1]) - np.array(scores_t1[1]))
+            else:
+                v_mut = np.array(np.array(scores_t1[0]))
+                v_rest = np.array(np.array(scores_t1[2]))
+                v_rc = np.array(np.array(scores_t1[1]))
+            scores_mutants.extend(v_mut)
+            scores_rest.extend(v_rest)
+            scores_rc.extend(v_rc)
+            id_mutants.extend([j]*len(v_mut))
+            id_rc.extend([j]*len(v_rc))
+            id_rest.extend([j]*len(v_rest))
+
+        value_rc.append(scores_rc) 
+        value_rest.append(scores_rest) 
+        value_mutants.append(scores_mutants) 
+        
+    # v_max = max([np.nanmax(scores_rc), np.nanmax(scores_rest), np.nanmax(scores_mutants)]) if normalize else 1       
+
+        
+    min_t = 1 if "strength" in measure else 0 
+    t = np.arange(min_t + 1, 1+15//window)
+    value_mutants= np.array(value_mutants)
+    value_rest= np.array(value_rest)
+    value_rc= np.array(value_rc)
+    id_mutants = np.array(id_mutants)
+    id_rc = np.array(id_rc)
+    id_rest = np.array(id_rest)
+
+    if normalize:
+        for idx in np.unique(id_mutants):
+            max_mut = max(np.nanstd(value_mutants[:, id_mutants == idx], axis = 0))
+            max_rc = max(np.nanstd(value_rc[:, id_rc == idx], axis = 0)) if value_rc[:, id_rc == idx].size != 0 else -np.inf
+            max_rest = max(np.nanstd(value_rest[:, id_rest == idx], axis = 0))
+            v_max = max([max_mut, max_rc, max_rest])
+            value_mutants[:, id_mutants == idx] = value_mutants[:, id_mutants == idx]/v_max
+            value_rc[:, id_rc == idx] = value_rc[:, id_rc == idx]/v_max
+            value_rest[:, id_rest == idx] = value_rest[:, id_rest == idx]/v_max
+    
+    total_len = value_mutants.shape[1]+value_rest.shape[1]+value_rc.shape[1] if separate_wt else value_mutants.shape[1]+value_rest.shape[1]
+    im = np.zeros((total_len, len(t)))
+    counter_y = 0
+    for idx in range(value_mutants.shape[1]):
+        im[counter_y, :] = np.abs(value_mutants[min_t:, idx])
+        counter_y += 1
+    for idx in range(value_rest.shape[1]):
+        im[counter_y, :] = np.abs(value_rest[min_t:, idx])
+        counter_y += 1
+    if separate_wt:
+        for idx in range(value_rc.shape[1]):
+            im[counter_y, :] = np.abs(value_rc[min_t:, idx])
+            counter_y += 1
+            
+    if ax is None:
+        fig, ax = plt.subplots(1, 1)
+    ax.imshow(im**2, cmap = "Reds", aspect='auto')
+    # ax.colorbar()
+    title = f"{measure} fluctuations (renormalized)" if normalize else f"{measure} fluctuations"
+    ax.set_title(title)
+    if not separate_wt:
+        ax.axhline(value_mutants.shape[1], ls = "--", lw = 3, label = "mutants")
+    elif separate_wt:
+        ax.axhline(value_mutants.shape[1], ls = "--", lw = 3, label = "mutants")
+        ax.axhline(value_mutants.shape[1]+value_rest.shape[1], ls = "--", lw = 3, label = "RC")
+
+    ax.legend()
+    # plt.show()
             
 if __name__ == "__main__":
 
@@ -421,8 +508,23 @@ if __name__ == "__main__":
     # plot_measure_timeseries("summed injaccard", 1, 'approaches', True, mnn = mnn, mutual = mutual)
     # plot_derivative_timeseries("outstrength", 1, 'approaches', True, mnn = mnn, mutual = mutual)
     
-    plot_derivative_all("summed injaccard", 1, 'approaches', True, mnn = mnn, mutual = mutual)
-    plot_measure_all("summed injaccard", 1, 'approaches', True, mnn = mnn, mutual = mutual)
+    # plot_derivative_all("summed injaccard", 1, 'approaches', False, mnn = mnn, mutual = mutual)
+    # plot_raster("summed injaccard")
+    # plot_raster("outstrength")
+    # fig, axs = plt.subplots(3, 3, figsize = (16, 13))
+    # for idx, var in enumerate(weighted_features):
+    #     plot_raster(var, normalize=True, ax = axs.flatten()[idx], mnn = None, mutual = False)
+    # plot_raster("outdegree", normalize=True, mnn = 5, mutual = False)
+    # plot_raster("summed injaccard", normalize=True, mnn = 5, mutual = False)
+
+    # plot_raster("outdegree", normalize=False, mnn = 5, mutual = False, separate_wt=True)
+    # plot_raster("summed injaccard", normalize=False, mnn = 5, mutual = False, separate_wt=True)
+
+    # plot_raster("out persistence")
+
+    # plot_raster("instrength")
+
+
 
 
     
