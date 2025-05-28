@@ -19,6 +19,8 @@ from utils import get_category_indices
 import mpl_toolkits.mplot3d  # noqa: F401
 from scipy.stats import ttest_ind
 from scipy import stats
+import warnings
+from termcolor import colored
 
 datapath = "..\\data\\chasing\\single\\"
 datapath = "..\\data\\averaged\\"
@@ -39,7 +41,8 @@ def default_on_error(graph_idx, variable, window, rm_weak_histo = True):
     """
     mutants, rc, others, wt, RFIDs = get_category_indices(graph_idx, "approaches", window, rm_weak_histo) # load data from exp day 1 as a template, because all group were properly detected.
     return [np.nan]*len(mutants), [np.nan]*len(rc), [np.nan]*len(others), \
-        [np.nan]*len(wt), [np.nan]*len(RFIDs), {"Mouse_RFID": [np.nan]*len(RFIDs), "mutant": [np.nan]*len(RFIDs), "RC": [np.nan]*len(RFIDs), "Group_ID": [np.nan]*len(RFIDs)}
+        [np.nan]*len(wt), [np.nan]*len(RFIDs), \
+        {"Mouse_RFID": [np.nan]*len(RFIDs), "mutant": [np.nan]*len(RFIDs), "RC": [np.nan]*len(RFIDs), "Group_ID": int(labels[graph_idx][1:])}
 
 def measures(graph_idx, day, window = 3, measure = "hub", variable = "approaches", mnn = None, mutual = True, rm_weak_histo = True):
     """
@@ -67,13 +70,9 @@ def measures(graph_idx, day, window = 3, measure = "hub", variable = "approaches
     """
     metadata_path = "..\\data\\meta_data.csv"
     metadata_df = pd.read_csv(metadata_path)
-    if window == 1:
-        datapath = "..\\data\\both_cohorts_1day\\"+labels[graph_idx]+"\\"+variable+"_resD1_"+str(day)+".csv"
-    elif window == 3:
-        datapath = "..\\data\\both_cohorts_3days\\"+labels[graph_idx]+"\\"+variable+"_resD3_"+str(day)+".csv"
-    elif window == 7:
-        datapath = "..\\data\\averaged\\"+labels[graph_idx]+"\\"+variable+"_resD7_"+str(day)+".csv"
-    else:
+    
+    datapath = f"..\\data\\both_cohorts_{window}days\\"+labels[graph_idx]+"\\"+variable+f"_resD{window}_"+str(day)+".csv"
+    if window not in [1, 3, 7]:
         print("Incorrect time window")
         return 
     try:
@@ -81,7 +80,6 @@ def measures(graph_idx, day, window = 3, measure = "hub", variable = "approaches
         arr = np.loadtxt(datapath, delimiter=",", dtype=str)
         RFIDs = arr[0, 1:].astype(str)
     except Exception as e:
-        print(e)
         return default_on_error(graph_idx, variable, window, rm_weak_histo)
     if variable == "interactions":
         mode = 'undirected'
@@ -127,7 +125,7 @@ def measures(graph_idx, day, window = 3, measure = "hub", variable = "approaches
         
     graph_length = len(g.vs())
     mutants = np.where(is_mutant)[0] if len(np.where(is_mutant)) != 0 else [] # indices of mutants in this group
-    rc = np.where(is_RC)[0] if len(np.where(is_mutant)) != 0 else [] # indices of RC in this group
+    rc = np.where(is_RC)[0] if len(np.where(is_RC)) != 0 else [] # indices of RC in this group
     others = np.arange(graph_length)[np.logical_and(~np.isin(np.arange(graph_length), rc), ~np.isin(np.arange(graph_length), mutants))]
     wt = np.arange(graph_length)[~np.isin(np.arange(graph_length), mutants)]
     
@@ -315,15 +313,10 @@ def measures(graph_idx, day, window = 3, measure = "hub", variable = "approaches
          scores_all = [g.transitivity_local_undirected()[i] for i in range(len(RFIDs))]
          
     elif measure == "out persistence" or measure == "in persistence":
-        if window == 1:
-            datapath2 = "..\\data\\both_cohorts_1day\\"+labels[graph_idx]+"\\"+variable+"_resD1_"+str(day+1)+".csv"
-        elif window == 3:
-            datapath2 = "..\\data\\both_cohorts_3days\\"+labels[graph_idx]+"\\"+variable+"_resD3_"+str(day+1)+".csv"
-        elif window == 7:
-            datapath2 = "..\\data\\averaged\\"+labels[graph_idx]+"\\"+variable+"_resD7_"+str(day+1)+".csv"
-        else:
+        datapath2 = f"..\\data\\both_cohorts_{window}days\\"+labels[graph_idx]+"\\"+variable+f"_resD{window}_"+str(day+1)+".csv"
+        if window not in [1, 3, 7]:
             print("Incorrect time window")
-            return
+            return 
         try:
             data2 = read_graph([datapath2], percentage_threshold = 0, mnn = mnn, mutual = mutual)[0]
             arr2 = np.loadtxt(datapath, delimiter=",", dtype=str)
@@ -348,8 +341,6 @@ def measures(graph_idx, day, window = 3, measure = "hub", variable = "approaches
             
         axis = 1 if measure[:3] == 'out' else 0
         cond1 = np.abs(data2 - data) + data <= 1.5*data
-     #   cond2 = np.abs(data2 - data) + data2 <= 1.5*data2
-      #  persistance = np.sum(np.logical_or(cond1, cond2), axis = axis)
         persistance = np.sum(cond1, axis = axis)
 
         scores_mutants = [persistance[i] for i in mutants]
@@ -357,7 +348,7 @@ def measures(graph_idx, day, window = 3, measure = "hub", variable = "approaches
         scores_rest = [persistance[i] for i in others]  
         scores_wt = [persistance[i] for i in wt]  
         scores_all = [persistance[i] for i in range(len(RFIDs))]
-        
+
     else:
         raise Exception("Unknown or misspelled input measurement.") 
     
@@ -508,12 +499,11 @@ def get_metric_df(metric, variable = "approaches", derivative = False, window = 
     """
     unweighted_features = ["indegree", "outdegree", "degree", "transitivity", "summed cocitation", "summed bibcoupling", 
         "summed common neighbors", "summed insubcomponent", "summed outsubcomponent", "summed injaccard", "summed outjaccard",
-        "summed jaccard", "out persistance"]
+        "summed jaccard", "out persistence"]
     
     weighted_features = ["authority", "hub", "eigenvector_centrality", "constraint", "pagerank", "incloseness", "outcloseness",
         "closeness",  "betweenness", "normed instrength", "normed outstrength","instrength", "outstrength", "out persistance", "in persistance"]
     
-    assert metric in weighted_features or metric in unweighted_features, "Unknown input metric"
     is_weighted = True if metric in weighted_features else False
     if is_weighted:
         mnn = None
@@ -521,7 +511,8 @@ def get_metric_df(metric, variable = "approaches", derivative = False, window = 
     features_df = pd.DataFrame()
     
     all_scores, day, RFIDs, Group_ID, mutants, RCs = [], [], [], [], [], []
-    for d in range(15//window):
+    time_range = np.arange(1, 16, window) if metric not in ["instrength", "outstrength"] else np.arange(2, 16, window)
+    for d in time_range:
         for j in range(len(labels)):
             res_t1 = measures(j, d+1, window, metric, variable, mnn, mutual, rm_weak_histo) 
             if res_t1 is None:
@@ -532,7 +523,7 @@ def get_metric_df(metric, variable = "approaches", derivative = False, window = 
                 scores_t1, metadata = np.array(res_t1[4]), res_t1[5]
                 scores_t2, _ = np.array(res_t2[4]), res_t1[5]
                 scores = scores_t2 - scores_t1
-                if metric == "in persistance" or metric == "out persistance": # persistance is already a derivative!
+                if metric == "in persistence" or metric == "out persistence": # persistance is already a derivative!
                     scores = scores_t1
                 
             tags, is_mutant, is_RC, group = metadata["Mouse_RFID"], metadata["mutant"], metadata["RC"], metadata["Group_ID"]
@@ -552,14 +543,13 @@ def get_metric_df(metric, variable = "approaches", derivative = False, window = 
         
     return features_df
 
-def manual_plot(df_path, dim = 2, variables = None, show_RC = True, std = True):
+def manual_plot(metrics, variable = "approaches", mnn = None, mutual = False, dim = 2, show_RC = True, std = True):
     """
     Reads the dataframe, and plots the input variables specified in 'variables' against each other.
     Var should contain at least 2 variables. Then, a PCA round is applied to transform the data,
     remove potential covariance and rescale the data by variance, which makes the plots look nicer.
     
     Args:
-        df_path (str): Path to the CSV file containing the dataframe.
         dim (int): dimension for the PCA reduction / covariance suppression
         variables (list): list of variable names (strings) of grpah metrices.
         show_RC (bool): whether or not to color the points associated to the RC.
@@ -567,41 +557,57 @@ def manual_plot(df_path, dim = 2, variables = None, show_RC = True, std = True):
             their std, i.e. whether or not we plot one point per day, or if the points 
             represent the fluctuations in the timeseries.
     """
-    # Read the dataframe
-    df = pd.read_csv(df_path)
-    df = df.dropna()
-    
-    if std:
-        df = df.groupby(['Mouse_RFID', 'Group_ID'], as_index=False).agg({
-          'mutant': 'first',  # Keep the first value (or use another aggregation function)
-          'RC': 'first',      # Keep the first value (or use another aggregation function)
-          **{col: 'std' for col in df.select_dtypes(include='number').columns if col not in ['Group_ID']}
-          })
-        df = df.dropna()
+    from timegraph_metrics import get_time_metric_df
+    temporal_metrics = ["summed outNEF", "summed inNEF", "summed outICI",
+                        "summed inICI", "summed outburstiness", "summed inburstiness"]
+    df = pd.DataFrame()
+    for var in metrics:
+        if var not in temporal_metrics:
+            curr_df = get_metric_df(var, variable, True, 1, mnn, mutual, True) # derivative of variables
+            
+            if std:
+                curr_df = curr_df.groupby(['Mouse_RFID', 'Group_ID'], as_index=False).agg({
+                  'mutant': 'first',  # Keep the first value (or use another aggregation function)
+                  'RC': 'first',      # Keep the first value (or use another aggregation function)
+                  **{col: 'std' for col in curr_df.select_dtypes(include='number').columns if col not in ['Group_ID']}
+                  })
+                curr_df = curr_df.dropna()
+            df["Mouse_RFID"] = curr_df["Mouse_RFID"]
+            df["mutant"] = curr_df["mutant"]
+            df["RC"] = curr_df["RC"]
+            df[var] = curr_df[var]
+            
+        else:
+            curr_df = get_time_metric_df(var, 1, variable, mnn = mnn, mutual = mutual, weighted = True)
+            df["Mouse_RFID"] = curr_df["Mouse_RFID"]
+            df["mutant"] = curr_df["mutant"]
+            df["RC"] = curr_df["RC"]
+            df[var] = curr_df[var]
         
-    
-    results = df[variables].values
-    
-    pca = PCA(n_components=dim)
-    results = pca.fit_transform(results)
-    
-    # scaler = MaxAbsScaler()
-    # results = scaler.fit_transform(results)
+    results = df[metrics].values
+
+    if dim is not None:
+        assert dim == 2 or dim == 3, "Dim argument for PCA should be 2 or 3 for visualization"
+        scaler = StandardScaler()
+        results = scaler.fit_transform(results)
+        pca = PCA(n_components=dim)
+        results = pca.fit_transform(results)
     
     if results.shape[1] == 2:
         fig, ax = plt.subplots(1, 1, figsize=(4.5, 4.5))
         if not show_RC:
-            ax.scatter(results[~df["mutant"].values, 0], results[~df["mutant"].values, 1],
-                                 c="k", alpha=0.9, s = 100, label = "control")
+            ax.scatter(results[(df["mutant"] == False).values, 0],
+                       results[(df["mutant"] == False).values, 1],
+                                 c="blue", alpha=0.9, s = 100, label = "control")
         if show_RC:
-            other_idx = np.logical_and(~df["mutant"], ~df["RC"]) 
-            RC_idx = np.logical_and(~df["mutant"], df["RC"])
+            other_idx = np.logical_and((df["mutant"] == False).values, df["RC"] == False) 
+            RC_idx = np.logical_and((df["mutant"] == False).values, df["RC"] == True)
             ax.scatter(results[other_idx, 0], results[other_idx, 1],
                                  c="k", alpha=0.9, s = 100, label = "non-members")
             ax.scatter(results[RC_idx, 0], results[RC_idx, 1],
                                  c="green", alpha=0.9, s = 100, label = "RC")
             
-        ax.scatter(results[df["mutant"].values, 0], results[df["mutant"].values, 1],
+        ax.scatter(results[df["mutant"].values == True, 0], results[df["mutant"].values == True, 1],
                              c="red", alpha=0.9, s = 100, label = "mutant")
         
     if results.shape[1] == 3:
@@ -609,23 +615,27 @@ def manual_plot(df_path, dim = 2, variables = None, show_RC = True, std = True):
         ax = fig.add_subplot(111, projection='3d')
 
         if not show_RC:
-            ax.scatter(results[~df["mutant"].values, 0], results[~df["mutant"].values, 1], results[~df["mutant"].values, 2],
-                                 c="k", alpha=0.9, s = 100, label = "control")
+            ax.scatter(results[(df["mutant"] == False).values, 0], 
+                       results[(df["mutant"] == False).values, 1], 
+                       results[(df["mutant"] == False).values, 2],
+                                 c="blue", alpha=0.9, s = 100, label = "control")
         if show_RC:
-            other_idx = np.logical_and(~df["mutant"], ~df["RC"]) 
-            RC_idx = np.logical_and(~df["mutant"], df["RC"])
+            other_idx = np.logical_and(df["mutant"] == False, df["RC"] == False) 
+            RC_idx = np.logical_and(df["mutant"] == False, df["RC"] == True)
             ax.scatter(results[other_idx, 0], results[other_idx, 1], results[other_idx, 2],
                                  c="k", alpha=0.9, s = 100, label = "non-members")
             ax.scatter(results[RC_idx, 0], results[RC_idx, 1], results[RC_idx, 2],
                                  c="green", alpha=0.9, s = 100, label = "RC")
             
-        ax.scatter(results[df["mutant"].values, 0], results[df["mutant"].values, 1], results[df["mutant"].values, 2],
+        ax.scatter(results[df["mutant"].values == True, 0], 
+                   results[df["mutant"].values == True, 1], 
+                   results[df["mutant"].values == True, 2],
                              c="red", alpha=0.9, s = 100, label = "mutant")
     
-    ax.set_xlabel(f"Transformed {variables[0]}", fontsize=12)
-    ax.set_ylabel(f"Transformed {variables[1]}", fontsize=12)
-    if len(variables) == 3:
-        ax.set_zlabel(f"Transformed {variables[2]}", fontsize=12)
+    ax.set_xlabel(f"Transformed {metrics[0]}", fontsize=12)
+    ax.set_ylabel(f"Transformed {metrics[1]}", fontsize=12)
+    if len(metrics) == 3:
+        ax.set_zlabel(f"Transformed {metrics[2]}", fontsize=12)
     ax.legend()
     plt.tight_layout()
     plt.show()
@@ -648,7 +658,7 @@ def add_significance(data, var, ax, bp):
     grouped_data1 = [data1.loc[data1["Mouse_RFID"] == rfid, var].values for rfid in np.unique(rfids1)]
     grouped_data1 = [list(d) for d in grouped_data1]
     grouped_data2 = [data2.loc[data2["Mouse_RFID"] == rfid, var].values for rfid in np.unique(rfids2)]
-    grouped_data2 = [list(d) for d in grouped_data2]
+    grouped_data2 = [list(d)for d in grouped_data2]
     
     combined_data = grouped_data1 + grouped_data2
     labels = [0] * len(grouped_data1) + [1] * len(grouped_data2)
@@ -708,8 +718,25 @@ def boxplot_metric_mutant(var, derivative = False, aggregation = None, window = 
     
     if var == "instrength" or var == "outstrength" or var == "normed outstrength" or var == "normed outstrength":
         df = df[df[f"Timestamp_base{window}"] != 0]  # first time point is strong outlier for strength, for some reason
+        df = df[df[var] < 150]
+        warnings.warn("Strength behaves very strangely on first day,removing it.\n Also removing outliers > 150")
 
-    if aggregation is not None:
+    if aggregation == "CV" and ~derivative:
+        # Compute mean and std per animal
+        grouped = df.groupby(['Mouse_RFID', 'Group_ID'], as_index=False).agg({
+            'mutant': 'first',
+            'RC': 'first',
+            var: ['mean', 'std']
+        })
+        # Flatten MultiIndex columns
+        grouped.columns = ['Mouse_RFID', 'Group_ID', 'mutant', 'RC', 'mean', 'std']
+        # Compute coefficient of variation
+        grouped[var] = grouped['std'] / grouped['mean']
+        # Remove inf/nan values (mean=0)
+        grouped = grouped.replace([np.inf, -np.inf], np.nan).dropna(subset=[var])
+        df = grouped
+
+    elif aggregation is not None:
         assert aggregation == "std" or aggregation == "mean", "aggregation should be mean or std"
         df = df.groupby(['Mouse_RFID', 'Group_ID'], as_index=False).agg({
           'mutant': 'first',  # Keep the first value (or use another aggregation function)
@@ -719,12 +746,13 @@ def boxplot_metric_mutant(var, derivative = False, aggregation = None, window = 
         
     # RC are exluded for the comparison, unless overlay RC is True
     if rm_RC:
-        data = [df.loc[np.logical_and(df["mutant"], ~df["RC"]),  ['Mouse_RFID', var]],  df.loc[np.logical_and(~df["mutant"], ~df["RC"]),  ['Mouse_RFID', var]] ]
+        data = [df.loc[np.logical_and(df["mutant"], df["RC"] == False), ['Mouse_RFID', var]], 
+                df.loc[np.logical_and(df["mutant"] == False, df["RC"] == False), ['Mouse_RFID', var]] ]
     else:
-        data = [df.loc[df["mutant"],  ['Mouse_RFID', var]],  df.loc[~df["mutant"],  ['Mouse_RFID', var]] ]
+        data = [df.loc[df["mutant"],  ['Mouse_RFID', var]],  df.loc[df["mutant"] == False,  ['Mouse_RFID', var]] ]
 
     if overlay_RC: # if we compare whole population, and show RC as green overlay
-        data = [df.loc[df["mutant"], ['Mouse_RFID', var]],   df.loc[~df["mutant"], ['Mouse_RFID', var]]]
+        data = [df.loc[df["mutant"], ['Mouse_RFID', var]],   df.loc[df["mutant"] == False, ['Mouse_RFID', var]]]
         
     # convert the dataframe data to a list of np.array that can be passed to plt.boxplot
     numeric_data = [data[i].drop("Mouse_RFID", axis = 1, inplace = False).values for i in range(2)]
@@ -741,10 +769,10 @@ def boxplot_metric_mutant(var, derivative = False, aggregation = None, window = 
 
     add_significance(data, var, ax, bp)
     if rm_RC:
-        ax.scatter([1 + np.random.normal()*0.05 for i in range(len(df.loc[np.logical_and(df["mutant"], ~df["RC"]),var].values))], 
-                    df.loc[np.logical_and(df["mutant"], ~df["RC"]),var], alpha = alpha, s = size, color = "red"); 
-        ax.scatter([2 + np.random.normal()*0.05 for i in range(len(df.loc[np.logical_and(~df["mutant"], ~df["RC"]), var].values))], 
-                    df.loc[np.logical_and(~df["mutant"], ~df["RC"]), var], alpha = alpha, s = size, color = "gray", label = "Non-member"); 
+        ax.scatter([1 + np.random.normal()*0.05 for i in range(len(df.loc[np.logical_and(df["mutant"], df["RC"] == False),var].values))], 
+                    df.loc[np.logical_and(df["mutant"], df["RC"] == False),var], alpha = alpha, s = size, color = "red"); 
+        ax.scatter([2 + np.random.normal()*0.05 for i in range(len(df.loc[np.logical_and(df["mutant"] == False, df["RC"] == False), var].values))], 
+                    df.loc[np.logical_and(df["mutant"] == False, df["RC"] == False), var], alpha = alpha, s = size, color = "gray", label = "Non-member"); 
     elif not rm_RC:
         ax.scatter([1 + np.random.normal()*0.05 for i in range(len(data[0][var].values))], 
                     data[0][var].values, alpha = alpha, s = size, color = "red"); 
@@ -753,8 +781,8 @@ def boxplot_metric_mutant(var, derivative = False, aggregation = None, window = 
     if overlay_RC: # Overlay the dots associated to RC on top of plot
         ax.scatter([1 + np.random.normal()*0.05 for i in range(len(df.loc[np.logical_and(df["mutant"], df["RC"]), var].values))], 
                     df.loc[np.logical_and(df["mutant"], df["RC"]), var], alpha = alpha, s = size, color = "green", label = "RC member"); 
-        ax.scatter([2 + np.random.normal()*0.05 for i in range(len(df.loc[np.logical_and(~df["mutant"], df["RC"]), var].values))], 
-                    df.loc[np.logical_and(~df["mutant"], df["RC"]), var], alpha = alpha, s = size, color = "green", label = "RC member"); 
+        ax.scatter([2 + np.random.normal()*0.05 for i in range(len(df.loc[np.logical_and(df["mutant"] == False, df["RC"]), var].values))], 
+                    df.loc[np.logical_and(df["mutant"] == False, df["RC"]), var], alpha = alpha, s = size, color = "green", label = "RC member"); 
     if derivative:
         if aggregation == "std":
             ax.set_ylabel("σ (dV(t)/dt)")
@@ -767,9 +795,12 @@ def boxplot_metric_mutant(var, derivative = False, aggregation = None, window = 
             ax.set_ylabel("σ [V(t)]")
         elif aggregation == "mean":
             ax.set_ylabel("μ [V(t)]")
+        elif aggregation == "CV":
+            ax.set_ylabel("CV[V(t)]")
         elif aggregation is None:
             ax.set_ylabel("V(t)")
     ax.set_title(f"{var}")
+    plt.tight_layout()
     
 def boxplot_metric_RC(var, derivative = False, aggregation = None, window = 1, mnn = 4, mutual = False, ax = None):
     """
@@ -915,17 +946,57 @@ if __name__ == "__main__":
     weighted_features = ["eigenvector_centrality", "pagerank", "incloseness", "outcloseness",
         "instrength", "outstrength"]
     
-    # manual_plot("..\\data\\processed_metrics\\metrics_derivative_approaches_d1_nn5_rm_weak.csv", 2, ["degree", "summed jaccard", "instrength"], True, True)
+    temporal_metrics = ["summed outNEF", "summed inNEF", "summed outICI", 
+                        "summed inICI", "summed outburstiness", "summed inburstiness"]
+
+    
+# (metrics, variable = "approaches", mnn = None, mutual = False, dim = 2, show_RC = True, std = True)
+
+    # manual_plot( ["summed outburstiness", "summed injaccard", "indegree"], "approaches", 
+    #             mnn =  5, mutual = False, dim = 2, show_RC = False)
+    
+    # manual_plot( ["summed outNEF", "summed injaccard", "indegree"], "approaches", 
+    #             mnn =  5, mutual = False, dim = 2, show_RC = False)
+    
+    # manual_plot( ["summed outburstiness", "summed injaccard", "outdegree"], "approaches", 
+    #             mnn =  5, mutual = False, dim = 2, show_RC = False)
+    
+    # manual_plot( ["indegree", "outdegree", "summed injaccard"], "approaches", 
+    #             mnn =  5, mutual = False, dim = None, show_RC = False)
+    
+
+    
+
+    # manual_plot( ["summed injaccard", "outdegree", "summed outNEF"], "approaches", 
+    #             mnn =  5, mutual = False, dim = None, show_RC = False)
+    # manual_plot( ["indegree", "outdegree"], "approaches", 
+    #             mnn =  7, mutual = False, dim = None, show_RC = False)
+    
 
     # fig, axs = plt.subplots(3, 3, figsize = (16, 13))
     # for idx, ax in enumerate(axs.flatten()):
-        # fluctuation_rank(unweighted_features[idx], window = 1, mnn = 3, mutual = False, ax = ax)
-    # fig, axs = plt.subplots(1, 2, figsize = (10, 10))
-    # boxplot_metric_mutant("closeness", derivative = False, aggregation = None, window = 7, mnn = 4, mutual = False, rm_RC = False, overlay_RC = False)
-    # boxplot_metric_mutant("betweenness", derivative = False, aggregation = None, window = 7, mnn = 4, mutual = False, rm_RC = False, overlay_RC = False)
+    #     boxplot_metric_mutant(unweighted_features[idx], derivative = False, aggregation = 'cv', window = 1, mnn = 5, mutual = False, rm_RC = False, overlay_RC = False, ax = ax)
+ 
+    # fig, axs = plt.subplots(3, 3, figsize = (16, 13))
+    # for idx, ax in enumerate(axs.flatten()):
+    #     boxplot_metric_mutant(weighted_features[idx], derivative = False, aggregation = 'cv', window = 1, mnn = None, mutual = False, rm_RC = False, overlay_RC = False, ax = ax)
+
+    # boxplot_metric_mutant("summed injaccard", derivative = True, aggregation = 'std', window = 1, mnn = 6, mutual = False, rm_RC = True, overlay_RC = False)
+    # boxplot_metric_mutant("summed outjaccard", derivative = True, aggregation = 'std', window = 1, mnn = 6, mutual = False, rm_RC = True, overlay_RC = False)
+
+    # boxplot_metric_mutant("indegree", derivative = True, aggregation = 'std', window = 1, mnn = 5, mutual = False, rm_RC = True, overlay_RC = False)
+    # boxplot_metric_mutant("outdegree", derivative = True, aggregation = 'std', window = 1, mnn = 5, mutual = False, rm_RC = True, overlay_RC = False)
+
+
+    # boxplot_metric_mutant("out persistence", derivative = False, aggregation = 'std', window = 1, mnn = None, mutual = False, rm_RC = True, overlay_RC = False)
+    # boxplot_metric_mutant("in persistence", derivative = False, aggregation = 'std', window = 1, mnn = None, mutual = False, rm_RC = True, overlay_RC = False)
+    
+    # boxplot_metric_mutant("outstrength", derivative = True, aggregation = 'std', window = 1, mnn = None, mutual = False, rm_RC = True, overlay_RC = False)
+    # boxplot_metric_mutant("instrength", derivative = True, aggregation = 'std', window = 1, mnn = None, mutual = False, rm_RC = True, overlay_RC = False)
+
     # boxplot_metric_mutant("eigenvector_centrality", derivative = False, aggregation = None, window = 7, mnn = 4, mutual = False, rm_RC = False, overlay_RC = False)
     # boxplot_metric_mutant("pagerank", derivative = False, aggregation = None, window = 7, mnn = 4, mutual = False, rm_RC = False, overlay_RC = False)
     # boxplot_metric_RC("outstrength", derivative = False, aggregation = None, window = 7, mnn = 4, mutual = False)
 
     # fluctuation_rank("outstrength", window = 1, mnn = 4, mutual = False, rm_RC = True, overlay_RC = False)
-    fluctuation_rank("summed jaccard", window = 1, mnn = 4, mutual = False, rm_RC = True, overlay_RC = False)
+    # fluctuation_rank("degree", window = 1, mnn = 4, mutual = False, rm_RC = True, overlay_RC = False)

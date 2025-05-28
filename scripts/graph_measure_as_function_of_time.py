@@ -276,7 +276,53 @@ def plot_derivative_all(measure, window = 3, variable = "approaches", separate_w
     ax.set_ylabel("Value", fontsize = 13)
     ax.tick_params(axis='both', which='major', labelsize=12)  # Adjust major tick labels
 
-   
+def plot_derivative_example(measure, window = 3, variable = "approaches", idx = [0, 0, 0], mnn = None, mutual = True, ax = None):
+    "plots the derivative of the timeseries of the specified measurment for all animals, without any aggregation"
+    value_mutants, value_rest, value_rc = [], [], []
+    std_mutants, std_rc, std_rest, std_wt = [], [], [], []
+    for d in range(15//window):
+        scores_mutants, scores_rc, scores_rest, _ = [], [], [], []
+        for j in range(len(labels)):
+            scores_t1 = measures(j, d+1, window, measure, variable, mnn, mutual)
+            scores_t2 = measures(j, d+2, window, measure, variable, mnn, mutual)
+            scores_mutants.extend(np.array(scores_t2[0]) - np.array(scores_t1[0]))
+            scores_rest.extend(np.array(scores_t2[2]) - np.array(scores_t1[2]))
+            scores_rc.extend(np.array(scores_t2[1]) - np.array(scores_t1[1]))
+
+        value_rc.append(scores_rc) 
+        value_rest.append(scores_rest) 
+        value_mutants.append(scores_mutants) 
+        
+    t = np.arange(1, 1+15//window)
+    value_mutants= np.array(value_mutants)
+    value_rest= np.array(value_rest)
+    value_rc= np.array(value_rc)
+    separate_wt = True if len(idx) == 3 else False
+    assert len(idx) == 2 or len(idx) == 3, "Please provide 2 indices for WT vs mutants or 3 indices for RC vs WT vs mutant."
+
+    if ax is None:
+        add_legend = True
+        fig, ax = plt.subplots(1, 1)
+    else:
+        add_legend = False
+
+    if separate_wt:
+        ax.plot(t, value_mutants[:, idx[0]], lw = 3, c = "red", label = "Mutant", alpha = 0.8)
+        ax.plot(t, value_rest[:, idx[1]], lw = 3, c = "k", label = "Non-member WT", alpha = 0.8)
+        ax.plot(t, value_rc[:, idx[2]], lw = 3, c = "green", label = "sRC", alpha = 0.8)
+    else:
+        ax.plot(t, value_mutants[:, idx[0]], lw = 3, c = "red", label = "Mutant", alpha = 0.8)
+        print(np.nanstd(value_mutants[:, idx[0]]))
+        ax.plot(t, value_rest[:, idx[1]], lw = 3, c = "k", label = "Non-member WT", alpha = 0.8)
+        print(np.nanstd(value_rest[:, idx[1]]))
+
+    plt.ylabel("dS(t)/dt")
+    ax.legend()
+
+    ax.set_title("Time derivative of "+ measure, fontsize = 15)
+    ax.set_xlabel("Day", fontsize = 13)
+    ax.set_ylabel("Value", fontsize = 13)
+    ax.tick_params(axis='both', which='major', labelsize=12)  # Adjust major tick labels
     
   
 def plot_persistance(out = True, window = 3, variable = "approaches", separate_wt = False, mnn = None, mutual = True, ax = None):
@@ -491,8 +537,9 @@ if __name__ == "__main__":
     weighted_features = ["authority", "hub", "eigenvector_centrality", "constraint", "pagerank", "incloseness", "outcloseness",
         "instrength", "outstrength"]
 
-    mnn = 5
-    mutual = False
+    mnn = 3
+    mutual = True
+    var = "interactions"
     # fig, axs = plt.subplots(3, 3, figsize = (16, 13))
     # for idx, ax in enumerate(axs.flatten()):
     #     try:
@@ -504,9 +551,14 @@ if __name__ == "__main__":
     # title = f"mnn = {mnn}" if mutual else f"nn = {mnn}"
     # fig.suptitle(title)
     # plot_derivative_timeseries("instrength", 1, 'approaches', False, mnn = mnn, mutual = mutual)
-    
-    # plot_measure_timeseries("summed injaccard", 1, 'approaches', True, mnn = mnn, mutual = mutual)
-    # plot_derivative_timeseries("outstrength", 1, 'approaches', True, mnn = mnn, mutual = mutual)
+    # for i in range(10):
+
+    plot_derivative_example("degree", 1, "approaches", [0, 8], mnn, mutual)
+
+
+
+    # plot_measure_timeseries("degree", 1, var, False, mnn = mnn, mutual = mutual)
+    # plot_derivative_timeseries("degree", 1, var, False, mnn = mnn, mutual = mutual)
     
     # plot_derivative_all("summed injaccard", 1, 'approaches', False, mnn = mnn, mutual = mutual)
     # plot_raster("summed injaccard")
@@ -520,7 +572,7 @@ if __name__ == "__main__":
     # plot_raster("outdegree", normalize=False, mnn = 5, mutual = False, separate_wt=True)
     # plot_raster("summed injaccard", normalize=False, mnn = 5, mutual = False, separate_wt=True)
 
-    # plot_raster("out persistence")
+    # plot_raster("out persistence", normalize=True)
 
     # plot_raster("instrength")
 

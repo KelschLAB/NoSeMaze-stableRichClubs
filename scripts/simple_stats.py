@@ -15,7 +15,7 @@ import seaborn as sns
 
 sys.path.append('..\\src\\')
 from read_graph import read_graph
-from utils import get_category_indices
+from utils import get_category_indices, format_plot, add_significance
 
 datapath = "..\\data\\chasing\\single\\"
 datapath = "..\\data\\averaged\\"
@@ -65,67 +65,6 @@ df = pd.read_excel(path)
 # sns.swarmplot(data=df, x = "mutant",y = "cs_plus_detection_speed_intraphase_shaping", size=5, hue = "mutant")
 # plt.title("cs_plus_detection_speed_intraphase_shaping")
 # plt.tight_layout()
-
-
-def statistic(x, y, axis):
-    return np.mean(x, axis=axis) - np.mean(y, axis=axis)
-
-def format_plot(ax, bp, xticklabels = ["RC", "Mutants", "Others"]):
-    """ Sets the x-axis the RC/mutants/Others, changes the color of the bars in the boxplot."""
-    ax.set_xticklabels(xticklabels, fontsize = 20)
-    colors = sns.color_palette('pastel')
-    for patch, color in zip(bp['boxes'], colors): # set colors
-        patch.set_facecolor(color)
-    plt.setp(bp['medians'], color='k')
-    
-def add_significance(data, ax, bp):
-    """Computes and adds p-value significance to input ax and boxplot"""
-    # Initialise a list of combinations of groups that are significantly different
-    significant_combinations = []
-    # Check from the outside pairs of boxes inwards
-    ls = list(range(1, len(data) + 1))
-    combinations = [(ls[x], ls[x + y]) for y in reversed(ls) for x in range((len(ls) - y))]
-    for combination in combinations:
-        data1 = data[combination[0] - 1]
-        data2 = data[combination[1] - 1]
-        # Significance
-        # U, p = stats.mannwhitneyu(data1, data2, alternative='two-sided')
-        # U, p = stats.ttest_ind(data1, data2,equal_var=False)
-        result = stats.permutation_test((data1, data2), statistic)
-        U = result.statistic  # This gives the test statistic
-        p = result.pvalue      # This gives the p-value
-        print(p)
-        # if p < 0.05:
-        significant_combinations.append([combination, p])
-            
-    for i, significant_combination in enumerate(significant_combinations):
-        # Columns corresponding to the datasets of interest
-        x1 = significant_combination[0][0]
-        x2 = significant_combination[0][1]
-        # What level is this bar among the bars above the plot?
-        level = len(significant_combinations) - i
-        # Plot the bar
-        # Get the y-axis limits
-        bottom, top = ax.get_ylim()
-        y_range = top - bottom
-        bar_height = (y_range * 0.07 * level) + top
-        bar_tips = bar_height - (y_range * 0.02)
-        plt.plot(
-            [x1, x1, x2, x2],
-            [bar_tips, bar_height, bar_height, bar_tips], lw=1, c='k'
-        )
-        # Significance level
-        p = significant_combination[1]
-        if p < 0.001:
-            sig_symbol = '***'
-        elif p < 0.01:
-            sig_symbol = '**'
-        elif p < 0.05:
-            sig_symbol = '*'
-        else:
-            sig_symbol = f"p = {np.round(p, 3)}"
-        text_height = bar_height + (y_range * 0.01)
-        plt.text((x1 + x2) * 0.5, text_height, sig_symbol, ha='center', va='bottom', c='k')
 
 def boxplot_chasing(out = True):
     """
@@ -445,9 +384,10 @@ def rc_size():
     plt.ylabel("Count")
     plt.show()
     
+if __name__ == "__main__":
 # rc_size()
 # time_in_arena(False)
-social_time()
+    social_time()
 # chasings()
 # approaches()
 # interactions()

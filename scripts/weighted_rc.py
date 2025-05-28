@@ -66,13 +66,13 @@ def weighted_rich_club(data, k = 3, iterations = 100):
     return observed_richness/normalization_factor
 
 labels = ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G10", "G11", "G12", "G13", "G14", "G15", "G16", "G17"]
-def rich_club_coefficients(variable, k):
+def rich_club_coefficients(variable, k, window = 3):
     avg_rc_coeffs, std_rc_coeffs = [], []
-    for day in range(1, 6):
+    for day in np.arange(1, 15, window):
         coefficients = []
         for graph_idx in range(len(labels)):
             try:
-                path_to_file = "..\\data\\both_cohorts_3days\\"+labels[graph_idx]+"\\"+variable+"_resD3_"+str(day)+".csv"
+                path_to_file = f"..\\data\\both_cohorts_{window}days\\"+labels[graph_idx]+"\\"+variable+f"_resD{window}_"+str(day)+".csv"
                 arr = np.loadtxt(path_to_file, delimiter=",", dtype=str)
                 data = arr[1:, 1:].astype(float)
                 data = mnn_cut(data, k)
@@ -83,7 +83,7 @@ def rich_club_coefficients(variable, k):
         coefficients = np.array(coefficients)
         avg_rc_coeffs.append(np.nanmean(coefficients))
         std_rc_coeffs.append(sem(coefficients[~np.isnan(coefficients)]))
-    t = np.arange(1, 15, 3)
+    t = np.arange(1, 15, window)
     avg_rc_coeffs, std_rc_coeffs = np.array(avg_rc_coeffs), np.array(std_rc_coeffs)
     plt.figure(figsize=(4, 3.5))
     plt.plot(t, avg_rc_coeffs, '-o', lw = 2, c = "k", label = "Average across groups")
@@ -92,7 +92,7 @@ def rich_club_coefficients(variable, k):
     plt.hlines(1, t[0], t[-1], ls = "--", color = "k", label = "Randomized graph")
     plt.xlabel("Day", fontsize = 18)
     plt.ylabel("Richness", fontsize = 18)
-    plt.xticks(range(1, 15, 3), fontsize = 14) 
+    plt.xticks(range(1, 15, window), fontsize = 14) 
     plt.yticks(np.linspace(1, 3, 3), fontsize = 14)
     plt.ylim(0.5, 3)
     plt.legend()
@@ -101,5 +101,5 @@ def rich_club_coefficients(variable, k):
     return avg_rc_coeffs, std_rc_coeffs
 
 if __name__ == "__main__":
-    a, s = rich_club_coefficients('interactions', 3)
+    a, s = rich_club_coefficients('interactions', 3, 1)
     

@@ -24,6 +24,70 @@ datapath = "..\\data\\averaged\\"
 #plt.rc('text', usetex=True)
 plt.rc('font', family='serif')
 
+def mean(x, y, axis):
+    return np.mean(x, axis=axis) - np.mean(y, axis=axis)
+
+def median(x, y, axis):
+    return np.mean(x, axis=axis) - np.mean(y, axis=axis)
+
+def format_plot(ax, bp, xticklabels = ["RC", "Mutants", "Others"]):
+    """ Sets the x-axis the RC/mutants/Others, changes the color of the bars in the boxplot."""
+    ax.set_xticklabels(xticklabels, fontsize = 20)
+    colors = sns.color_palette('pastel')
+    for patch, color in zip(bp['boxes'], colors): # set colors
+        patch.set_facecolor(color)
+    plt.setp(bp['medians'], color='k')
+    
+def add_significance(data, ax, bp, stat = mean):
+    """Computes and adds p-value significance to input ax and boxplot"""
+    # Initialise a list of combinations of groups that are significantly different
+    significant_combinations = []
+    # Check from the outside pairs of boxes inwards
+    ls = list(range(1, len(data) + 1))
+    combinations = [(ls[x], ls[x + y]) for y in reversed(ls) for x in range((len(ls) - y))]
+    for combination in combinations:
+        data1 = data[combination[0] - 1]
+        data2 = data[combination[1] - 1]
+        # Significance
+        # U, p = stats.mannwhitneyu(data1, data2, alternative='two-sided')
+        # U, p = stats.ttest_ind(data1, data2,equal_var=False)
+        result = stats.permutation_test((data1, data2), stat)
+        U = result.statistic  # This gives the test statistic
+        p = result.pvalue      # This gives the p-value
+        print(p)
+        # if p < 0.05:
+        significant_combinations.append([combination, p])
+            
+    for i, significant_combination in enumerate(significant_combinations):
+        # Columns corresponding to the datasets of interest
+        x1 = significant_combination[0][0]
+        x2 = significant_combination[0][1]
+        # What level is this bar among the bars above the plot?
+        level = len(significant_combinations) - i
+        # Plot the bar
+        # Get the y-axis limits
+        bottom, top = ax.get_ylim()
+        y_range = top - bottom
+        bar_height = (y_range * 0.07 * level) + top
+        bar_tips = bar_height - (y_range * 0.02)
+        plt.plot(
+            [x1, x1, x2, x2],
+            [bar_tips, bar_height, bar_height, bar_tips], lw=1, c='k'
+        )
+        # Significance level
+        p = significant_combination[1]
+        if p < 0.001:
+            sig_symbol = '***'
+        elif p < 0.01:
+            sig_symbol = '**'
+        elif p < 0.05:
+            sig_symbol = '*'
+        else:
+            sig_symbol = f"p = {np.round(p, 3)}"
+        text_height = bar_height + (y_range * 0.01)
+        plt.text((x1 + x2) * 0.5, text_height, sig_symbol, ha='center', va='bottom', c='k')
+
+
 labels = ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G10", "G11", "G12", "G13", "G14", "G15", "G16", "G17"]
 
 def get_category_indices(graph_idx, variable, window, rm_weak_histo = True):
@@ -52,7 +116,10 @@ def get_category_indices(graph_idx, variable, window, rm_weak_histo = True):
     if variable == "chasing":
         datapath = "..\\data\\chasing\\single\\"+labels[graph_idx]+"_single_chasing.csv"
     else:
-        datapath = "..\\data\\both_cohorts_1day\\"+labels[graph_idx]+"\\"+f"{variable}_resD{window}_1.csv" # Day 1 as template
+        datapath = f"..\\data\\both_cohorts_{window}days\\"+labels[graph_idx]+"\\"+variable+f"_resD{window}_1.csv"
+        if window not in [1, 3, 7]:
+            print("Incorrect time window")
+            return 
     
     arr = np.loadtxt(datapath, delimiter=",", dtype=str)
     RFIDs = arr[0, 1:].astype(str)
@@ -83,4 +150,6 @@ def get_category_indices(graph_idx, variable, window, rm_weak_histo = True):
     others = np.arange(graph_length)[np.logical_and(~np.isin(np.arange(graph_length), rc), ~np.isin(np.arange(graph_length), mutants))]
     wt = np.arange(graph_length)[~np.isin(np.arange(graph_length), mutants)]
     return mutants, rc, others, wt, RFIDs
+
+
 
