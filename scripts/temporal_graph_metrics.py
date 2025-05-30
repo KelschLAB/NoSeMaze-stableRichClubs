@@ -185,8 +185,9 @@ def time_measures(measure, graph_idx, window = 1, variable = "approaches", mnn =
     elif measure == "summed outNEF" or measure == "summed inNEF": # NEF = normalized edge fluctuations
         all_data = np.array(graphs)
         time_std, time_mean = np.nanstd(all_data, axis = 0), np.nanmean(all_data, axis = 0)
-        all_scores = (time_std - time_mean)/(time_std + time_mean)
-        all_scores = time_std/time_mean
+        all_scores = time_std
+        # all_scores = (time_std - time_mean)/(time_std + time_mean)
+        # all_scores = time_std/time_mean
 
     else:
         raise Exception("Unknown or misspelled input measurement.") 
@@ -262,7 +263,7 @@ def bp_metric_mutants(measure, window = 1, variable = "approaches", mnn = None, 
     ax.scatter([2 + np.random.normal()*0.05 for i in range(len(scores_others))], 
                 scores_others, alpha = alpha, s = size, color = "gray", label = "Non-member")
     add_significance(data, measure, ax, bp)
-    title = f"weighted {measure}, mnn = {mnn}" if weighted else f"Unweighted {measure}, mnn = {mnn}"
+    title = f"weighted {measure}, nn = {mnn}" if weighted else f"Unweighted {measure}, nn = {mnn}"
     ax.set_title(title)
     plt.show()
     
@@ -270,9 +271,10 @@ temporal_metrics = ["summed outNEF", "summed inNEF", "summed outICI", "summed in
 
 
 if __name__ == "__main__":
-    for mnn in range(2, 5):
-        # bp_metric_mutants("summed outburstiness", mnn = mnn, mutual = True, weighted = False)
-        # bp_metric_mutants("summed inburstiness", mnn = mnn, mutual = True, weighted = False)
-        bp_metric_mutants("summed outNEF", mnn = mnn, mutual = False, weighted = False)
-        bp_metric_mutants("summed inNEF", mnn = mnn, mutual = False, weighted = False)
-
+    # for mnn in range(4, 6):
+    mnn = None
+    # bp_metric_mutants("summed outburstiness", mnn = mnn, mutual = False, weighted = True)
+    # bp_metric_mutants("summed inburstiness", mnn = mnn, mutual = False, weighted = True)
+    bp_metric_mutants("summed outNEF", mnn = mnn, mutual = False, weighted = True)
+    bp_metric_mutants("summed inNEF", mnn = mnn, mutual = False, weighted = True)
+# 
