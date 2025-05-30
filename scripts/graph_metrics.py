@@ -20,7 +20,6 @@ import mpl_toolkits.mplot3d  # noqa: F401
 from scipy.stats import ttest_ind
 from scipy import stats
 import warnings
-from termcolor import colored
 
 datapath = "..\\data\\chasing\\single\\"
 datapath = "..\\data\\averaged\\"
@@ -972,20 +971,30 @@ if __name__ == "__main__":
     # manual_plot( ["indegree", "outdegree"], "approaches", 
     #             mnn =  7, mutual = False, dim = None, show_RC = False)
     
-
-    # fig, axs = plt.subplots(3, 3, figsize = (16, 13))
-    # for idx, ax in enumerate(axs.flatten()):
-    #     boxplot_metric_mutant(unweighted_features[idx], derivative = False, aggregation = 'cv', window = 1, mnn = 5, mutual = False, rm_RC = False, overlay_RC = False, ax = ax)
+        
  
     # fig, axs = plt.subplots(3, 3, figsize = (16, 13))
     # for idx, ax in enumerate(axs.flatten()):
-    #     boxplot_metric_mutant(weighted_features[idx], derivative = False, aggregation = 'cv', window = 1, mnn = None, mutual = False, rm_RC = False, overlay_RC = False, ax = ax)
+    #     boxplot_metric_mutant(unweighted_features[idx], derivative = True, aggregation = 'std', window = 1, mnn = 3, mutual = False, rm_RC = True, overlay_RC = False, ax = ax)
+        
+    # fig, axs = plt.subplots(3, 3, figsize = (16, 13))
+    # for idx, ax in enumerate(axs.flatten()):
+    #     boxplot_metric_mutant(unweighted_features[idx], derivative = True, aggregation = 'std', window = 1, mnn = 4, mutual = False, rm_RC = True, overlay_RC = False, ax = ax)    
+        
+    # for mnn in range(2, 4):
+    #     fig, axs = plt.subplots(3, 3, figsize = (16, 13))
+    #     for idx, ax in enumerate(axs.flatten()):
+    #         boxplot_metric_mutant(unweighted_features[idx], derivative = True, aggregation = 'std', window = 1, mnn = mnn, mutual = True, rm_RC = True, overlay_RC = False, ax = ax)
+        
+    mnn = 3
+    boxplot_metric_mutant("summed injaccard", derivative = False, aggregation = 'mean', window = 1, mnn = mnn, mutual = False, rm_RC = True, overlay_RC = False)
+    # boxplot_metric_mutant("in persistence", derivative = False, aggregation = 'mean', window = 1, mnn = mnn, mutual = False, rm_RC = True, overlay_RC = False)
 
-    # boxplot_metric_mutant("summed injaccard", derivative = True, aggregation = 'std', window = 1, mnn = 6, mutual = False, rm_RC = True, overlay_RC = False)
-    # boxplot_metric_mutant("summed outjaccard", derivative = True, aggregation = 'std', window = 1, mnn = 6, mutual = False, rm_RC = True, overlay_RC = False)
+    # boxplot_metric_mutant("summed injaccard", derivative = True, aggregation = 'std', window = 1, mnn = 4, mutual = False, rm_RC = True, overlay_RC = False)
+    # boxplot_metric_mutant("summed outjaccard", derivative = True, aggregation = 'std', window = 1, mnn = 4, mutual = False, rm_RC = True, overlay_RC = False)
 
-    # boxplot_metric_mutant("indegree", derivative = True, aggregation = 'std', window = 1, mnn = 5, mutual = False, rm_RC = True, overlay_RC = False)
-    # boxplot_metric_mutant("outdegree", derivative = True, aggregation = 'std', window = 1, mnn = 5, mutual = False, rm_RC = True, overlay_RC = False)
+    # boxplot_metric_mutant("indegree", derivative = True, aggregation = 'std', window = 1, mnn = 4, mutual = False, rm_RC = True, overlay_RC = False)
+    # boxplot_metric_mutant("outdegree", derivative = True, aggregation = 'std', window = 1, mnn = 4, mutual = False, rm_RC = True, overlay_RC = False)
 
 
     # boxplot_metric_mutant("out persistence", derivative = False, aggregation = 'std', window = 1, mnn = None, mutual = False, rm_RC = True, overlay_RC = False)
@@ -993,7 +1002,7 @@ if __name__ == "__main__":
     
     # boxplot_metric_mutant("outstrength", derivative = True, aggregation = 'std', window = 1, mnn = None, mutual = False, rm_RC = True, overlay_RC = False)
     # boxplot_metric_mutant("instrength", derivative = True, aggregation = 'std', window = 1, mnn = None, mutual = False, rm_RC = True, overlay_RC = False)
-
+# 
     # boxplot_metric_mutant("eigenvector_centrality", derivative = False, aggregation = None, window = 7, mnn = 4, mutual = False, rm_RC = False, overlay_RC = False)
     # boxplot_metric_mutant("pagerank", derivative = False, aggregation = None, window = 7, mnn = 4, mutual = False, rm_RC = False, overlay_RC = False)
     # boxplot_metric_RC("outstrength", derivative = False, aggregation = None, window = 7, mnn = 4, mutual = False)

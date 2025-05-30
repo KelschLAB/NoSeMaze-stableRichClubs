@@ -41,7 +41,9 @@ def inverse(arr, remove_feedback_loops = True):
 def nn_cut(arr, nn = 2):
     """
     Cuts the edges of the graph in the input array by keeping only the edges that are nearest neighbors.
-    Nodes that are further away the 'nn' neighbours have their edges cut.
+    Nodes that are further away the 'nn' neighbours have their edges cut.  The cut is NOT direction specific,
+    meaning that two nodes are nearest neighbors if they are nearest neighbors in the outgoing direction 
+    OR in the ingoing direction.
 
         Parameter:
                 arr: array representing the graph
