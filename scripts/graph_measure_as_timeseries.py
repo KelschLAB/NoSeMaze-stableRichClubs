@@ -276,15 +276,16 @@ def plot_derivative_all(measure, window = 3, variable = "approaches", separate_w
     ax.set_ylabel("Value", fontsize = 13)
     ax.tick_params(axis='both', which='major', labelsize=12)  # Adjust major tick labels
 
-def plot_derivative_example(measure, window = 3, variable = "approaches", idx = [0, 0, 0], mnn = None, mutual = True, ax = None):
+def plot_derivative_example(measure, window = 3, variable = "approaches", idx = [0, 0, 0],
+                            mnn = None, mutual = True, threshold = 0.0, ax = None):
     "plots the derivative of the timeseries of the specified measurment for all animals, without any aggregation"
     value_mutants, value_rest, value_rc = [], [], []
     std_mutants, std_rc, std_rest, std_wt = [], [], [], []
     for d in range(15//window):
         scores_mutants, scores_rc, scores_rest, _ = [], [], [], []
         for j in range(len(labels)):
-            scores_t1 = measures(j, d+1, window, measure, variable, mnn, mutual)
-            scores_t2 = measures(j, d+2, window, measure, variable, mnn, mutual)
+            scores_t1 = measures(j, d+1, window, measure, variable, mnn, mutual, True, threshold)
+            scores_t2 = measures(j, d+2, window, measure, variable, mnn, mutual, True, threshold)
             scores_mutants.extend(np.array(scores_t2[0]) - np.array(scores_t1[0]))
             scores_rest.extend(np.array(scores_t2[2]) - np.array(scores_t1[2]))
             scores_rc.extend(np.array(scores_t2[1]) - np.array(scores_t1[1]))
@@ -450,16 +451,17 @@ def plot_persistance(out = True, window = 3, variable = "approaches", separate_w
     
     
         
-def plot_raster(measure, derivative = True, window = 1, normalize = False, variable = "approaches", separate_wt = False, mnn = None, mutual = True, ax = None):
+def plot_raster(measure, derivative = True, window = 1, normalize = False, variable = "approaches", separate_wt = False,
+                mnn = None, mutual = True, threshold = 0.0, ax = None):
     "plots the derivative of the timeseries of the specified measurment for all animals, without any aggregation"
     value_mutants, value_rest, value_rc = [], [], []
     for d in range(15//window):
         scores_mutants, scores_rc, scores_rest, _ = [], [], [], []
         id_mutants, id_rc, id_rest = [], [], []
         for j in range(len(labels)):
-            scores_t1 = measures(j, d+1, window, measure, variable, mnn, mutual)
+            scores_t1 = measures(j, d+1, window, measure, variable, mnn, mutual, True, threshold)
             if derivative:
-                scores_t2 = measures(j, d+2, window, measure, variable, mnn, mutual)
+                scores_t2 = measures(j, d+2, window, measure, variable, mnn, mutual, True, threshold)
                 v_mut = np.abs(np.array(scores_t2[0]) - np.array(scores_t1[0]))
                 v_rest = np.abs(np.array(scores_t2[2]) - np.array(scores_t1[2]))
                 v_rc = np.abs(np.array(scores_t2[1]) - np.array(scores_t1[1]))
@@ -568,11 +570,11 @@ if __name__ == "__main__":
     #     plot_raster(var, normalize=True, ax = axs.flatten()[idx], mnn = None, mutual = False)
     # plot_raster("outdegree", normalize=True, mnn = 5, mutual = False)
     # plot_raster("summed injaccard", normalize=True, mnn = 5, mutual = False)
-
-    # plot_raster("outdegree", normalize=False, mnn = 5, mutual = False, separate_wt=True)
+    # plot_derivative_example("outdegree", 1, "approaches", [1, 9], None, False, 1)
+    plot_raster("outdegree", normalize=False, mnn = None, mutual = False, separate_wt=False, threshold = 1)
     # plot_raster("summed injaccard", normalize=False, mnn = 5, mutual = False, separate_wt=True)
 
-    # plot_raster("out persistence", normalize=True)
+    # plot_raster("out persis", normalize=True)
 
     # plot_raster("instrength")
 

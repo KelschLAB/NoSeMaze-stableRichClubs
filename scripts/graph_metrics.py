@@ -43,7 +43,7 @@ def default_on_error(graph_idx, variable, window, rm_weak_histo = True):
         [np.nan]*len(wt), [np.nan]*len(RFIDs), \
         {"Mouse_RFID": [np.nan]*len(RFIDs), "mutant": [np.nan]*len(RFIDs), "RC": [np.nan]*len(RFIDs), "Group_ID": int(labels[graph_idx][1:])}
 
-def measures(graph_idx, day, window = 3, measure = "hub", variable = "approaches", mnn = None, mutual = True, rm_weak_histo = True):
+def measures(graph_idx, day, window = 3, measure = "hub", variable = "approaches", mnn = None, mutual = True, rm_weak_histo = True, threshold = 0.0):
     """
     Computes specified graph-theoretical metric for a given cohort, day, and time window.
 
@@ -75,7 +75,7 @@ def measures(graph_idx, day, window = 3, measure = "hub", variable = "approaches
         print("Incorrect time window")
         return 
     try:
-        data = read_graph([datapath], percentage_threshold = 0, mnn = mnn, mutual = mutual)[0]
+        data = read_graph([datapath], percentage_threshold = threshold, mnn = mnn, mutual = mutual)[0]
         arr = np.loadtxt(datapath, delimiter=",", dtype=str)
         RFIDs = arr[0, 1:].astype(str)
     except Exception as e:
@@ -311,6 +311,8 @@ def measures(graph_idx, day, window = 3, measure = "hub", variable = "approaches
          scores_wt = [g.transitivity_local_undirected()[i] for i in wt]  
          scores_all = [g.transitivity_local_undirected()[i] for i in range(len(RFIDs))]
          
+         
+         
     elif measure == "out persistence" or measure == "in persistence":
         datapath2 = f"..\\data\\both_cohorts_{window}days\\"+labels[graph_idx]+"\\"+variable+f"_resD{window}_"+str(day+1)+".csv"
         if window not in [1, 3, 7]:
@@ -491,7 +493,7 @@ def mk_derivatives_dataframe(variable = "approaches", window = 3, mnn = 4, mutua
     features_df.to_csv(f"..\\data\\processed_metrics\\{save_name}", index = False)
     return features_df
 
-def get_metric_df(metric, variable = "approaches", derivative = False, window = 1, mnn = 4, mutual = False, rm_weak_histo = True):
+def get_metric_df(metric, variable = "approaches", derivative = False, window = 1, mnn = 4, mutual = False, rm_weak_histo = True, threshold = 0.0):
     """
     Extracts the values of the input metric as a function of time and returns it as a pandas dataframe 
     along with useful meta data used for plotting.
@@ -513,12 +515,12 @@ def get_metric_df(metric, variable = "approaches", derivative = False, window = 
     time_range = np.arange(1, 16, window) if metric not in ["instrength", "outstrength"] else np.arange(2, 16, window)
     for d in time_range:
         for j in range(len(labels)):
-            res_t1 = measures(j, d+1, window, metric, variable, mnn, mutual, rm_weak_histo) 
+            res_t1 = measures(j, d+1, window, metric, variable, mnn, mutual, rm_weak_histo, threshold) 
             if res_t1 is None:
                 continue
             scores, metadata = np.array(res_t1[4]), res_t1[5]
             if derivative:
-                res_t2 = measures(j, d+2, window, metric, variable, mnn, mutual, rm_weak_histo) # weighted edge measures do not need graph cut : mnn = None
+                res_t2 = measures(j, d+2, window, metric, variable, mnn, mutual, rm_weak_histo, threshold) # weighted edge measures do not need graph cut : mnn = None
                 scores_t1, metadata = np.array(res_t1[4]), res_t1[5]
                 scores_t2, _ = np.array(res_t2[4]), res_t1[5]
                 scores = scores_t2 - scores_t1
@@ -556,7 +558,7 @@ def manual_plot(metrics, variable = "approaches", mnn = None, mutual = False, di
             their std, i.e. whether or not we plot one point per day, or if the points 
             represent the fluctuations in the timeseries.
     """
-    from timegraph_metrics import get_time_metric_df
+    from tmp_timegraph_metrics import get_time_metric_df
     temporal_metrics = ["summed outNEF", "summed inNEF", "summed outICI",
                         "summed inICI", "summed outburstiness", "summed inburstiness"]
     df = pd.DataFrame()
@@ -700,7 +702,8 @@ def add_significance(data, var, ax, bp):
     text_height = bar_height + (y_range * 0.01)
     ax.text((x1 + x2) * 0.5, text_height, sig_symbol, ha='center', va='bottom', c='k')
     
-def boxplot_metric_mutant(var, derivative = False, aggregation = None, window = 1, mnn = 4, mutual = False, rm_RC = True, overlay_RC = False, ax = None):
+def boxplot_metric_mutant(var, derivative = False, aggregation = None, window = 1, mnn = 4, mutual = False,
+                          rm_RC = True, overlay_RC = False, threshold = 0.0, ax = None):
     """
      Plots a boxplot comparing the specified graph-theoretical metric between mutant and wild-type mice. By Default, RC members
      are excluded from the comparison unless 'overlay_RC' is True. The function aggregates the metric per mouse using the specified method, 
@@ -712,7 +715,7 @@ def boxplot_metric_mutant(var, derivative = False, aggregation = None, window = 
          aggregation: Aggregation method for repeated measures per mouse. Can be None, "mean" or "std".
      """
      
-    df = get_metric_df(var, "approaches", derivative, window, mnn, mutual, True)
+    df = get_metric_df(var, "approaches", derivative, window, mnn, mutual, True, threshold)
     df = df.dropna()
     
     if var == "instrength" or var == "outstrength" or var == "normed outstrength" or var == "normed outstrength":
@@ -798,10 +801,10 @@ def boxplot_metric_mutant(var, derivative = False, aggregation = None, window = 
             ax.set_ylabel("CV[V(t)]")
         elif aggregation is None:
             ax.set_ylabel("V(t)")
-    ax.set_title(f"{var}")
+    ax.set_title(f"{var}, threshold: {threshold}%")
     plt.tight_layout()
     
-def boxplot_metric_RC(var, derivative = False, aggregation = None, window = 1, mnn = 4, mutual = False, ax = None):
+def boxplot_metric_RC(var, derivative = False, aggregation = None, window = 1, mnn = 4, mutual = False, threshold = 0.0, ax = None):
     """
     Plots a boxplot comparing the specified graph-theoretical metric between RC (rich club) members and non-members. 
     Non distinction of mutant or WT mice is made here. The function aggregates the metric per mouse using the specified method, 
@@ -813,7 +816,7 @@ def boxplot_metric_RC(var, derivative = False, aggregation = None, window = 1, m
         aggregation: Aggregation method for repeated measures per mouse. Can be None, "mean" or "std".
     """
     
-    df = get_metric_df(var, "approaches", derivative, window, mnn, mutual, True)
+    df = get_metric_df(var, "approaches", derivative, window, mnn, mutual, True, threshold)
     df = df.dropna()
     
     if var == "instrength" or var == "outstrength" or var == "normed outstrength" or var == "normed outstrength":
@@ -857,7 +860,7 @@ def boxplot_metric_RC(var, derivative = False, aggregation = None, window = 1, m
             ax.set_ylabel("V(t)")
     ax.set_title(f"{var}")
       
-def fluctuation_rank(var, window = 1, mnn = 4, mutual = False, rm_RC = True, overlay_RC = False, ax = None):
+def fluctuation_rank(var, window = 1, mnn = 4, mutual = False, rm_RC = True, overlay_RC = False, threshold = 0.0, ax = None):
     """
      Plots a boxplot comparing the specified graph-theoretical metric between mutant and wild-type mice. By Default, RC members
      are excluded from the comparison unless 'overlay_RC' is True. The function aggregates the metric per mouse using the specified method, 
@@ -869,7 +872,7 @@ def fluctuation_rank(var, window = 1, mnn = 4, mutual = False, rm_RC = True, ove
          aggregation: Aggregation method for repeated measures per mouse. Can be None, "mean" or "std".
      """
      
-    df = get_metric_df(var, "approaches", True, window, mnn, mutual, True)
+    df = get_metric_df(var, "approaches", True, window, mnn, mutual, True, threshold)
     df = df.dropna()
     
     if var == "instrength" or var == "outstrength" or var == "normed outstrength" or var == "normed outstrength":
@@ -920,6 +923,9 @@ def fluctuation_rank(var, window = 1, mnn = 4, mutual = False, rm_RC = True, ove
                     mutants, alpha = alpha, s = size, color = "red"); 
         ax.scatter([2 + np.random.normal()*0.05 for i in range(len(non_mem))], 
                     non_mem, alpha = alpha, s = size, color = "gray", label = "Non-member"); 
+        fig, ax2 = plt.subplots(1,1)
+        ax2.hist(mutants, alpha = 0.5)
+        ax2.hist(non_mem, alpha = 0.5)
     elif not rm_RC:
         ax.scatter([1 + np.random.normal()*0.05 for i in range(len(data[0]['rank'].values))], 
                     data[0]['rank'].values, alpha = alpha, s = size, color = "red"); 
@@ -932,7 +938,7 @@ def fluctuation_rank(var, window = 1, mnn = 4, mutual = False, rm_RC = True, ove
                     df.loc[np.logical_and(df["mutant"] == False, df["RC"]), 'rank'], alpha = alpha, s = size, color = "green", label = "RC member"); 
 
     ax.set_ylabel("Rank")
-    ax.set_title(f"Rank of {var} fluctuations")
+    ax.set_title(f"Rank of {var} fluctuations\nthreshold: {threshold}%")
     
 if __name__ == "__main__":
     # df = mk_measures_dataframe("approaches", 1, 5, mutual = False, rm_weak_histo = True)
@@ -986,8 +992,8 @@ if __name__ == "__main__":
     #     for idx, ax in enumerate(axs.flatten()):
     #         boxplot_metric_mutant(unweighted_features[idx], derivative = True, aggregation = 'std', window = 1, mnn = mnn, mutual = True, rm_RC = True, overlay_RC = False, ax = ax)
         
-    mnn = 3
-    boxplot_metric_mutant("summed injaccard", derivative = False, aggregation = 'mean', window = 1, mnn = mnn, mutual = False, rm_RC = True, overlay_RC = False)
+    # mnn = 3
+    # boxplot_metric_mutant("summed injaccard", derivative = False, aggregation = 'mean', window = 1, mnn = mnn, mutual = False, rm_RC = True, overlay_RC = False)
     # boxplot_metric_mutant("in persistence", derivative = False, aggregation = 'mean', window = 1, mnn = mnn, mutual = False, rm_RC = True, overlay_RC = False)
 
     # boxplot_metric_mutant("summed injaccard", derivative = True, aggregation = 'std', window = 1, mnn = 4, mutual = False, rm_RC = True, overlay_RC = False)
@@ -1000,12 +1006,25 @@ if __name__ == "__main__":
     # boxplot_metric_mutant("out persistence", derivative = False, aggregation = 'std', window = 1, mnn = None, mutual = False, rm_RC = True, overlay_RC = False)
     # boxplot_metric_mutant("in persistence", derivative = False, aggregation = 'std', window = 1, mnn = None, mutual = False, rm_RC = True, overlay_RC = False)
     
-    # boxplot_metric_mutant("outstrength", derivative = True, aggregation = 'std', window = 1, mnn = None, mutual = False, rm_RC = True, overlay_RC = False)
+    # boxplot_metric_mutant("outdegree", derivative = True, aggregation = 'std', window = 1, mnn = None,
+    #                       mutual = False, rm_RC = True, overlay_RC = False, threshold = 0.0)
+    
+    # boxplot_metric_mutant("outdegree", derivative = False, aggregation = 'mean', window = 1, mnn = None,
+    #                       mutual = False, rm_RC = True, overlay_RC = False, threshold = 0.0)
+    
+    # boxplot_metric_mutant("indegree", derivative = True, aggregation = 'std', window = 1, mnn = None,
+    #                       mutual = False, rm_RC = True, overlay_RC = False, threshold = 5)
+    
     # boxplot_metric_mutant("instrength", derivative = True, aggregation = 'std', window = 1, mnn = None, mutual = False, rm_RC = True, overlay_RC = False)
-# 
+ 
     # boxplot_metric_mutant("eigenvector_centrality", derivative = False, aggregation = None, window = 7, mnn = 4, mutual = False, rm_RC = False, overlay_RC = False)
     # boxplot_metric_mutant("pagerank", derivative = False, aggregation = None, window = 7, mnn = 4, mutual = False, rm_RC = False, overlay_RC = False)
     # boxplot_metric_RC("outstrength", derivative = False, aggregation = None, window = 7, mnn = 4, mutual = False)
 
     # fluctuation_rank("outstrength", window = 1, mnn = 4, mutual = False, rm_RC = True, overlay_RC = False)
-    # fluctuation_rank("degree", window = 1, mnn = 4, mutual = False, rm_RC = True, overlay_RC = False)
+    
+    # fluctuation_rank("outdegree", window = 1, mnn = 5, mutual = False, rm_RC = True, overlay_RC = False)
+    # fluctuation_rank("outdegree", window = 1, mnn = 6, mutual = False, rm_RC = True, overlay_RC = False)
+    # fluctuation_rank("outdegree", window = 1, mnn = None, mutual = False,
+                     # rm_RC = True, overlay_RC = False, threshold = 2.5, ax = None)
+    # fluctuation_rank("indegree", window = 1, mnn = 7, mutual = False, rm_RC = True, overlay_RC = False)

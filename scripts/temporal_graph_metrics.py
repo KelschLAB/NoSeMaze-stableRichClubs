@@ -36,7 +36,7 @@ def default_on_error(graph_idx, variable, window, rm_weak_histo = True):
         [np.nan]*len(wt), [np.nan]*len(RFIDs), \
         {"Mouse_RFID": [np.nan]*len(RFIDs), "mutant": [np.nan]*len(RFIDs), "RC": [np.nan]*len(RFIDs), "Group_ID": int(labels[graph_idx][1:])}
 
-def time_measures(measure, graph_idx, window = 1, variable = "approaches", mnn = None, mutual = True, weighted = False, rm_weak_histo = True):
+def time_measures(measure, graph_idx, window = 1, variable = "approaches", mnn = None, mutual = True, weighted = False, rm_weak_histo = True, threshold = 0.0):
     """
     Computes specified time graph-theoretical metric for a given cohort, and time window.
 
@@ -69,7 +69,7 @@ def time_measures(measure, graph_idx, window = 1, variable = "approaches", mnn =
     ## figuring out position of mutants, wt and rc within the indexing of the csv file
     datapath = f"..\\data\\both_cohorts_{window}days\\"+labels[graph_idx]+"\\"+variable+f"_resD{window}_1.csv"
     try:
-        data_ref = read_graph([datapath], percentage_threshold = 0, mnn = mnn, mutual = mutual)[0]
+        data_ref = read_graph([datapath], percentage_threshold = threshold, mnn = mnn, mutual = mutual)[0]
         arr = np.loadtxt(datapath, delimiter=",", dtype=str)
         RFIDs = arr[0, 1:].astype(str)
     except Exception as e:
@@ -126,7 +126,7 @@ def time_measures(measure, graph_idx, window = 1, variable = "approaches", mnn =
     for day in np.arange(1, 16, window):
         datapath = f"..\\data\\both_cohorts_{window}days\\"+labels[graph_idx]+"\\"+variable+f"_resD{window}_"+str(day)+".csv"
         try:
-            data = read_graph([datapath], percentage_threshold = 0, mnn = mnn, mutual = mutual)[0]
+            data = read_graph([datapath], percentage_threshold = threshold, mnn = mnn, mutual = mutual)[0]
             arr = np.loadtxt(datapath, delimiter=",", dtype=str)
             RFIDs = arr[0, 1:].astype(str)
         except Exception as e:
@@ -181,14 +181,13 @@ def time_measures(measure, graph_idx, window = 1, variable = "approaches", mnn =
 
         time_std, time_mean = np.nanstd(all_data, axis = 0), np.nanmean(all_data, axis = 0)
         all_scores = (time_std - time_mean)/(time_std + time_mean)
+        all_Scores = time_std
         
     elif measure == "summed outNEF" or measure == "summed inNEF": # NEF = normalized edge fluctuations
         all_data = np.array(graphs)
         time_std, time_mean = np.nanstd(all_data, axis = 0), np.nanmean(all_data, axis = 0)
         all_scores = time_std
-        # all_scores = (time_std - time_mean)/(time_std + time_mean)
-        # all_scores = time_std/time_mean
-
+        
     else:
         raise Exception("Unknown or misspelled input measurement.") 
         return
@@ -231,11 +230,11 @@ def get_time_metric_df(measure, window = 1, variable = "approaches", mnn = None,
     df["Mouse_RFID"] = RFIDs
     return df
 
-def bp_metric_mutants(measure, window = 1, variable = "approaches", mnn = None, mutual = True, weighted = False, ax = None):
+def bp_metric_mutants(measure, window = 1, variable = "approaches", mnn = None, mutual = True, weighted = False, threshold = 0.0, ax = None):
     scores_mutants, scores_rc, scores_wt, scores_others, scores_all = [], [], [], [], []
     RFIDs, mutants, RCs = [], [], []
     for graph_idx in range(len(labels)):
-        res = time_measures(measure, graph_idx, window, variable, mnn, mutual, weighted)
+        res = time_measures(measure, graph_idx, window, variable, mnn, mutual, weighted, True, threshold)
         scores_mutants.extend(res[0])
         scores_rc.extend(res[1])
         scores_others.extend(res[2])
@@ -263,7 +262,7 @@ def bp_metric_mutants(measure, window = 1, variable = "approaches", mnn = None, 
     ax.scatter([2 + np.random.normal()*0.05 for i in range(len(scores_others))], 
                 scores_others, alpha = alpha, s = size, color = "gray", label = "Non-member")
     add_significance(data, measure, ax, bp)
-    title = f"weighted {measure}, nn = {mnn}" if weighted else f"Unweighted {measure}, nn = {mnn}"
+    title = f"weighted {measure}, mnn = {mnn}, thresh = {threshold}%" if weighted else f"Unweighted {measure}, mnn = {mnn}, thresh = {threshold}%"
     ax.set_title(title)
     plt.show()
     
@@ -271,10 +270,7 @@ temporal_metrics = ["summed outNEF", "summed inNEF", "summed outICI", "summed in
 
 
 if __name__ == "__main__":
-    # for mnn in range(4, 6):
-    mnn = None
-    # bp_metric_mutants("summed outburstiness", mnn = mnn, mutual = False, weighted = True)
-    # bp_metric_mutants("summed inburstiness", mnn = mnn, mutual = False, weighted = True)
-    bp_metric_mutants("summed outNEF", mnn = mnn, mutual = False, weighted = True)
-    bp_metric_mutants("summed inNEF", mnn = mnn, mutual = False, weighted = True)
-# 
+    # bp_metric_mutants("summed outburstiness", mnn = None, mutual = True, weighted = False, threshold=5)    
+    bp_metric_mutants("summed outNEF", mnn = None, mutual = False, weighted = False, threshold = 5)
+
+    
