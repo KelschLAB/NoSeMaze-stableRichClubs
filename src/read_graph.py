@@ -424,7 +424,8 @@ def display_graph(path_to_file, ax, percentage_threshold = 0.0, mnn = None, avg_
         layer_labels = kwargs["layer_labels"] if "layer_labels" in kwargs else None
         display_graph_3d(path_to_file, ax = ax, percentage_threshold = percentage_threshold, mnn = mnn, affinity = affinity, \
                          rm_fb_loops = rm_fb_loops, mutual = mutual, layout = layout_style, node_metric = kwargs["node_metric"], idx = kwargs["idx"], \
-                         cluster_num = kwargs["cluster_num"], layer_labels = layer_labels, node_labels = node_labels, deg = kwargs["deg"])
+                         cluster_num = kwargs["cluster_num"], layer_labels = layer_labels, node_labels = node_labels, deg = kwargs["deg"], 
+                         node_size = kwargs["node_size"], default_edge_width = kwargs["default_edge_width"])
         return
     else:
         data = read_graph(path_to_file, percentage_threshold = percentage_threshold, mnn = mnn, mutual = mutual, \
@@ -437,14 +438,13 @@ def display_graph(path_to_file, ax, percentage_threshold = 0.0, mnn = None, avg_
         
     # default values
     node_color = "blue"
-    node_size = 15
+    default_node_size = kwargs["node_size"] if "node_size" in kwargs else 15
 
     cmap1 = cm.Reds
     if "node_metric" in kwargs:
         if kwargs["node_metric"] == "none":
-            node_color = "blue"
-            node_size = 15
-        elif kwargs["node_metric"] == "betweenness":
+            node_size = default_node_size
+        if kwargs["node_metric"] == "betweenness":
             edge_betweenness = g.betweenness(weights = [1/e['weight'] for e in g.es()]) #taking the inverse of edge values as we want high score to represent low distances
             edge_betweenness = ig.rescale(edge_betweenness)
             node_size = [(1+e)*15 for e in edge_betweenness]
@@ -560,10 +560,11 @@ def display_graph_3d(path_to_file, ax, percentage_threshold = 0.0, mnn = None, a
     layers = read_graph(path_to_file, percentage_threshold = percentage_threshold, mnn = mnn, return_ig=True, affinity = affinity, rm_fb_loops = rm_fb_loops, mutual = mutual) 
     layers_data = read_graph(path_to_file, percentage_threshold = percentage_threshold, mnn = mnn, return_ig=False, affinity = affinity, rm_fb_loops = rm_fb_loops, mutual = mutual)
 
-    node_size = 15 #default value
+    default_node_size = kwargs["node_size"] if "node_size" in kwargs else 15
+    default_edge_width = kwargs["default_edge_width"] if "default_edge_width" in kwargs else 5
     if "node_metric" in kwargs:
         if kwargs["node_metric"] == "none":
-            node_size = 15
+            node_size = default_node_size
         elif kwargs["node_metric"] == "betweenness":
             node_size = []
             for g in layers:
@@ -611,13 +612,13 @@ def display_graph_3d(path_to_file, ax, percentage_threshold = 0.0, mnn = None, a
             for g in layers:
                 k_degree = kwargs["deg"]
                 size = rich_club_weights(g, k_degree, 0.01)
-                node_size.append(np.array([n*1 for n in size]))
+                node_size.append(np.array([n*default_node_size for n in size]))
         elif kwargs["node_metric"] == "k-core":
             node_size = []
             for d in layers_data:
                 k_degree = kwargs["deg"]
                 size = k_core_weights(d, k_degree, 0.01)
-                node_size.append(np.array([n*1 for n in size]))
+                node_size.append(np.array([n*default_node_size for n in size]))
         
     else:
         node_color = "red"
@@ -627,8 +628,9 @@ def display_graph_3d(path_to_file, ax, percentage_threshold = 0.0, mnn = None, a
         if len(kwargs["idx"]) == 0:
             marker_frame_color = None
         else:
+            color_num = len(np.unique(kwargs["idx"]))
             cmap = get_cmap('Spectral')
-            palette = ClusterColoringPalette(kwargs["cluster_num"])
+            palette = ClusterColoringPalette(color_num)
             marker_frame_color = [palette[i] for i in kwargs["idx"]]#cmap(kwargs["idx"])
     else:
         marker_frame_color = None
@@ -661,7 +663,9 @@ def display_graph_3d(path_to_file, ax, percentage_threshold = 0.0, mnn = None, a
     else:
         layer_labels = None
             
-    LayeredNetworkGraph(layers_layout, layers, layers_data, ax=ax, layout=layout, node_labels = node_labels, nodes_width=node_size, node_edge_colors=marker_frame_color, layer_labels=layer_labels)
+    LayeredNetworkGraph(layers_layout, layers, layers_data, ax=ax, layout=layout, 
+                        node_labels = node_labels, nodes_width=node_size, node_edge_colors=marker_frame_color, 
+                        layer_labels=layer_labels, default_edge_width=default_edge_width)
     ax.set_axis_off()
 
     

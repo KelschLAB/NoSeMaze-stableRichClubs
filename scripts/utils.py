@@ -78,14 +78,20 @@ def add_significance(data, ax, bp, stat = mean):
         p = significant_combination[1]
         if p < 0.001:
             sig_symbol = '***'
+            text_height = bar_height - (y_range * 0.03)
+            plt.text((x1 + x2) * 0.5, text_height, sig_symbol, ha='center', va='bottom', c='k', fontsize = 20)
         elif p < 0.01:
             sig_symbol = '**'
+            text_height = bar_height - (y_range * 0.03)
+            plt.text((x1 + x2) * 0.5, text_height, sig_symbol, ha='center', va='bottom', c='k', fontsize = 20)
         elif p < 0.05:
             sig_symbol = '*'
+            text_height = bar_height - (y_range * 0.03)
+            plt.text((x1 + x2) * 0.5, text_height, sig_symbol, ha='center', va='bottom', c='k', fontsize = 20)
         else:
             sig_symbol = f"p = {np.round(p, 3)}"
-        text_height = bar_height + (y_range * 0.01)
-        plt.text((x1 + x2) * 0.5, text_height, sig_symbol, ha='center', va='bottom', c='k')
+            text_height = bar_height + (y_range * 0.01)
+            plt.text((x1 + x2) * 0.5, text_height, sig_symbol, ha='center', va='bottom', c='k')
 
 
 labels = ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G10", "G11", "G12", "G13", "G14", "G15", "G16", "G17"]

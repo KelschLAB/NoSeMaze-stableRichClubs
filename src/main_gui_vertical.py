@@ -27,6 +27,7 @@ from clustering_window import *
 #       - Check that feedback loops rm works, and that display of distance graphs also works
 #       - mnn in clustering should be fixed (the displayed cut graph isnt cut properly)
 #       - statistical test of random chance for rich club in statistics tabs
+#       - add to settings possibility to change colormaps for layers, base node size, base colors and colormap for edges.
 #       - write tests
 
 ###### For future version: 

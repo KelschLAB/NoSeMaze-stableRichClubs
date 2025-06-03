@@ -512,7 +512,7 @@ def get_metric_df(metric, variable = "approaches", derivative = False, window = 
     features_df = pd.DataFrame()
     
     all_scores, day, RFIDs, Group_ID, mutants, RCs = [], [], [], [], [], []
-    time_range = np.arange(1, 16, window) if metric not in ["instrength", "outstrength"] else np.arange(2, 16, window)
+    time_range = np.arange(7, 16, window) if metric not in ["instrength", "outstrength"] else np.arange(2, 16, window)
     for d in time_range:
         for j in range(len(labels)):
             res_t1 = measures(j, d+1, window, metric, variable, mnn, mutual, rm_weak_histo, threshold) 
@@ -772,9 +772,9 @@ def boxplot_metric_mutant(var, derivative = False, aggregation = None, window = 
     add_significance(data, var, ax, bp)
     if rm_RC:
         ax.scatter([1 + np.random.normal()*0.05 for i in range(len(df.loc[np.logical_and(df["mutant"], df["RC"] == False),var].values))], 
-                    df.loc[np.logical_and(df["mutant"], df["RC"] == False),var], alpha = alpha, s = size, color = "red"); 
+                    df.loc[np.logical_and(df["mutant"], df["RC"] == False),var], alpha = alpha, s = size, color = "red", linewidths = 0); 
         ax.scatter([2 + np.random.normal()*0.05 for i in range(len(df.loc[np.logical_and(df["mutant"] == False, df["RC"] == False), var].values))], 
-                    df.loc[np.logical_and(df["mutant"] == False, df["RC"] == False), var], alpha = alpha, s = size, color = "gray", label = "Non-member"); 
+                    df.loc[np.logical_and(df["mutant"] == False, df["RC"] == False), var], alpha = alpha, s = size, color = "gray", label = "Non-member", linewidths = 0); 
     elif not rm_RC:
         ax.scatter([1 + np.random.normal()*0.05 for i in range(len(data[0][var].values))], 
                     data[0][var].values, alpha = alpha, s = size, color = "red"); 
@@ -993,14 +993,17 @@ if __name__ == "__main__":
     #         boxplot_metric_mutant(unweighted_features[idx], derivative = True, aggregation = 'std', window = 1, mnn = mnn, mutual = True, rm_RC = True, overlay_RC = False, ax = ax)
         
     # mnn = 3
-    # boxplot_metric_mutant("summed injaccard", derivative = False, aggregation = 'mean', window = 1, mnn = mnn, mutual = False, rm_RC = True, overlay_RC = False)
-    # boxplot_metric_mutant("in persistence", derivative = False, aggregation = 'mean', window = 1, mnn = mnn, mutual = False, rm_RC = True, overlay_RC = False)
 
-    # boxplot_metric_mutant("summed injaccard", derivative = True, aggregation = 'std', window = 1, mnn = 4, mutual = False, rm_RC = True, overlay_RC = False)
+    # boxplot_metric_mutant("summed injaccard", derivative = True, aggregation = 'std', window = 1, mnn = None, mutual = False, rm_RC = True, overlay_RC = False, threshold=0)
     # boxplot_metric_mutant("summed outjaccard", derivative = True, aggregation = 'std', window = 1, mnn = 4, mutual = False, rm_RC = True, overlay_RC = False)
 
-    # boxplot_metric_mutant("indegree", derivative = True, aggregation = 'std', window = 1, mnn = 4, mutual = False, rm_RC = True, overlay_RC = False)
-    # boxplot_metric_mutant("outdegree", derivative = True, aggregation = 'std', window = 1, mnn = 4, mutual = False, rm_RC = True, overlay_RC = False)
+    # boxplot_metric_mutant("outdegree", derivative = True, aggregation = 'std', window = 1, mnn = None, mutual = False, rm_RC = True, overlay_RC = False, threshold = 0)
+
+    # boxplot_metric_mutant("indegree", derivative = True, aggregation = 'std', window = 1, mnn = None, mutual = False, rm_RC = True, overlay_RC = False, threshold = 10)
+    # boxplot_metric_mutant("outdegree", derivative = True, aggregation = 'std', window = 1, mnn = None, mutual = False, rm_RC = True, overlay_RC = False, threshold = 5)
+    
+    # boxplot_metric_mutant("instrength", derivative = True, aggregation = 'std', window = 1, mnn = None, mutual = False, rm_RC = True, overlay_RC = False)
+    # boxplot_metric_mutant("outstrength", derivative = False, aggregation = 'std', window = 1, mnn = None, mutual = False, rm_RC = True, overlay_RC = False)
 
 
     # boxplot_metric_mutant("out persistence", derivative = False, aggregation = 'std', window = 1, mnn = None, mutual = False, rm_RC = True, overlay_RC = False)
@@ -1015,7 +1018,7 @@ if __name__ == "__main__":
     # boxplot_metric_mutant("indegree", derivative = True, aggregation = 'std', window = 1, mnn = None,
     #                       mutual = False, rm_RC = True, overlay_RC = False, threshold = 5)
     
-    # boxplot_metric_mutant("instrength", derivative = True, aggregation = 'std', window = 1, mnn = None, mutual = False, rm_RC = True, overlay_RC = False)
+    # boxplot_metric_mutant("out persistence", derivative = True, aggregation = 'std', window = 1, mnn = None, mutual = False, rm_RC = True, overlay_RC = False)
  
     # boxplot_metric_mutant("eigenvector_centrality", derivative = False, aggregation = None, window = 7, mnn = 4, mutual = False, rm_RC = False, overlay_RC = False)
     # boxplot_metric_mutant("pagerank", derivative = False, aggregation = None, window = 7, mnn = 4, mutual = False, rm_RC = False, overlay_RC = False)

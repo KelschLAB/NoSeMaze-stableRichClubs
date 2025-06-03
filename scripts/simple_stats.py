@@ -42,7 +42,7 @@ df = pd.read_excel(path)
 # dist_wt = times[~oxtype]
 # dist_mu = times[oxtype]
 # t, p = ttest_ind(dist_wt[~np.isnan(dist_wt)], dist_mu[~np.isnan(dist_mu)])
-# plt.title("time_in_arena_average\n p-value = 0.28")
+# plt.title(f"time_in_arena_average\n p-value = {p}")
 # plt.tight_layout()
 
 # sns.catplot(data=df, x = "mutant",y = "cs_plus_detection_speed", color=".9", kind="box", width = 0.33)
@@ -120,9 +120,9 @@ def boxplot_approaches(out = True, sep = False, all_wt = False):
     
     approaches_rc, approaches_mutants, approaches_others = [], [], [] 
     for idx, g in enumerate(labels):
-        this_mutants, this_rc, _, _, _ = get_category_indices(idx, "approaches")
+        this_mutants, this_rc, _, _, _ = get_category_indices(idx, "approaches", 7)
 
-        data = read_graph(["..\\data\\averaged\\"+g+"\\approaches_resD7_1.csv"], percentage_threshold = 0)[0] + read_graph(["..\\data\\averaged\\"+g+"\\approaches_resD7_2.csv"], percentage_threshold = 0)[0]
+        data = read_graph(["..\\data\\both_cohorts_7days\\"+g+"\\approaches_resD7_1.csv"], percentage_threshold = 0)[0] + read_graph(["..\\data\\both_cohorts_7days\\"+g+"\\approaches_resD7_2.csv"], percentage_threshold = 0)[0]
         for rc in this_rc:
             if out:
                 approaches_rc.append(np.sum(data[:, rc]))
@@ -150,7 +150,7 @@ def boxplot_approaches(out = True, sep = False, all_wt = False):
         else:
             data = [approaches_mutants, approaches_others + approaches_rc]
 
-    ax = plt.axes()
+    fig, ax = plt.subplots(1, 1)
     bp = ax.boxplot(data, widths=0.6, patch_artist=True, showfliers = False, zorder=1)
     add_significance(data, ax, bp)
 
@@ -162,12 +162,12 @@ def boxplot_approaches(out = True, sep = False, all_wt = False):
                     data[1], alpha = alpha, s = size, label = "non-member", zorder=2); 
     
     elif sep:
-         ax.scatter([1 + np.random.normal()*0.05 for i in range(len(data[1]))], 
-                     data[1], alpha = alpha, s = size, label = "mutant"); 
-         ax.scatter([2 + np.random.normal()*0.05 for i in range(len(data[2]))], 
-                     data[2], alpha = alpha, s = size, label = "non-member"); 
-         ax.scatter([3 + np.random.normal()*0.05 for i in range(len(data[0]))], 
+         ax.scatter([1 + np.random.normal()*0.05 for i in range(len(data[0]))], 
                      data[0], alpha = alpha, s = size, label = "RC"); 
+         ax.scatter([2 + np.random.normal()*0.05 for i in range(len(data[1]))], 
+                     data[1], alpha = alpha, s = size, label = "mutant"); 
+         ax.scatter([3 + np.random.normal()*0.05 for i in range(len(data[2]))], 
+                     data[2], alpha = alpha, s = size, label = "non-member"); 
 
     if out:
         ax.set_ylabel("Outgoing approaches", fontsize = 20)
@@ -180,6 +180,141 @@ def boxplot_approaches(out = True, sep = False, all_wt = False):
             format_plot(ax, bp, xticklabels = ["Mutants", "Non-members"]) # set x_axis, and colors of each bar
         else:
             format_plot(ax, bp, xticklabels = ["Mutants", "WT"]) # set x_axis, and colors of each bar
+    plt.show()
+    
+    
+def boxplot_interactions(sep = False, all_wt = False):
+    """
+    Compares the number of approaches made by RC members, mutants and others.
+    sep (bool): whether to show the rich club in a separate box
+    all_wt (boot): if true, rc will be included in normal wt, otherwise, only show non member WT
+    histo: if true, plots the results as a histogram
+    """
+
+    labels = ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G10", "G11", "G12", "G13", "G14", "G15", "G16"]
+    
+    approaches_rc, approaches_mutants, approaches_others = [], [], [] 
+    for idx, g in enumerate(labels):
+        this_mutants, this_rc, _, _, _ = get_category_indices(idx, "approaches", 7)
+
+        data = read_graph(["..\\data\\both_cohorts_7days\\"+g+"\\interactions_resD7_1.csv"], percentage_threshold = 0)[0] + read_graph(["..\\data\\both_cohorts_7days\\"+g+"\\interactions_resD7_2.csv"], percentage_threshold = 0)[0]
+        for rc in this_rc:
+                approaches_rc.append(np.sum(data[:, rc])/2 + np.sum(data[rc, :])/2)
+
+        for mutant in this_mutants:
+                approaches_mutants.append(np.sum(data[mutant, :])/2 + np.sum(data[:, mutant])/2)
+
+        others = np.arange(10)[np.logical_and(~np.isin(np.arange(10), this_rc), ~np.isin(np.arange(10), this_mutants))]
+        for other in others:
+            try:
+                approaches_others.append(np.sum(data[other, :])/2 + np.sum(data[:, other])/2)
+            except:
+                pass
+    if sep:
+        data = [approaches_rc, approaches_mutants, approaches_others]
+    else:
+        if not all_wt:
+            data = [approaches_mutants, approaches_others]
+        else:
+            data = [approaches_mutants, approaches_others + approaches_rc]
+
+    fig, ax = plt.subplots(1, 1)
+
+    bp = ax.boxplot(data, widths=0.6, patch_artist=True, showfliers = False, zorder=1)
+    add_significance(data, ax, bp)
+
+    alpha, size  = 1, 40
+    if not sep:
+        ax.scatter([1 + np.random.normal()*0.05 for i in range(len(data[0]))], 
+                    data[0], alpha = alpha, s = size, label = "mutant", zorder=2); 
+        ax.scatter([2 + np.random.normal()*0.05 for i in range(len(data[1]))], 
+                    data[1], alpha = alpha, s = size, label = "non-member", zorder=2); 
+    
+    elif sep:
+         ax.scatter([1 + np.random.normal()*0.05 for i in range(len(data[0]))], 
+                     data[0], alpha = alpha, s = size, label = "RC"); 
+         ax.scatter([2 + np.random.normal()*0.05 for i in range(len(data[1]))], 
+                     data[1], alpha = alpha, s = size, label = "mutant"); 
+         ax.scatter([3 + np.random.normal()*0.05 for i in range(len(data[2]))], 
+                     data[2], alpha = alpha, s = size, label = "non-member"); 
+
+    ax.set_ylabel("Total interactions", fontsize = 20)
+    if sep:
+        format_plot(ax, bp, xticklabels = ["RC", "Mutants", "Non-members"]) # set x_axis, and colors of each bar
+    else:
+        if not all_wt:
+            format_plot(ax, bp, xticklabels = ["Mutants", "Non-members"]) # set x_axis, and colors of each bar
+        else:
+            format_plot(ax, bp, xticklabels = ["Mutants", "WT"]) # set x_axis, and colors of each bar
+            
+    plt.tight_layout()
+    plt.show()
+    
+def boxplot_interaction_durations(sep = False, all_wt = False):
+    """
+    Compares the number of approaches made by RC members, mutants and others.
+    sep (bool): whether to show the rich club in a separate box
+    all_wt (boot): if true, rc will be included in normal wt, otherwise, only show non member WT
+    histo: if true, plots the results as a histogram
+    """
+
+    labels = ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G10", "G11", "G12", "G13", "G14", "G15", "G16"]
+    
+    approaches_rc, approaches_mutants, approaches_others = [], [], [] 
+    for idx, g in enumerate(labels):
+        this_mutants, this_rc, _, _, _ = get_category_indices(idx, "approaches", 7)
+
+        data = read_graph(["..\\data\\both_cohorts_7days\\"+g+"\\t_mean_resD7_1.csv"], percentage_threshold = 0)[0] + read_graph(["..\\data\\both_cohorts_7days\\"+g+"\\t_mean_resD7_2.csv"], percentage_threshold = 0)[0]
+        for rc in this_rc:
+                approaches_rc.append(np.sum(data[:, rc])/2 + np.sum(data[rc, :])/2)
+
+        for mutant in this_mutants:
+                approaches_mutants.append(np.sum(data[mutant, :])/2 + np.sum(data[:, mutant])/2)
+
+        others = np.arange(10)[np.logical_and(~np.isin(np.arange(10), this_rc), ~np.isin(np.arange(10), this_mutants))]
+        for other in others:
+            try:
+                approaches_others.append(np.sum(data[other, :])/2 + np.sum(data[:, other])/2)
+            except:
+                pass
+    if sep:
+        data = [approaches_rc, approaches_mutants, approaches_others]
+    else:
+        if not all_wt:
+            data = [approaches_mutants, approaches_others]
+        else:
+            data = [approaches_mutants, approaches_others + approaches_rc]
+
+    fig, ax = plt.subplots(1, 1)
+   
+    bp = ax.boxplot(data, widths=0.6, patch_artist=True, showfliers = False, zorder=1)
+    add_significance(data, ax, bp)
+
+    alpha, size  = 1, 40
+    if not sep:
+        ax.scatter([1 + np.random.normal()*0.05 for i in range(len(data[0]))], 
+                    data[0], alpha = alpha, s = size, label = "mutant", zorder=2); 
+        ax.scatter([2 + np.random.normal()*0.05 for i in range(len(data[1]))], 
+                    data[1], alpha = alpha, s = size, label = "non-member", zorder=2); 
+    
+    elif sep:
+         ax.scatter([1 + np.random.normal()*0.05 for i in range(len(data[0]))], 
+                     data[0], alpha = alpha, s = size, label = "RC"); 
+         ax.scatter([2 + np.random.normal()*0.05 for i in range(len(data[1]))], 
+                     data[1], alpha = alpha, s = size, label = "mutant"); 
+         ax.scatter([3 + np.random.normal()*0.05 for i in range(len(data[2]))], 
+                     data[2], alpha = alpha, s = size, label = "non-member"); 
+
+
+    ax.set_ylabel("Mean interaction duration", fontsize = 20)
+    if sep:
+        format_plot(ax, bp, xticklabels = ["RC", "Mutants", "Non-members"]) # set x_axis, and colors of each bar
+    else:
+        if not all_wt:
+            format_plot(ax, bp, xticklabels = ["Mutants", "Non-members"]) # set x_axis, and colors of each bar
+        else:
+            format_plot(ax, bp, xticklabels = ["Mutants", "WT"]) # set x_axis, and colors of each bar
+    plt.tight_layout()
     plt.show()
     
 def approaches_scatter_plot(show_rc = False, symmetry_parameter = 1.5):
@@ -231,48 +366,20 @@ def approaches_scatter_plot(show_rc = False, symmetry_parameter = 1.5):
     plt.xlim(x_min, x_max)
     plt.show()
     
-def boxplot_interactions():
-    """
-    Compares the number of interactions made by RC members, mutants and others.
-    """
-    labels = ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G10", "G11", "G12", "G13", "G14", "G15", "G16"]
-    
-    interactions_rc, interactions_mutants, interactions_others = [], [], [] 
-    for idx, g in enumerate(labels):
-        this_mutants, this_rc, _, _, _ = get_category_indices(idx, "interactions")
-        data = read_graph(["..\\data\\averaged\\"+g+"\\interactions_resD7_1.csv"], percentage_threshold = 0)[0] + read_graph(["..\\data\\averaged\\"+g+"\\interactions_resD7_2.csv"], percentage_threshold = 0)[0]
-        for rc in this_rc:
-            interactions_rc.append(np.sum(data[rc, :]))
-        for mutant in this_mutants:
-            interactions_mutants.append(np.sum(data[mutant, :]))
-        others = np.arange(10)[np.logical_and(~np.isin(np.arange(10), this_rc), ~np.isin(np.arange(10), this_mutants))]
-        for other in others:
-            try:
-                interactions_others.append(np.sum(data[other, :]))
-            except:
-                pass
-    data = [interactions_rc, interactions_mutants, interactions_others]
-    ax = plt.axes()
-    bp = ax.boxplot(data, widths=0.6, patch_artist=True)
-    ax.set_ylabel("Total interactions", fontsize = 20)
-    format_plot(ax, bp) # set x_axis, and colors of each bar
-    add_significance(data, ax, bp)
-    # bottom, top = ax.get_ylim()
-    plt.show()
 
-def time_in_arena(plot_both_cohorts = False):
+def time_in_arena(sep = False, all_wt = False, plot_both_cohorts = False):
     path_to_first_cohort = "..\\data\\reduced_data.xlsx"
-    path_to_second_cohort = "..\\data\\reduced_data.xlsx"
+    path_to_second_cohort = "..\\data\\validation_cohort.xlsx"
     
     df1 = pd.read_excel(path_to_first_cohort)
     rc1 = df1.loc[:, "RC"]
     mutants1 = df1.loc[:, "mutant"]
     time_in_arena1 = np.array(df1.time_in_arena_average.values)
     social_time1 = np.array(df1.ratio_social_to_total_time_average.values)*time_in_arena1
-    df2 = pd.read_excel(path_to_second_cohort)
     
+    df2 = pd.read_excel(path_to_second_cohort)
     rc2 = df2.loc[:, "RC"]
-    mutants2 = df2.loc[:, "mutant"]
+    mutants2 = df2.loc[df2["genotype"] == "Oxt", "genotype"].values == 'Oxt'
 
     rc = np.concatenate([rc1, rc2])
     mutants = np.concatenate([mutants1, mutants2])
@@ -292,29 +399,48 @@ def time_in_arena(plot_both_cohorts = False):
     data = [time_in_arena[~nan*rc], 
             time_in_arena[~nan*mutants], 
             time_in_arena[~nan*~mutants*~rc]]
-
-    ax = plt.axes()
-    bp = ax.boxplot(data, widths=0.6, patch_artist=True)
-    format_plot(ax, bp) # set x_axis, and colors of each bar
+    
+    if sep:
+        pass
+    else:
+        if not all_wt:
+            data = [data[1], data[2]]
+        else:
+            data = [data[1], np.concatenate((data[2], data[0]))]
+            
+    fig, ax = plt.subplots(1, 1)
+    bp = ax.boxplot(data, widths=0.6, patch_artist=True, showfliers = False, zorder=1)
     add_significance(data, ax, bp)
- #   plt.rc('text', usetex=True)
-    plt.rc('font', family='serif')
-    xticklabels = ["RC", "Mutants", "Others"]
-    ax.set_xticklabels(xticklabels, fontsize = 20)
-    ax.set_ylabel("Avg. time in arena", fontsize = 20)
-    colors = sns.color_palette('pastel')
-    for patch, color in zip(bp['boxes'], colors): # set colors
-        patch.set_facecolor(color)
-    plt.setp(bp['medians'], color='k')
-    bottom, top = ax.get_ylim()
-    y_range = top - bottom
-    for i, dataset in enumerate(data):
-        sample_size = len(dataset)
-        ax.text(i + 1, 15000, fr'$n = {sample_size}$', ha='center', size='x-small')
+
+    alpha, size  = 1, 40
+    if not sep:
+        ax.scatter([1 + np.random.normal()*0.05 for i in range(len(data[0]))], 
+                    data[0], alpha = alpha, s = size, label = "mutant", zorder=2); 
+        ax.scatter([2 + np.random.normal()*0.05 for i in range(len(data[1]))], 
+                    data[1], alpha = alpha, s = size, label = "non-member", zorder=2); 
+    
+    elif sep:
+         ax.scatter([1 + np.random.normal()*0.05 for i in range(len(data[1]))], 
+                     data[1], alpha = alpha, s = size, label = "mutant"); 
+         ax.scatter([2 + np.random.normal()*0.05 for i in range(len(data[2]))], 
+                     data[2], alpha = alpha, s = size, label = "non-member"); 
+         ax.scatter([3 + np.random.normal()*0.05 for i in range(len(data[0]))], 
+                     data[0], alpha = alpha, s = size, label = "RC"); 
+
+    ax.set_ylabel("Time spent in arena", fontsize = 20)
+    if sep:
+        format_plot(ax, bp, xticklabels = ["RC", "Mutants", "Non-members"]) # set x_axis, and colors of each bar
+    else:
+        if not all_wt:
+            format_plot(ax, bp, xticklabels = ["Mutants", "Non-members"]) # set x_axis, and colors of each bar
+        else:
+            format_plot(ax, bp, xticklabels = ["Mutants", "WT"]) # set x_axis, and colors of each bar
+    plt.tight_layout()
+    plt.show()
         
-def social_time(sep = False):
+def social_time(sep = False, all_wt = False):
     path_to_first_cohort = "..\\data\\reduced_data.xlsx"
-    path_to_second_cohort = "..\\data\\reduced_data.xlsx"
+    path_to_second_cohort = "..\\data\\validation_cohort.xlsx"
     
     df1 = pd.read_excel(path_to_first_cohort)
     rc1 = df1.loc[:, "RC"]
@@ -324,7 +450,7 @@ def social_time(sep = False):
     df2 = pd.read_excel(path_to_second_cohort)
     
     rc2 = df2.loc[:, "RC"]
-    mutants2 = df2.loc[:, "mutant"]
+    mutants2 = df2.loc[:, df2["genotype"] == "Oxt"]
 
     rc = np.concatenate([rc1, rc2])
     mutants = np.concatenate([mutants1, mutants2])
@@ -340,41 +466,47 @@ def social_time(sep = False):
     wt = np.array([time_in_arena[~nan*~mutants], social_time[~nan*~mutants]])
     muts = np.array([time_in_arena[~nan*mutants], social_time[~nan*mutants]])
     
-    # plot params
-    if sep:
-        data = [social_time[~nan*rc], 
-                social_time[~nan*mutants], 
-                social_time[~nan*~mutants*~rc]]
-    else:
-        data = [social_time[~nan*mutants], 
-                social_time[~nan*~mutants*~rc]]
-        
 
-    ax = plt.axes()
-    bp = ax.boxplot(data, widths=0.6, patch_artist=True)
+    data = [social_time[~nan*rc], 
+            social_time[~nan*mutants], 
+            social_time[~nan*~mutants*~rc]]
     if sep:
-        format_plot(ax, bp) # set x_axis, and colors of each bar
+        pass
     else:
-        format_plot(ax, bp, ["Mutants", "WT"]) # set x_axis, and colors of each bar
-
+        if not all_wt:
+            data = [data[1], data[2]]
+        else:
+            data = [data[1], np.concatenate((data[2], data[0]))]   
+            
+    fig, ax = plt.subplots(1, 1)
+    bp = ax.boxplot(data, widths=0.6, patch_artist=True, showfliers = False, zorder=1)
     add_significance(data, ax, bp)
+
+    alpha, size  = 1, 40
+    if not sep:
+        ax.scatter([1 + np.random.normal()*0.05 for i in range(len(data[0]))], 
+                    data[0], alpha = alpha, s = size, label = "mutant", zorder=2); 
+        ax.scatter([2 + np.random.normal()*0.05 for i in range(len(data[1]))], 
+                    data[1], alpha = alpha, s = size, label = "non-member", zorder=2); 
     
- #   plt.rc('text', usetex=True)
-    plt.rc('font', family='serif')
-    xticklabels = ["RC", "Mutants", "Others"]
-    ax.set_xticklabels(xticklabels, fontsize = 20)
+    elif sep:
+         ax.scatter([1 + np.random.normal()*0.05 for i in range(len(data[1]))], 
+                     data[1], alpha = alpha, s = size, label = "mutant"); 
+         ax.scatter([2 + np.random.normal()*0.05 for i in range(len(data[2]))], 
+                     data[2], alpha = alpha, s = size, label = "non-member"); 
+         ax.scatter([3 + np.random.normal()*0.05 for i in range(len(data[0]))], 
+                     data[0], alpha = alpha, s = size, label = "RC"); 
+
     ax.set_ylabel("Avg. social time", fontsize = 20)
-    colors = sns.color_palette('pastel')
-    for patch, color in zip(bp['boxes'], colors): # set colors
-        patch.set_facecolor(color)
-    plt.setp(bp['medians'], color='k')
-    bottom, top = ax.get_ylim()
-    y_range = top - bottom
-    for i, dataset in enumerate(data):
-        sample_size = len(dataset)
-        ax.text(i + 1, 3000, fr'$n = {sample_size}$', ha='center', size='x-small')
+    if sep:
+        format_plot(ax, bp, xticklabels = ["RC", "Mutants", "Non-members"]) # set x_axis, and colors of each bar
+    else:
+        if not all_wt:
+            format_plot(ax, bp, xticklabels = ["Mutants", "Non-members"]) # set x_axis, and colors of each bar
+        else:
+            format_plot(ax, bp, xticklabels = ["Mutants", "WT"]) # set x_axis, and colors of each bar
     plt.tight_layout()
-        
+    plt.show()
 
 def rc_size():
     rcs = [2, 3, 3, 2, 2, 2, 3, 2, 2, 2, 2, 3, 2, 2]
@@ -386,9 +518,11 @@ def rc_size():
     
 if __name__ == "__main__":
 # rc_size()
-# time_in_arena(False)
-    social_time()
+    # time_in_arena(False, True)
+    # social_time(False, True)
 # chasings()
-# approaches()
-# interactions()
+    boxplot_approaches(True, True, all_wt = True)
+    boxplot_approaches(False, True, all_wt = True)
+    boxplot_interactions(True, all_wt = True)
+    boxplot_interaction_durations(True, all_wt = True)
 # approaches_scatter_plot(True)

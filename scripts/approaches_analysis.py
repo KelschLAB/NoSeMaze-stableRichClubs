@@ -11,7 +11,7 @@ from scipy.ndimage import gaussian_filter
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 
-# path_to_data = "W:\\group_entwbio\\data\\Luise\\NoSeMaze2023\\DLC_output_windows\\GJ1\\D1\\G1D1_trajectoriesInfos_pre120frames.csv"
+path_to_data = "W:\\group_entwbio\\data\\Luise\\NoSeMaze2023\\DLC_output_windows\\GJ1\\D1\\G1D1_trajectoriesInfos_pre120frames.csv"
 path_to_data = "C:\\Users\\wolfgang.kelsch\\Documents\\GitHub\\RichClubs\\data\\approach_meta_data\\GJ1\\"
 
 def load_data(path_to_data):
@@ -101,32 +101,32 @@ def plot_2d_distribution(path_to_data, approach_type = "start_point", cutoff = 0
     xmin, xmax = min(x), max(x)
     ymin, ymax = min(y), max(y)
     H, xedges, yedges = np.histogram2d(x, y, bins=[int(np.round(xmax)), int(np.round(ymax))], range=[[xmin, xmax], [ymin, ymax]])
-    H[np.where(H == 0)] = 1e-15
-    H = np.log(H)
-    max_val = np.max(H) # to recover correct scaling of colorbar after plotting (imshow normalizes colormap from 0 to 1)
+    # H[np.where(H == 0)] = 1e-15
+    # H = np.log(H)
+    # max_val = np.max(H) # to recover correct scaling of colorbar after plotting (imshow normalizes colormap from 0 to 1)
 
     
     # Smooth the histogram with a Gaussian filter
-    sigma = 0.42 # Adjust sigma for better smoothing
+    sigma = 2 # Adjust sigma for better smoothing
     H_smooth = gaussian_filter(H, sigma=sigma)
     
     # Normalize the heatmap
-    H_smooth = H_smooth / np.max(H_smooth)
-    H_smooth[H_smooth < cutoff] = 0
-    H_smooth[H_smooth > 1 - cutoff] = 1
+    # H_smooth = H_smooth / np.max(H_smooth)
+    # H_smooth[H_smooth < cutoff] = 0
+    # H_smooth[H_smooth > 1 - cutoff] = 1
     
     # Plot the heatmap
     extent = [xedges[0], xedges[-1], yedges[0], yedges[-1]]
     plt.imshow(H_smooth.T, extent=extent, origin='lower', cmap=colmap, aspect='auto')
     plt.xlabel("x (cm)")
     plt.ylabel("y (cm)")
-    # cbar = plt.colorbar(label="Density")
-    norm = mpl.colors.Normalize(vmin=cutoff, vmax=1-cutoff)
-    cbar = plt.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=colmap), ax = ax, label = "Density (events / cm²)", shrink=0.7)
-    ticks = np.array([float(t.get_text().replace('−','-')) for t in cbar.ax.get_yticklabels()])
-    cbar.set_ticks([ticks[i] for i in range(1, len(ticks), 2)])
-    ticks_val = [int(np.round(np.exp(t*max_val))) for t in ticks]
-    cbar.set_ticklabels([ticks_val[i] for i in range(1, len(ticks_val), 2)])
+    cbar = plt.colorbar(label="Density")
+    # norm = mpl.colors.Normalize(vmin=cutoff, vmax=1-cutoff)
+    # cbar = plt.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=colmap), ax = ax, label = "Density (events / cm²)", shrink=0.7)
+    # ticks = np.array([float(t.get_text().replace('−','-')) for t in cbar.ax.get_yticklabels()])
+    # cbar.set_ticks([ticks[i] for i in range(1, len(ticks), 2)])
+    # ticks_val = [int(np.round(np.exp(t*max_val))) for t in ticks]
+    # cbar.set_ticklabels([ticks_val[i] for i in range(1, len(ticks_val), 2)])
     ax.spines[['right', 'top']].set_visible(False)
     plt.show()
     
@@ -231,6 +231,6 @@ def plot_traj(path_to_data, index):
     plt.show()
     
 # plot_2d_distribution(path_to_data, "start_point", 0, "hot_r")
-# plot_2d_distribution(path_to_data, "interactions", 0, "bwr")
+plot_2d_distribution(path_to_data, "interactions", 0, "hot_r")
 # hist_travelled_dist(path_to_data)
-plot_traj("C:\\Users\\wolfgang.kelsch\\Documents\\GitHub\\RichClubs\\data\\approach_meta_data\\trajectories\\", 35)
+# plot_traj("C:\\Users\\wolfgang.kelsch\\Documents\\GitHub\\RichClubs\\data\\approach_meta_data\\trajectories\\", 35)

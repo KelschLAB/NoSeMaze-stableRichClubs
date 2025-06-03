@@ -276,19 +276,28 @@ def plot_derivative_all(measure, window = 3, variable = "approaches", separate_w
     ax.set_ylabel("Value", fontsize = 13)
     ax.tick_params(axis='both', which='major', labelsize=12)  # Adjust major tick labels
 
-def plot_derivative_example(measure, window = 3, variable = "approaches", idx = [0, 0, 0],
+def plot_timeseries_example(measure, derivative = True, window = 3, variable = "approaches", idx = [0, 0, 0],
                             mnn = None, mutual = True, threshold = 0.0, ax = None):
     "plots the derivative of the timeseries of the specified measurment for all animals, without any aggregation"
     value_mutants, value_rest, value_rc = [], [], []
     std_mutants, std_rc, std_rest, std_wt = [], [], [], []
-    for d in range(15//window):
+    t_window = range(15//window) if measure != "outstrength" else range(1, 15//window)
+    for d in t_window:
         scores_mutants, scores_rc, scores_rest, _ = [], [], [], []
+        group_mutant, group_rest = [], []
         for j in range(len(labels)):
             scores_t1 = measures(j, d+1, window, measure, variable, mnn, mutual, True, threshold)
-            scores_t2 = measures(j, d+2, window, measure, variable, mnn, mutual, True, threshold)
-            scores_mutants.extend(np.array(scores_t2[0]) - np.array(scores_t1[0]))
-            scores_rest.extend(np.array(scores_t2[2]) - np.array(scores_t1[2]))
-            scores_rc.extend(np.array(scores_t2[1]) - np.array(scores_t1[1]))
+            if derivative:
+                scores_t2 = measures(j, d+2, window, measure, variable, mnn, mutual, True, threshold)
+                scores_mutants.extend(np.array(scores_t2[0]) - np.array(scores_t1[0]))
+                scores_rest.extend(np.array(scores_t2[2]) - np.array(scores_t1[2]))
+                scores_rc.extend(np.array(scores_t2[1]) - np.array(scores_t1[1]))
+            else:
+                scores_mutants.extend(np.array(scores_t1[0]))
+                scores_rest.extend(np.array(scores_t1[2]))
+                scores_rc.extend(np.array(scores_t1[1]))
+            group_mutant.extend([scores_t1[5]["Group_ID"] for m in range(len(scores_t1[0]))])
+            group_rest.extend([scores_t1[5]["Group_ID"] for m in range(len(scores_t1[2]))])
 
         value_rc.append(scores_rc) 
         value_rest.append(scores_rest) 
@@ -313,14 +322,21 @@ def plot_derivative_example(measure, window = 3, variable = "approaches", idx = 
         ax.plot(t, value_rc[:, idx[2]], lw = 3, c = "green", label = "sRC", alpha = 0.8)
     else:
         ax.plot(t, value_mutants[:, idx[0]], lw = 3, c = "red", label = "Mutant", alpha = 0.8)
+        print(f"Mutant from group {group_mutant[idx[0]]}")
         print(np.nanstd(value_mutants[:, idx[0]]))
         ax.plot(t, value_rest[:, idx[1]], lw = 3, c = "k", label = "Non-member WT", alpha = 0.8)
+        print(f"WT from group {group_rest[idx[1]]}")
         print(np.nanstd(value_rest[:, idx[1]]))
+        if not derivative:
+            ax.axhline(np.nanmean(value_mutants[:, idx[0]]), ls = "--", color = "red", alpha = 0.8)
+            ax.axhline(np.nanmean(value_rest[:, idx[1]]), ls = "--", color = "k", alpha = 0.8)
 
-    plt.ylabel("dS(t)/dt")
+    
+    ylabel = "dS(t)/dt" if derivative else "μ[S(t)]"
+    plt.ylabel(ylabel)
     ax.legend()
-
-    ax.set_title("Time derivative of "+ measure, fontsize = 15)
+    title = "Time derivative of "+ measure if derivative else measure
+    ax.set_title(title, fontsize = 15)
     ax.set_xlabel("Day", fontsize = 13)
     ax.set_ylabel("Value", fontsize = 13)
     ax.tick_params(axis='both', which='major', labelsize=12)  # Adjust major tick labels
@@ -540,7 +556,7 @@ if __name__ == "__main__":
         "instrength", "outstrength"]
 
     mnn = 3
-    mutual = True
+    mutual = False
     var = "interactions"
     # fig, axs = plt.subplots(3, 3, figsize = (16, 13))
     # for idx, ax in enumerate(axs.flatten()):
@@ -554,13 +570,27 @@ if __name__ == "__main__":
     # fig.suptitle(title)
     # plot_derivative_timeseries("instrength", 1, 'approaches', False, mnn = mnn, mutual = mutual)
     # for i in range(10):
+    # for i in range(53, 62):
+    # plot_derivative_example("outdegree", 1, "approaches", [10, 56], None, mutual)
+    
+    # plot_derivative_example("summed injaccard", 1, "approaches", [16, 66], 3, mutual)
+    # plot_derivative_example("outstrength", 1, "approaches", [16, 67], None, mutual)
+    # plot_timeseries_example(measure = "out persistence", derivative = False, window = 1, 
+    #                         variable = "approaches", idx = [10, 57], mnn = None, mutual = mutual)
 
-    # plot_derivative_example("degree", 1, "approaches", [0, 8], mnn, mutual)
+    # plot_timeseries_example(measure = "summed injaccard", derivative = True, window = 1, 
+    #                        variable = "approaches", idx = [10, 57], mnn = None, mutual = mutual)
+    
+    plot_timeseries_example(measure = "instrength", derivative = True, window = 1, 
+                           variable = "approaches", idx = [30, 92], mnn = None, mutual = mutual)
+
+    # plot_derivative_example("outdegree", 1, "approaches", [16, 67], None, mutual)
+
 
 
 
     # plot_measure_timeseries("degree", 1, var, False, mnn = mnn, mutual = mutual)
-    # plot_derivative_timeseries("degree", 1, var, False, mnn = mnn, mutual = mutual)
+    # plot_derivative_timeseries("outdegree", 1, var, False, mnn = None, mutual = mutual)
     
     # plot_derivative_all("summed injaccard", 1, 'approaches', False, mnn = mnn, mutual = mutual)
     # plot_raster("summed injaccard")
@@ -571,7 +601,7 @@ if __name__ == "__main__":
     # plot_raster("outdegree", normalize=True, mnn = 5, mutual = False)
     # plot_raster("summed injaccard", normalize=True, mnn = 5, mutual = False)
     # plot_derivative_example("outdegree", 1, "approaches", [1, 9], None, False, 1)
-    plot_raster("outdegree", normalize=False, mnn = None, mutual = False, separate_wt=False, threshold = 1)
+    # plot_raster("outdegree", normalize=False, mnn = None, mutual = False, separate_wt=False, threshold = 1)
     # plot_raster("summed injaccard", normalize=False, mnn = 5, mutual = False, separate_wt=True)
 
     # plot_raster("out persis", normalize=True)
