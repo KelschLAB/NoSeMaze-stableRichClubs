@@ -66,7 +66,6 @@ def mutants_in_rc_mnn2_k2(): #actually 4 mnn and rc 4
 
 def mutants_in_rc_mnn3_k3(weak = False): #mnn = 3, rc = 3
     number_of_hits = []
-    number_of_hits = []
     single_mutants = np.array([1])
     double_mutants = np.array([1, 2])
     triple_mutants = np.array([1,2,3])
@@ -77,8 +76,8 @@ def mutants_in_rc_mnn3_k3(weak = False): #mnn = 3, rc = 3
         full_histo_mutants = [double_mutants, double_mutants,double_mutants,double_mutants,double_mutants,double_mutants,double_mutants, double_mutants, double_mutants, 
                               quadruple_mutants, quintuple_mutants, triple_mutants, triple_mutants, triple_mutants]
     else:
-        full_histo_mutants = [single_mutants, double_mutants, single_mutants, double_mutants, single_mutants,single_mutants, double_mutants, single_mutants, single_mutants,
-                              quadruple_mutants, double_mutants, double_mutants, triple_mutants, triple_mutants]
+        full_histo_mutants = [single_mutants, single_mutants, double_mutants, single_mutants, double_mutants, single_mutants, double_mutants, single_mutants, single_mutants,
+                              quadruple_mutants, double_mutants, quadruple_mutants, double_mutants]
 
     for i in tqdm(range(1000)):
         hits = 0
@@ -118,10 +117,10 @@ def mutants_in_rc_mnn3_k3(weak = False): #mnn = 3, rc = 3
             hits += np.any(np.isin(full_histo_mutants[10], shuffled_arr[:2]))
             # expID 15
             np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(full_histo_mutants[12], shuffled_arr[:3]))
+            hits += np.any(np.isin(full_histo_mutants[11], shuffled_arr[:3]))
             # # expID 17
             np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(full_histo_mutants[13], shuffled_arr[:2]))
+            hits += np.any(np.isin(full_histo_mutants[12], shuffled_arr[:2]))
             
         number_of_hits.append(hits)
         
@@ -153,8 +152,8 @@ def mutants_in_rc_mnn4_k4(weak = False): #actually 4 mnn and rc 4
         full_histo_mutants = [double_mutants, double_mutants,double_mutants,double_mutants,double_mutants,double_mutants,double_mutants, double_mutants, double_mutants, 
                               quadruple_mutants, quintuple_mutants, triple_mutants, quadruple_mutants, triple_mutants]
     else:
-        full_histo_mutants = [single_mutants, double_mutants, single_mutants, single_mutants, double_mutants, single_mutants, double_mutants, single_mutants, double_mutants,
-                              quadruple_mutants, double_mutants, double_mutants, triple_mutants, triple_mutants]
+        full_histo_mutants = [single_mutants, single_mutants, double_mutants, single_mutants, double_mutants, single_mutants, double_mutants, single_mutants, single_mutants,
+                              quadruple_mutants, double_mutants, quadruple_mutants, triple_mutants, double_mutants]
 
     for i in tqdm(range(1000)):
         hits = 0
@@ -208,7 +207,7 @@ def mutants_in_rc_mnn4_k4(weak = False): #actually 4 mnn and rc 4
     if weak:
         observed = 5
     else:
-        observed = 3
+        observed = 3 
     plt.axvline(np.percentile(number_of_hits, 5), ls = "--", color = 'k', label = "95% CI")
     # plt.axvline(np.percentile(number_of_hits, 95), ls = "--", color = 'k', label = "95% CI")
     plt.axvline(observed, color = 'red', label = "Experimentally observed")
@@ -865,7 +864,7 @@ def reshuffled_rc_mnn4_k4(cumulative = False):
 
 # mutants_in_rc_mnn2_k2()
 # mutants_in_rc_mnn3_k3()
-# mutants_in_rc_mnn4_k4(True)
+mutants_in_rc_mnn4_k4(False)
 # mutants_in_both_mnn5_k5(True)
 
 # littermates_in_rc_mnn2_k2()    

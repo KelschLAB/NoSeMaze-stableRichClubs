@@ -418,7 +418,7 @@ def display_graph(path_to_file, ax, percentage_threshold = 0.0, mnn = None, avg_
     else:
         layout_style = "fr"
         
-    node_labels = read_labels(path_to_file)
+    node_labels = read_labels(path_to_file) if "node_labels" not in kwargs else kwargs["node_labels"]
         
     if len(path_to_file) > 1 and not avg_graph:
         layer_labels = kwargs["layer_labels"] if "layer_labels" in kwargs else None

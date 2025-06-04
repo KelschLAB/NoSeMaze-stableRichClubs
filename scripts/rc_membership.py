@@ -106,7 +106,8 @@ def get_rc(graph_idx, variable = "interactions", window = 3, deg = 3, nn = 3, mu
                 is_mutant.append(False)
             # else, treat animal as WT
             elif len(metadata_df.loc[metadata_df["Mouse_RFID"] == rfid, "mutant"].values) == 0: 
-                is_mutant.append(False)
+                print("Mutant in metadata not found in matrix, treat as MUTANT anyways")
+                is_mutant.append(True)
                 
     mutants_RFIDs = RFIDs[is_mutant]
     mutant_count = 0
@@ -114,36 +115,79 @@ def get_rc(graph_idx, variable = "interactions", window = 3, deg = 3, nn = 3, mu
         if sRC_member in mutants_RFIDs:
             mutant_count += 1
             
-    return sRC, mutant_count
+    return sRC, mutant_count, mutants_RFIDs         
 
 def process_all_cohorts(variable = "interactions", window = 3, deg = 3, nn = 3, mutual = True, rm_weak_histo = True, verbose = True):
     """
     Computes the sRC for all cohorts 
 
     """
-    sRC, mut_count = [], 0
-    
-    variable, window = "approaches",  3
-    deg, nn, mutual = 3, 3, True
-    rm_weak_histo = True
-    
+    sRC, sRC_count, mut_count, mutants = [], 0, 0, []
+        
     print(colored("------------------------  sRC list --------------------------", "green"))
     params =  f"------ Variable: {variable}, time window: {window},  mnn: {nn} ------" if mutual else f"Variable: {variable}, time window: {window}, deg:{deg}, nn:{nn}"
     print(colored(params, "green"))
    
     for graph_idx in range(len(labels)):
         res = get_rc(graph_idx, variable, window, deg, nn, mutual, rm_weak_histo)
-        sRC.extend(res[0])
+        sRC.append(res[0])
+        sRC_count += len(res[0])
         mut_count += res[1]
+        mutants.append(res[2])
         print(f"{labels[graph_idx]}: {res[0]}")
 
         
-    print(f"{len(sRC)} members")
+    print(f"{sRC_count} members")
     print(colored(f"{mut_count} mutants detected in the stable rich club!", "red"))
+    return sRC, mut_count, mutants
+
+def get_results_significance(sRC,  mut_count, rm_weak = True):
+    number_of_hits = []
+    not_applicable = [0]
+    single_mutants = np.array([1])
+    double_mutants = np.array([1, 2])
+    triple_mutants = np.array([1,2,3])
+    quadruple_mutants = np.array([1,2,3,4])
+    quintuple_mutants = np.array([1,2,3,4,5])
+    shuffled_arr = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    
+    if rm_weak:
+        # for mnn = 3
+        mutants = [single_mutants, single_mutants, double_mutants, single_mutants, double_mutants, single_mutants, double_mutants, single_mutants, single_mutants,
+                              quadruple_mutants, double_mutants, not_applicable, not_applicable, quadruple_mutants, not_applicable, double_mutants]
+        # for mnn = 4
+        # mutants = [single_mutants, single_mutants, double_mutants, single_mutants, double_mutants, single_mutants, double_mutants, single_mutants, single_mutants,
+        #                       quadruple_mutants, double_mutants, not_applicable, not_applicable, quadruple_mutants, triple_mutants, double_mutants]
+    else:
+        mutants = [double_mutants, double_mutants,double_mutants,double_mutants,double_mutants,double_mutants,double_mutants, double_mutants, double_mutants, 
+                              quadruple_mutants, quintuple_mutants, triple_mutants, triple_mutants, triple_mutants]
+
+    arr = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    
+    for i in tqdm(range(1000)):
+        hits = 0
+        for idx, rc in enumerate(sRC):
+            np.random.shuffle(shuffled_arr)
+            for j in mutants[idx]:
+                if j in shuffled_arr[:len(rc)]:
+                    hits += 1
+        number_of_hits.append(hits)
+        
+    h = plt.hist(number_of_hits, bins = np.arange(15), density = True, align = 'left', label = "Expected by random chance")
+    plt.axvline(np.percentile(number_of_hits, 5), ls = "--", color = 'k', label = "95% CI")
+    # plt.axvline(np.percentile(number_of_hits, 95), ls = "--", color = 'k', label = "95% CI")
+    plt.axvline(mut_count, color = 'red', label = "Experimentally observed")
+    plt.annotate("p-value = "+str(np.round(np.cumsum(h[0]), 4)[mut_count]), (1.5, 0.2), bbox=dict(facecolor='white', edgecolor='none', pad=1.0), ha='center')
+    plt.title("Random chance of mutant in rich-club\n both cohorts")
+    plt.xlabel("Groups with at least 1 mutants in RC", fontsize=15)
+    plt.ylabel("Probability", fontsize=15)
+    plt.legend()
+    plt.show()
+        
 
 if __name__ == "__main__":
-    
-
+    sRC, mut_count, mutants = process_all_cohorts("approaches", 3, 3, 3, True, True)
+    get_results_significance(sRC, 1)
     
       
     

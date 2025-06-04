@@ -74,15 +74,14 @@ class settingsWindow(tk.Toplevel):
             self.app.edge_type = "distance"
         elif self.app.edge_type == "distance":
             self.app.edge_type = "affinity"
-        self.app.plot_in_frame()#layout_style = self.layout_style, node_metric = self.node_metric,\
-                               #percentage_threshold=self.percentage_threshold, mnn = self.mnn_number, deg = self.degree)
+        self.app.plot_in_frame()
+        
     def switch_view_type(self):
         if self.app.view_type == "3D":
             self.app.view_type = "avg"
         elif self.app.view_type == "avg":
             self.app.view_type = "3D"
-        self.app.plot_in_frame()#layout_style = self.layout_style, node_metric = self.node_metric,\
-                               #percentage_threshold=self.percentage_threshold, mnn = self.mnn_number, deg = self.degree)
+        self.app.plot_in_frame()
                                
     def switch_histo_type(self):
         if self.app.histo_type == "stacked":
@@ -96,8 +95,7 @@ class settingsWindow(tk.Toplevel):
             self.app.remove_loops = False
         elif not self.app.remove_loops:
             self.app.remove_loops = True
-        self.app.plot_in_frame()#layout_style = self.layout_style, node_metric = self.node_metric,\
-                               #percentage_threshold=self.percentage_threshold, mnn = self.mnn_number, deg = self.degree)
+        self.app.plot_in_frame()
         
     def on_close(self):
         self.destroy()
