@@ -25,10 +25,7 @@ class SpectralClustWindow(tk.Toplevel):
 
         super().__init__(master = root)
         self.root = root
-        self.title("New Window")
         self.geometry("1000x600")
-        # label = tk.Label(self, text ="This is a new Window")
-        # label.pack()
         self.title('Clustering analysis window')
         self.app = app
         

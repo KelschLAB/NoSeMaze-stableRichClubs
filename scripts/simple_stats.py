@@ -369,7 +369,7 @@ def approaches_scatter_plot(show_rc = False, symmetry_parameter = 1.5):
 
 def time_in_arena(sep = False, all_wt = False, plot_both_cohorts = False):
     path_to_first_cohort = "..\\data\\reduced_data.xlsx"
-    path_to_second_cohort = "..\\data\\validation_cohort.xlsx"
+    path_to_second_cohort = "..\\data\\validation_cohort_full.xlsx"
     
     df1 = pd.read_excel(path_to_first_cohort)
     rc1 = df1.loc[:, "RC"]
@@ -379,7 +379,7 @@ def time_in_arena(sep = False, all_wt = False, plot_both_cohorts = False):
     
     df2 = pd.read_excel(path_to_second_cohort)
     rc2 = df2.loc[:, "RC"]
-    mutants2 = df2.loc[df2["genotype"] == "Oxt", "genotype"].values == 'Oxt'
+    mutants2 = df2.loc[:, "mutant"]
 
     rc = np.concatenate([rc1, rc2])
     mutants = np.concatenate([mutants1, mutants2])
@@ -440,7 +440,7 @@ def time_in_arena(sep = False, all_wt = False, plot_both_cohorts = False):
         
 def social_time(sep = False, all_wt = False):
     path_to_first_cohort = "..\\data\\reduced_data.xlsx"
-    path_to_second_cohort = "..\\data\\validation_cohort.xlsx"
+    path_to_second_cohort = "..\\data\\validation_cohort_full.xlsx"
     
     df1 = pd.read_excel(path_to_first_cohort)
     rc1 = df1.loc[:, "RC"]
@@ -450,7 +450,7 @@ def social_time(sep = False, all_wt = False):
     df2 = pd.read_excel(path_to_second_cohort)
     
     rc2 = df2.loc[:, "RC"]
-    mutants2 = df2.loc[:, df2["genotype"] == "Oxt"]
+    mutants2 = df2.loc[:, "mutant"]
 
     rc = np.concatenate([rc1, rc2])
     mutants = np.concatenate([mutants1, mutants2])
@@ -518,11 +518,11 @@ def rc_size():
     
 if __name__ == "__main__":
 # rc_size()
-    # time_in_arena(False, True)
-    # social_time(False, True)
+    time_in_arena(False, True)
+    social_time(False, True)
 # chasings()
-    boxplot_approaches(True, True, all_wt = True)
-    boxplot_approaches(False, True, all_wt = True)
-    boxplot_interactions(True, all_wt = True)
-    boxplot_interaction_durations(True, all_wt = True)
+    # boxplot_approaches(True, True, all_wt = True)
+    # boxplot_approaches(False, True, all_wt = True)
+    # boxplot_interactions(True, all_wt = True)
+    # boxplot_interaction_durations(True, all_wt = True)
 # approaches_scatter_plot(True)

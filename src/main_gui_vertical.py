@@ -16,6 +16,7 @@ from matplotlib.figure import Figure
 import os
 from read_graph import *
 from clustering_window import *
+from settings_window import settingsWindow
 
 #To-do: 
 #       - what does it mean to be neighbors in terms of chasing?? (directed interaction). Rich club coloring does not seem to work
@@ -50,7 +51,7 @@ class App:
         root.resizable(width=True, height=True)
         root.title("Multilayer graph analysis")
 
-        #variables stored after interacting with the buttons
+        # variables that can change after interacting with the buttons
         self.dirpath = None
         self.path_to_file = None
         self.layout_style = "fr"
@@ -69,7 +70,9 @@ class App:
         self.edge_type_var = tk.IntVar(value = 1) # variable for changing affinity/distance in settings window
         self.view_var = tk.IntVar(value = 1)      # variable for changing view from 3D to average in settings window
         self.loops_var = tk.IntVar(value = 1)     # variable for the removal of feedback loops in graph display
-        
+        self.edge_thickness_var = tk.StringVar(value = "5") # variable for changing edge type in settings window
+        self.node_thickness_var = tk.StringVar(value = "15") # variable for changing edge type in settings window
+
         self.color1 = "#E4F8FF"
         self.color2 = "#FFF7E3"
         self. color3 = "#FFE8E3"
@@ -93,7 +96,7 @@ class App:
         load_label.place(relx = 0.1, rely = 0.1, relwidth=0.8, relheight=0.35)
         load_button = tk.Button(menu_frame, text = "Open")
         load_button.place(relx=0.05, rely = 0.5, relwidth=0.43, relheight=0.35)
-        load_button["command"] = self.settings_button_command
+        load_button["command"] = self.load_button_command
         settings_button = tk.Menubutton(menu_frame, text = "Settings")
         settings_button.menu = tk.Menu(settings_button, tearoff=False)   
         settings_button["menu"]= settings_button.menu  
@@ -175,7 +178,7 @@ class App:
         self.stats_btn.config(bg="#f0f0f0")
         
     # functions for 'file' menu 
-    def settings_button_command(self):
+    def load_button_command(self):
         """ Selects the directory/folder path where graph layers are contained, and updates the list of selectable graph layer """
         self.dirpath = filedialog.askdirectory(title="Select the directory/folder which contains the graph file(s)")
         menu = tk.Menu(self.graph_selector, tearoff=False)
@@ -220,76 +223,10 @@ class App:
         B2.pack(side="left")
         
     def settings_window(self):
-        """
-        Opens a window showing the current settings (edge type, multilayer view and stats type),
-        to allow user to change them.
-        """
-        settings_popup = tk.Toplevel(root)
-        settings_popup.wm_title("Settings")
-        if self.edge_type == "distance":
-            self.edge_type_var.set(2)
-            
-        edge_label = tk.Label(settings_popup, text="Edge type")
-        edge_label.grid(row = 1, column = 1)
-        dist_button = tk.Radiobutton(settings_popup, text="Distance", variable = self.edge_type_var, value = 2, command = self.switch_edge_type)
-        dist_button.grid(row = 1, column = 2)    
-        aff_button = tk.Radiobutton(settings_popup, text="Affinity", variable = self.edge_type_var, value = 1, command = self.switch_edge_type)
-        aff_button.grid(row = 1, column = 3)
-
-        multilayer_label = tk.Label(settings_popup, text="Multilayer display")
-        multilayer_label.grid(row = 2, column = 1)
-        avg_button = tk.Radiobutton(settings_popup, text="Average", variable = self.view_var, value = 2, command = self.switch_view_type)
-        avg_button.grid(row = 2, column = 2)
-        multilayer_button = tk.Radiobutton(settings_popup, text="3D", variable = self.view_var, value = 1, command = self.switch_view_type)
-        multilayer_button.grid(row = 2, column = 3)
-        
-        multilayer_label = tk.Label(settings_popup, text="Histogram type")
-        multilayer_label.grid(row = 3, column = 1)
-        sbs_button = tk.Radiobutton(settings_popup, text="Side-by-side", variable = self.view_var, value = 1, command = self.switch_histo_type)
-        sbs_button.grid(row = 3, column = 2)
-        stacked_button = tk.Radiobutton(settings_popup, text="Stacked", variable = self.view_var, value = 2, command = self.switch_histo_type)
-        stacked_button.grid(row = 3, column = 3)
-        
-        fbloop_label = tk.Label(settings_popup, text="Remove feedback loops in plots: ")
-        fbloop_label.grid(row = 4, column = 1)
-        fb_loop_button = tk.Checkbutton(settings_popup, text="", variable = self.loops_var, onvalue = 1, offvalue = 0, command = self.loops_button_clicked)
-        if self.loops_var.get() == 1:
-            fb_loop_button.select()
-        fb_loop_button.grid(row = 4, column = 2)
-
-    def switch_edge_type(self):
-        if self.edge_type == "affinity":
-            self.edge_type = "distance"
-        elif self.edge_type == "distance":
-            self.edge_type = "affinity"
-        self.plot_in_frame(layout_style = self.layout_style, node_metric = self.node_metric,\
-                               percentage_threshold=self.percentage_threshold, mnn = self.mnn_number, deg = self.degree)
-        
-    def switch_view_type(self):
-        if self.view_type == "3D":
-            self.view_type = "avg"
-        elif self.view_type == "avg":
-            self.view_type = "3D"
-        self.plot_in_frame(layout_style = self.layout_style, node_metric = self.node_metric,\
-                               percentage_threshold=self.percentage_threshold, mnn = self.mnn_number, deg = self.degree)
+        settings_menu = settingsWindow(root, self) # creates a settings window
          
-    def switch_histo_type(self):
-        if self.histo_type == "stacked":
-            self.histo_type = "side-by-side"
-        elif self.histo_type == "side-by-side":
-            self.histo_type = "stacked"
-        self.stats_in_frame()
-    
-    def loops_button_clicked(self):
-        if self.remove_loops:
-            self.remove_loops = False
-        elif not self.remove_loops:
-            self.remove_loops = True
-        self.plot_in_frame(layout_style = self.layout_style, node_metric = self.node_metric,\
-                               percentage_threshold=self.percentage_threshold, mnn = self.mnn_number, deg = self.degree)
-            
     # central function for plotting the graph(s)
-    def plot_in_frame(self, layout_style = "fr", node_metric = "none", percentage_threshold=0.0, mnn = None, deg = 0):
+    def plot_in_frame(self):
         for fm in self.content_frame.winfo_children():
             fm.destroy()
             root.update()
@@ -303,11 +240,12 @@ class App:
             
         display_graph(self.path_to_file, a, percentage_threshold = self.percentage_threshold, mnn = self.mnn_number, mutual = self.mutual, \
                       avg_graph = self.view_type == "avg", affinity = self.edge_type == "affinity",  rm_fb_loops = self.remove_loops, \
-                      layout = layout_style, node_metric = self.node_metric, \
-                      idx = self.idx, cluster_num = self.cluster_num, layer_labels=self.path_to_file, deg = self.degree)
+                      layout = self.layout_style, node_metric = self.node_metric, \
+                      idx = self.idx, cluster_num = self.cluster_num, layer_labels=self.path_to_file, deg = self.degree,
+                      edge_width = int(self.edge_thickness_var.get()), node_size = int(self.node_thickness_var.get()))
         
         f.colorbar(ScalarMappable(norm=Normalize(vmin=0, vmax=1), cmap=cm.Greys), ax=a, label="Normalized edge value", shrink = 0.3, location = 'right', pad = 0.1)
-        if node_metric != "none":
+        if self.node_metric != "none":
             f.colorbar(ScalarMappable(norm=Normalize(vmin=0, vmax=1), cmap=cm.Reds), ax=a, label="Normalized metric value", shrink = 0.3, location = 'left')
             # f.colorbar(ScalarMappable(norm=Normalize(vmin=0, vmax=1), cmap=cm.viridis), ax=a, label="Relative edge value", shrink = 0.3, location = 'right', pad = 0.1)
         else:
@@ -350,8 +288,7 @@ class App:
                 lst.append(self.path_label_list[i])
         self.active_path_list = lst
         self.path_to_file = [self.dirpath + "/" + self.active_path_list[i] for i in range(len(self.active_path_list))]   
-        self.plot_in_frame(layout_style = self.layout_style, node_metric = self.node_metric,\
-                               percentage_threshold=self.percentage_threshold, mnn = self.mnn_number, deg = self.degree)
+        self.plot_in_frame()
 
     def graphcut_param_window(self, event):
         """
@@ -369,7 +306,7 @@ class App:
             self.percentage_threshold = 0.0
             self.mnn_number = None
             if self.display_type == "plot":
-                self.plot_in_frame(layout_style = self.layout_style, node_metric = self.node_metric, percentage_threshold=self.percentage_threshold, mnn = self.mnn_number)
+                self.plot_in_frame()
             else:
                 self.stats_in_frame()
             return
@@ -399,13 +336,13 @@ class App:
         self.node_metric = self.node_metric_selector.get()
         self.new_window.destroy()
         if self.display_type == "plot":
-            self.plot_in_frame(layout_style = self.layout_style, node_metric = self.node_metric, percentage_threshold=self.percentage_threshold, mnn = self.mnn_number)
+            self.plot_in_frame()
         else:
             self.stats_in_frame()
         
     def plot_clicked(self):
         self.display_type = "plot"
-        self.plot_in_frame(layout_style = self.layout_style, node_metric = self.node_metric, percentage_threshold=self.percentage_threshold, mnn = self.mnn_number)
+        self.plot_in_frame()
         self.plot_btn.config(bg="#d1d1d1")
         self.stats_btn.config(bg="#f0f0f0")
 
@@ -418,7 +355,7 @@ class App:
     def plot_changed(self, event):
         self.layout_style = self.plot_selector.get()
         if self.display_type == "plot":
-            self.plot_in_frame(layout_style = self.layout_style, node_metric = self.node_metric, percentage_threshold=self.percentage_threshold, mnn = self.mnn_number, deg = self.degree)
+            self.plot_in_frame()
 
     def rich_club_window(self):
         self.new_window = tk.Toplevel(root)
@@ -440,7 +377,7 @@ class App:
         self.degree = int(self.rich_club_entry.get())
         self.new_window.destroy()
         if self.display_type == "plot":
-            self.plot_in_frame(layout_style = self.layout_style, node_metric = self.node_metric, percentage_threshold=self.percentage_threshold, mnn = self.mnn_number, deg = self.degree)
+            self.plot_in_frame()
         else:
             self.stats_in_frame()
         
@@ -453,8 +390,7 @@ class App:
             self.k_core_window()
             
         if self.display_type == "plot":
-            self.plot_in_frame(layout_style = self.layout_style, node_metric = self.node_metric,\
-                               percentage_threshold=self.percentage_threshold, mnn = self.mnn_number)
+            self.plot_in_frame()
         else:
             self.stats_in_frame()
 
@@ -478,7 +414,7 @@ class App:
         print(self.idx)
         self.cluster_num = max(self.idx)+1
         self.clustertype_wdw.destroy()
-        self.plot_in_frame(layout_style = self.layout_style, node_metric = self.node_metric)
+        self.plot_in_frame()
 
 if __name__ == "__main__":
     root = tk.Tk()

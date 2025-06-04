@@ -111,7 +111,10 @@ class LayeredNetworkGraph(object):
         return False
         
     def rescale(self, arr, max_val = 5):
-        normalized_arr = (arr - np.min(arr))/(np.max(arr)-np.min(arr))
+        if len(np.unique(arr)) == 1:
+            normalized_arr = (arr/arr[0])*max_val
+        else:
+            normalized_arr = (arr - np.min(arr))/(np.max(arr)-np.min(arr))
         return normalized_arr*max_val
 
     def get_nodes(self):
@@ -236,7 +239,7 @@ class LayeredNetworkGraph(object):
             if self.nodes_width is not None and type(self.nodes_width) == list:
                 colors = [cmap_list[z](width) for width in self.rescale(self.nodes_width[z], 1)]
                 self.draw_nodes([node for node in self.nodes if node[1]==z], \
-                                s=self.nodes_width[z]*500, zorder=3, \
+                                s=self.nodes_width[z]*50, zorder=3, \
                                 edgecolors = self.node_edge_colors, linewidths=2, c = colors, depthshade=False)
             else:
                 self.draw_nodes([node for node in self.nodes if node[1]==z], edgecolors = self.node_edge_colors, linewidths=2.5, s=300, zorder=3, depthshade=False)

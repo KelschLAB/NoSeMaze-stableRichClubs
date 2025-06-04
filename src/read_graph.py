@@ -425,7 +425,7 @@ def display_graph(path_to_file, ax, percentage_threshold = 0.0, mnn = None, avg_
         display_graph_3d(path_to_file, ax = ax, percentage_threshold = percentage_threshold, mnn = mnn, affinity = affinity, \
                          rm_fb_loops = rm_fb_loops, mutual = mutual, layout = layout_style, node_metric = kwargs["node_metric"], idx = kwargs["idx"], \
                          cluster_num = kwargs["cluster_num"], layer_labels = layer_labels, node_labels = node_labels, deg = kwargs["deg"], 
-                         node_size = kwargs["node_size"], default_edge_width = kwargs["default_edge_width"])
+                         node_size = kwargs["node_size"], edge_width = kwargs["edge_width"])
         return
     else:
         data = read_graph(path_to_file, percentage_threshold = percentage_threshold, mnn = mnn, mutual = mutual, \
@@ -439,6 +439,7 @@ def display_graph(path_to_file, ax, percentage_threshold = 0.0, mnn = None, avg_
     # default values
     node_color = "blue"
     default_node_size = kwargs["node_size"] if "node_size" in kwargs else 15
+    default_edge_width = kwargs["edge_width"] if "edge_width" in kwargs else 5
 
     cmap1 = cm.Reds
     if "node_metric" in kwargs:
@@ -447,49 +448,49 @@ def display_graph(path_to_file, ax, percentage_threshold = 0.0, mnn = None, avg_
         if kwargs["node_metric"] == "betweenness":
             edge_betweenness = g.betweenness(weights = [1/e['weight'] for e in g.es()]) #taking the inverse of edge values as we want high score to represent low distances
             edge_betweenness = ig.rescale(edge_betweenness)
-            node_size = [(1+e)*15 for e in edge_betweenness]
+            node_size = [(1+e)*default_node_size for e in edge_betweenness]
             node_color = [cmap1(b) for b in edge_betweenness]
         elif kwargs["node_metric"] == "strength":
             edge_strength = g.strength(weights = [e['weight'] for e in g.es()])
             edge_strength = ig.rescale(edge_strength)
-            node_size = [(1+e)*15 for e in edge_strength]
+            node_size = [(1+e)*default_node_size for e in edge_strength]
             node_color = [cmap1(b) for b in edge_strength]
         elif kwargs["node_metric"] == "closeness":
             edge_closeness = g.closeness(weights = [1/e['weight'] for e in g.es()]) #taking the inverse of edge values as we want high score to represent low distances
             edge_closeness = ig.rescale(edge_closeness)
-            node_size = [(1+e)*15 for e in edge_closeness]
+            node_size = [(1+e)*default_node_size for e in edge_closeness]
             node_color = [cmap1(b) for b in edge_closeness]
         elif kwargs["node_metric"] == "hub score":
             edge_hub = g.hub_score(weights = [e['weight'] for e in g.es()])
             edge_hub = ig.rescale(edge_hub)
-            node_size = [(1+e)*15 for e in edge_hub]
+            node_size = [(1+e)*default_node_size for e in edge_hub]
             node_color = [cmap1(b) for b in edge_hub]
         elif kwargs["node_metric"] == "authority score":
             edge_authority = g.authority_score(weights = [e['weight'] for e in g.es()])
             edge_authority = ig.rescale(edge_authority)
-            node_size = [(1+e)*15 for e in edge_authority]
+            node_size = [(1+e)*default_node_size for e in edge_authority]
             node_color = [cmap1(b) for b in edge_authority]
         elif kwargs["node_metric"] == "eigenvector centrality":
             random.seed(1)
             edge_evc = g.eigenvector_centrality(weights = [e['weight'] for e in g.es()])
             edge_evc = ig.rescale(edge_evc)
-            node_size = [(1+e)*15 for e in edge_evc]
+            node_size = [(1+e)*default_node_size for e in edge_evc]
             node_color = [cmap1(b) for b in edge_evc]
         elif kwargs["node_metric"] == "page rank":
             edge_pagerank = g.personalized_pagerank(weights = [e['weight'] for e in g.es()])
             edge_pagerank = ig.rescale(edge_pagerank)
-            node_size = [(1+e)*15 for e in edge_pagerank]
+            node_size = [(1+e)*default_node_size for e in edge_pagerank]
             node_color = [cmap1(b) for b in edge_pagerank]
         elif kwargs["node_metric"] == "rich-club":
             k_degree = kwargs["deg"]
             node_size = rich_club_weights(g, k_degree, 0.2)
             node_color = [cmap1(0.99) if b == 1 else cmap1(0.2) for b in node_size]
-            node_size = [n*20 for n in node_size]
+            node_size = [n*default_node_size for n in node_size]
         elif kwargs["node_metric"] == "k-core":
             k_degree = kwargs["deg"]
             node_size = k_core_weights(data, k_degree, 0.2)
             node_color = [cmap1(0.99) if b == 1 else cmap1(0.2) for b in node_size]
-            node_size = [n*20 for n in node_size]
+            node_size = [n*default_node_size for n in node_size]
         
     if "idx" in kwargs:
         if len(kwargs["idx"]) == 0:
@@ -508,8 +509,8 @@ def display_graph(path_to_file, ax, percentage_threshold = 0.0, mnn = None, avg_
     visual_style["vertex_color"] = node_color
     edge_cmap = get_cmap('Greys')
     visual_style["edge_color"] = [edge_cmap(edge) for edge in rescale(np.array([w['weight'] for w in g.es])) - 0.01]
-    visual_style["edge_arrow_width"] = rescale(np.array([w['weight'] for w in g.es]))*5
-    visual_style["edge_width"] = rescale(np.array([w['weight'] for w in g.es]))
+    visual_style["edge_arrow_width"] = rescale(np.array([w['weight'] for w in g.es]), default_edge_width)*5
+    visual_style["edge_width"] = rescale(np.array([w['weight'] for w in g.es]), default_edge_width)
     visual_style["layout"] = layout
     visual_style["vertex_frame_color"] = marker_frame_color
     if isSymmetric(data):
@@ -561,52 +562,56 @@ def display_graph_3d(path_to_file, ax, percentage_threshold = 0.0, mnn = None, a
     layers_data = read_graph(path_to_file, percentage_threshold = percentage_threshold, mnn = mnn, return_ig=False, affinity = affinity, rm_fb_loops = rm_fb_loops, mutual = mutual)
 
     default_node_size = kwargs["node_size"] if "node_size" in kwargs else 15
-    default_edge_width = kwargs["default_edge_width"] if "default_edge_width" in kwargs else 5
+    default_edge_width = kwargs["edge_width"] if "edge_width" in kwargs else 5
     if "node_metric" in kwargs:
         if kwargs["node_metric"] == "none":
-            node_size = default_node_size
+            node_size = []
+            for g in layers:
+                size = np.array([default_node_size for v in range(g.vcount())])
+                node_size.append(size)
+                
         elif kwargs["node_metric"] == "betweenness":
             node_size = []
             for g in layers:
                 edge_betweenness = g.betweenness(weights = [1/(e['weight']) for e in g.es()]) #taking the inverse of edge values as we want high score to represent low distances
                 edge_betweenness = ig.rescale(edge_betweenness)
-                node_size.append(np.array(edge_betweenness)+0.07)
+                node_size.append(np.array(edge_betweenness)*default_node_size+0.07)
         elif kwargs["node_metric"] == "strength":
             node_size = []
             for g in layers:
                 edge_strength = g.strength(weights = [e['weight'] for e in g.es()])
                 edge_strength = ig.rescale(edge_strength)
-                node_size.append(np.array(edge_strength)+0.07)
+                node_size.append(np.array(edge_strength)*default_node_size+0.07)
         elif kwargs["node_metric"] == "closeness":
             node_size = []
             for g in layers:
                 edge_closeness = g.closeness(weights = [1/(e['weight']) for e in g.es()]) #taking the inverse of edge values as we want high score to represent low distances
                 edge_closeness = ig.rescale(edge_closeness)
-                node_size.append(np.array(edge_closeness)+0.07)
+                node_size.append(np.array(edge_closeness)*default_node_size+0.07)
         elif kwargs["node_metric"] == "hub score":
             node_size = []
             for g in layers:
                 edge_hub = g.hub_score(weights = [e['weight'] for e in g.es()])
                 edge_hub = ig.rescale(edge_hub)
-                node_size.append(np.array(edge_hub)+0.07)
+                node_size.append(np.array(edge_hub)*default_node_size+0.07)
         elif kwargs["node_metric"] == "authority score":
             node_size = []
             for g in layers:
                 edge_authority = g.authority_score(weights = [e['weight'] for e in g.es()])
                 edge_authority = ig.rescale(edge_authority)
-                node_size.append(np.array(edge_authority)+0.07)
+                node_size.append(np.array(edge_authority)*default_node_size+0.07)
         elif kwargs["node_metric"] == "eigenvector centrality":
             node_size = []
             for g in layers:
                 edge_evc = g.eigenvector_centrality(weights = [e['weight'] for e in g.es()])
                 edge_evc = ig.rescale(edge_evc)
-                node_size.append(np.array(edge_evc)+0.07)
+                node_size.append(np.array(edge_evc)*default_node_size+0.07)
         elif kwargs["node_metric"] == "page rank":
             node_size = []
             for g in layers:
                 edge_pagerank = g.personalized_pagerank(weights = [e['weight'] for e in g.es()])
                 edge_pagerank = ig.rescale(edge_pagerank)
-                node_size.append(np.array(edge_pagerank)+0.07)
+                node_size.append(np.array(edge_pagerank)*default_node_size+0.07)
         elif kwargs["node_metric"] == "rich-club":
             node_size = []
             for g in layers:
@@ -622,7 +627,7 @@ def display_graph_3d(path_to_file, ax, percentage_threshold = 0.0, mnn = None, a
         
     else:
         node_color = "red"
-        node_size = 15
+        node_size = default_node_size
         
     if "idx" in kwargs:
         if len(kwargs["idx"]) == 0:
