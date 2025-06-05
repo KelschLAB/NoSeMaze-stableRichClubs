@@ -186,7 +186,7 @@ def get_results_significance(sRC,  mut_count, rm_weak = True):
         
 
 if __name__ == "__main__":
-    sRC, mut_count, mutants = process_all_cohorts("approaches", 3, 3, 3, True, True)
+    sRC, mut_count, mutants = process_all_cohorts("approaches", 3, 2, 2, True, True)
     get_results_significance(sRC, 1)
     
       

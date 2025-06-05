@@ -425,7 +425,8 @@ def display_graph(path_to_file, ax, percentage_threshold = 0.0, mnn = None, avg_
         display_graph_3d(path_to_file, ax = ax, percentage_threshold = percentage_threshold, mnn = mnn, affinity = affinity, \
                          rm_fb_loops = rm_fb_loops, mutual = mutual, layout = layout_style, node_metric = kwargs["node_metric"], idx = kwargs["idx"], \
                          cluster_num = kwargs["cluster_num"], layer_labels = layer_labels, node_labels = node_labels, deg = kwargs["deg"], 
-                         node_size = kwargs["node_size"], edge_width = kwargs["edge_width"])
+                         node_size = kwargs["node_size"], edge_width = kwargs["edge_width"], scale_edge_width = kwargs["scale_edge_width"],
+                         between_layer_edges = kwargs["between_layer_edges"])
         return
     else:
         data = read_graph(path_to_file, percentage_threshold = percentage_threshold, mnn = mnn, mutual = mutual, \
@@ -508,9 +509,23 @@ def display_graph(path_to_file, ax, percentage_threshold = 0.0, mnn = None, avg_
     visual_style["vertex_size"] = node_size
     visual_style["vertex_color"] = node_color
     edge_cmap = get_cmap('Greys')
-    visual_style["edge_color"] = [edge_cmap(edge) for edge in rescale(np.array([w['weight'] for w in g.es])) - 0.01]
     visual_style["edge_arrow_width"] = rescale(np.array([w['weight'] for w in g.es]), default_edge_width)*5
-    visual_style["edge_width"] = rescale(np.array([w['weight'] for w in g.es]), default_edge_width)
+    
+    if "scale_edge_width" in kwargs and type(kwargs["scale_edge_width"]) == bool:
+        if kwargs["scale_edge_width"]: #if true, adapt edge_thickness to edge value, else all edges are shown with same width.
+            display_edge_width = rescale(np.array([w['weight'] for w in g.es]), default_edge_width)
+            edge_color = [edge_cmap(edge) for edge in rescale(np.array([w['weight'] for w in g.es])) - 0.01]
+        else:
+            display_edge_width = np.array([1 if w > 0.01 else 0 for w in g.es])*default_edge_width
+            edge_color = [edge_cmap(0.99) for edge in g.es]
+    else:
+        display_edge_width = rescale(np.array([w['weight'] for w in g.es]), default_edge_width)
+        edge_color = [edge_cmap(edge) for edge in rescale(np.array([w['weight'] for w in g.es])) - 0.01]
+
+
+    visual_style["edge_width"] = display_edge_width
+    visual_style["edge_color"] = edge_color
+    
     visual_style["layout"] = layout
     visual_style["vertex_frame_color"] = marker_frame_color
     if isSymmetric(data):
@@ -563,6 +578,12 @@ def display_graph_3d(path_to_file, ax, percentage_threshold = 0.0, mnn = None, a
 
     default_node_size = kwargs["node_size"] if "node_size" in kwargs else 15
     default_edge_width = kwargs["edge_width"] if "edge_width" in kwargs else 5
+    node_color = "red"
+    node_size = []
+    for g in layers:
+        size = np.array([default_node_size for v in range(g.vcount())])
+        node_size.append(size)
+        
     if "node_metric" in kwargs:
         if kwargs["node_metric"] == "none":
             node_size = []
@@ -625,10 +646,6 @@ def display_graph_3d(path_to_file, ax, percentage_threshold = 0.0, mnn = None, a
                 size = k_core_weights(d, k_degree, 0.01)
                 node_size.append(np.array([n*default_node_size for n in size]))
         
-    else:
-        node_color = "red"
-        node_size = default_node_size
-        
     if "idx" in kwargs:
         if len(kwargs["idx"]) == 0:
             marker_frame_color = None
@@ -667,10 +684,12 @@ def display_graph_3d(path_to_file, ax, percentage_threshold = 0.0, mnn = None, a
         layer_labels = kwargs["layer_labels"]
     else:
         layer_labels = None
-            
+    
+    scale_edge_width = kwargs["scale_edge_width"] if "scale_edge_width" in kwargs and type(kwargs["scale_edge_width"]) == bool else True   
     LayeredNetworkGraph(layers_layout, layers, layers_data, ax=ax, layout=layout, 
                         node_labels = node_labels, nodes_width=node_size, node_edge_colors=marker_frame_color, 
-                        layer_labels=layer_labels, default_edge_width=default_edge_width)
+                        layer_labels=layer_labels, default_edge_width=default_edge_width,
+                        scale_edge_width = scale_edge_width, between_layer_edges = kwargs["between_layer_edges"])
     ax.set_axis_off()
 
     

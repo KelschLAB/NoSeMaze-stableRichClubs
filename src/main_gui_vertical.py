@@ -72,6 +72,8 @@ class App:
         self.loops_var = tk.IntVar(value = 1)     # variable for the removal of feedback loops in graph display
         self.edge_thickness_var = tk.StringVar(value = "5") # variable for changing edge type in settings window
         self.node_thickness_var = tk.StringVar(value = "15") # variable for changing edge type in settings window
+        self.scale_edge_width = True # variable for scaling the thickness of edge to their value
+        self.between_layer_edges = True
 
         self.color1 = "#E4F8FF"
         self.color2 = "#FFF7E3"
@@ -242,13 +244,15 @@ class App:
                       avg_graph = self.view_type == "avg", affinity = self.edge_type == "affinity",  rm_fb_loops = self.remove_loops, \
                       layout = self.layout_style, node_metric = self.node_metric, \
                       idx = self.idx, cluster_num = self.cluster_num, layer_labels=self.path_to_file, deg = self.degree,
-                      edge_width = int(self.edge_thickness_var.get()), node_size = int(self.node_thickness_var.get()))
-        
-        f.colorbar(ScalarMappable(norm=Normalize(vmin=0, vmax=1), cmap=cm.Greys), ax=a, label="Normalized edge value", shrink = 0.3, location = 'right', pad = 0.1)
+                      edge_width = int(self.edge_thickness_var.get()), node_size = int(self.node_thickness_var.get()), 
+                      scale_edge_width = self.scale_edge_width, between_layer_edges = self.between_layer_edges)
+            
+        if self.scale_edge_width:
+            f.colorbar(ScalarMappable(norm=Normalize(vmin=0, vmax=1), cmap=cm.Greys), ax=a, label="Normalized edge value", shrink = 0.3, location = 'right', pad = 0.1)
         if self.node_metric != "none":
             f.colorbar(ScalarMappable(norm=Normalize(vmin=0, vmax=1), cmap=cm.Reds), ax=a, label="Normalized metric value", shrink = 0.3, location = 'left')
             # f.colorbar(ScalarMappable(norm=Normalize(vmin=0, vmax=1), cmap=cm.viridis), ax=a, label="Relative edge value", shrink = 0.3, location = 'right', pad = 0.1)
-        else:
+        else: # to keep layout consistent across changes of settings
             cb = f.colorbar(ScalarMappable(norm=Normalize(vmin=0, vmax=1), cmap=cm.Reds), ax=a, label="Normalized metric value", shrink = 0.3, location = 'left')
             cb.remove()
         

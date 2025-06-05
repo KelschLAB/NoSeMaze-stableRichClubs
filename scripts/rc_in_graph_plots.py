@@ -33,16 +33,18 @@ def graph_in_time_3d(graph_idx, var = "interactions", mnn = 3, show_mut = True):
         mutants = np.ones(len(RFIDs))
         mutants[mutants_idx] = 0
         display_graph_3d(files, ax, mnn = mnn, node_metric = "rich-club", deg = mnn,
-                         layout = "circle", node_labels = None, node_size = 0.1, default_edge_width = 1, idx = mutants)
+                         layout = "circle", node_labels = None, node_size = 5, default_edge_width = 2, idx = mutants,
+                         scale_edge_width = False, between_layer_edges = False)
         
     else:
         display_graph_3d(files, ax, mnn = mnn, node_metric = "rich-club", deg = mnn,
-                         layout = "circle", node_labels = None, node_size = 0.1, default_edge_width = 1)
+                         layout = "circle", node_labels = None, node_size = 5, default_edge_width = 2,
+                         scale_edge_width = False, between_layer_edges = False)
     
     # fig.suptitle(labels[graph_idx], fontsize=12)
     # ax.set_frame_on(False)
     #plt.savefig("C:\\Users\\Corentin offline\\Documents\\GitHub\\clusterGUI\\plots\\params_exploration\\"+dirname+"_mnn"+str(mnn)+"_deg"+str(deg)+"_interactions.png")
-    plt.savefig("..\\plots\\paper\\rc_presentation\\graphs\\"+labels[graph_idx]+"_mnn"+str(mnn)+f"_{var}.svg")
+    # plt.savefig("..\\plots\\paper\\rc_presentation\\graphs\\"+labels[graph_idx]+"_mnn"+str(mnn)+f"_{var}.svg")
     plt.tight_layout()
     plt.show()
 
@@ -76,6 +78,7 @@ def graph_in_time_2d(graph_idx, var = "interactions", mnn = 3, mutual = True, sh
     #     plt.savefig("C:\\Users\\Corentin offline\\Documents\\GitHub\\clusterGUI\\plots\\params_exploration\\"+dirname+"_mnn"+str(mnn)+"_deg"+str(deg)+"_approach.png")
     # else:
     #     plt.savefig("C:\\Users\\Corentin offline\\Documents\\GitHub\\clusterGUI\\plots\\params_exploration\\"+dirname+"_nn"+str(mnn)+"_deg"+str(deg)+"_approach.png")
+    plt.savefig("..\\plots\\paper\\rc_presentation\\graphs\\2D"+labels[graph_idx]+"_mnn"+str(mnn)+f"_{var}.svg")
     plt.show()
 
 
@@ -99,10 +102,11 @@ def day_to_day_approachprop(dirname, mnn = 4, deg = 2):
 
 # for graph in ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G10"]:
 #     day_to_day_approach(graph, 4, 6, False)
-# for i in range(9):
+for i in range(9):
+    graph_in_time_2d(i, "interactions", mnn = 3, mutual = True, show_mut = True)
     # graph_in_time_3d(i, "approaches", mnn = 3, show_mut = False)
     
-graph_in_time_2d(2, "approaches", mnn = 3, mutual = True, show_mut = False)
-# graph_in_time_2d(2, "approaches", mnn = 3, mutual = True, show_mut = True)
+# graph_in_time_3d(2, "interactions", mnn = 3, show_mut = False)
+
 
 # day_to_day_interactions_3d(1, mnn = 3, deg = 3)

@@ -30,7 +30,8 @@ class Arrow3D(FancyArrowPatch):
 
 class LayeredNetworkGraph(object):
 
-    def __init__(self, graphs_layout, graphs, graphs_data, node_labels=None, layout=nx.spring_layout, nodes_width = None, default_edge_width = 5, ax=None, node_edge_colors = None, layer_labels = None):
+    def __init__(self, graphs_layout, graphs, graphs_data, node_labels=None, layout=nx.spring_layout, nodes_width = None,
+                 default_edge_width = 5, ax=None, node_edge_colors = None, layer_labels = None, scale_edge_width = True, between_layer_edges = True):
         """Given an ordered list of graphs [g1, g2, ..., gn] that represent
         different layers in a multi-layer network, plot the network in
         3D with the different layers separated along the z-axis.
@@ -66,21 +67,21 @@ class LayeredNetworkGraph(object):
         self.alphas = []
         self.node_edge_colors = node_edge_colors
         self.layer_labels = layer_labels
+        self.between_layer_edges = between_layer_edges
         self.symmetry = [] # to store whether or not graphs are directed
         for g in self.graphs:
             weights = nx.get_edge_attributes(g, "weight").values()
-            self.edge_width.extend(self.rescale(np.array([w for w in weights]), default_edge_width))
+            if scale_edge_width:
+                g_edge_width = self.rescale(np.array([w for w in weights]), default_edge_width)
+            else:
+                g_edge_width = np.array([1 if w > 0.01 else 0 for w in weights])*default_edge_width
+            self.edge_width.extend(g_edge_width)
             self.alphas.extend(self.rescale(np.array([w for w in weights]), 0.5)+0.5)
         for graph_index, d in enumerate(self.data):
             self.symmetry.extend([self.isSymmetric(d) for i in range(len(self.graphs[graph_index].edges))])
                 
-        # for g in graphs:
-        #     self.edge_width.extend(self.rescale(np.array([w['weight'] for w in g.es]), scale_factor))
         self.edge_colors = []
         for w in self.edge_width:
-            # if w == 0: #0.01 represents 0, it is just to avoid division by 0 in the rescaling for thresholding (see read_graph).
-            #     self.edge_colors.append([1, 1, 1, 0])
-            # else:
             self.edge_colors.append(self.cmap_edges((w - 0.001)/default_edge_width)) #subtracting 0.001 to ensure colormap is not called with 1 (which would be cycle back to 0).
         
         self.nodes_width = nodes_width
@@ -229,7 +230,8 @@ class LayeredNetworkGraph(object):
     def draw(self):
         self.draw_edges(self.edges_within_layers, arrow = True, alpha=0.7, linestyle='-', zorder=2
                         , linewidths=self.edge_width, facecolor=self.edge_colors,  colors=self.edge_colors)
-        self.draw_edges(self.edges_between_layers, arrow = False, color='k', alpha=0.2, linestyle='--', zorder=2, lw = 1)
+        if self.between_layer_edges:
+            self.draw_edges(self.edges_between_layers, arrow = False, color='k', alpha=0.2, linestyle='--', zorder=2, lw = 1)
         cmap_list = [cm.Reds, cm.Blues, cm.Greens, cm.Oranges, cm.Purples]*self.total_layers
         for z in range(self.total_layers):
             if self.layer_labels != None:

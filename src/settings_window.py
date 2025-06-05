@@ -48,19 +48,33 @@ class settingsWindow(tk.Toplevel):
             fb_loop_button.select()
         fb_loop_button.grid(row = 4, column = 2)
         
-        tk.Label(self, text="Edge thickness:").grid(row=5, column=1)
+        scale_edge_label = tk.Label(self, text="Scale edge width: ")
+        scale_edge_label.grid(row = 5, column = 1)
+        scale_edge_button = tk.Checkbutton(self, text="", command = self.scale_edge_clicked)
+        if self.app.scale_edge_width:
+            scale_edge_button.select()
+        scale_edge_button.grid(row = 5, column = 2)
+        
+        tk.Label(self, text="Edge thickness:").grid(row=6, column=1)
         self.edge_thickness_var = tk.StringVar() 
         self.edge_thickness_entry = tk.Entry(self, textvariable=self.edge_thickness_var)
         self.edge_thickness_entry.insert(0, self.app.edge_thickness_var.get())
         self.edge_thickness_entry.bind('<Return>', lambda event: self.on_enter_pressed(event))
-        self.edge_thickness_entry.grid(row=5, column=2)
+        self.edge_thickness_entry.grid(row=6, column=2)
         
-        tk.Label(self, text="Node thickness:").grid(row=6, column=1)
+        tk.Label(self, text="Node thickness:").grid(row=7, column=1)
         self.node_thickness_var = tk.StringVar() 
         self.node_thickness_entry = tk.Entry(self, textvariable=self.node_thickness_var)
         self.node_thickness_entry.insert(0, self.app.node_thickness_var.get())
         self.node_thickness_entry.bind('<Return>', lambda event: self.on_enter_pressed(event))
-        self.node_thickness_entry.grid(row=6, column=2)
+        self.node_thickness_entry.grid(row=7, column=2)
+        
+        between_layer_label = tk.Label(self, text="Draw edges between layers: ")
+        between_layer_label.grid(row = 8, column = 1)
+        between_layer_button = tk.Checkbutton(self, text="", command = self.between_layer_clicked)
+        if self.app.between_layer_edges:
+            between_layer_button.select()
+        between_layer_button.grid(row = 8, column = 2)
 
     def on_enter_pressed(self, event):
         edge_thickness_value = self.edge_thickness_entry.get()  # Note: using direct widget reference
@@ -95,6 +109,20 @@ class settingsWindow(tk.Toplevel):
             self.app.remove_loops = False
         elif not self.app.remove_loops:
             self.app.remove_loops = True
+        self.app.plot_in_frame()
+        
+    def scale_edge_clicked(self):
+        if self.app.scale_edge_width:
+            self.app.scale_edge_width = False
+        elif not self.app.scale_edge_width:
+            self.scale_edge_width = True
+        self.app.plot_in_frame()
+        
+    def between_layer_clicked(self):
+        if self.app.between_layer_edges:
+            self.app.between_layer_edges = False
+        elif not self.app.between_layer_edges:
+            self.app.between_layer_edges = True
         self.app.plot_in_frame()
         
     def on_close(self):
