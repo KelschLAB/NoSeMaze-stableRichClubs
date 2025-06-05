@@ -509,7 +509,7 @@ def display_graph(path_to_file, ax, percentage_threshold = 0.0, mnn = None, avg_
     visual_style["vertex_size"] = node_size
     visual_style["vertex_color"] = node_color
     edge_cmap = get_cmap('Greys')
-    visual_style["edge_arrow_width"] = rescale(np.array([w['weight'] for w in g.es]), default_edge_width)*5
+    visual_style["edge_arrow_width"] = rescale(np.array([w['weight'] for w in g.es]), default_edge_width)*(default_edge_width)
     
     if "scale_edge_width" in kwargs and type(kwargs["scale_edge_width"]) == bool:
         if kwargs["scale_edge_width"]: #if true, adapt edge_thickness to edge value, else all edges are shown with same width.
