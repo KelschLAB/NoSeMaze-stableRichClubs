@@ -68,7 +68,7 @@ def weighted_rich_club(data, k = 3, iterations = 100):
 labels = ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G10", "G11", "G12", "G13", "G14", "G15", "G16", "G17"]
 def rich_club_coefficients(variable, k, window = 3):
     avg_rc_coeffs, std_rc_coeffs = [], []
-    for day in np.arange(1, 15, window):
+    for day in np.arange(1, 16//window):
         coefficients = []
         for graph_idx in range(len(labels)):
             try:
@@ -83,7 +83,7 @@ def rich_club_coefficients(variable, k, window = 3):
         coefficients = np.array(coefficients)
         avg_rc_coeffs.append(np.nanmean(coefficients))
         std_rc_coeffs.append(sem(coefficients[~np.isnan(coefficients)]))
-    t = np.arange(1, 15, window)
+    t = np.arange(1, 16//window)
     avg_rc_coeffs, std_rc_coeffs = np.array(avg_rc_coeffs), np.array(std_rc_coeffs)
     plt.figure(figsize=(4, 3.5))
     plt.plot(t, avg_rc_coeffs, '-o', lw = 2, c = "k", label = "Average across groups")
@@ -92,7 +92,7 @@ def rich_club_coefficients(variable, k, window = 3):
     plt.hlines(1, t[0], t[-1], ls = "--", color = "k", label = "Randomized graph")
     plt.xlabel("Day", fontsize = 18)
     plt.ylabel("Richness", fontsize = 18)
-    plt.xticks(range(1, 15, window), fontsize = 14) 
+    plt.xticks(range(1, 16//window), fontsize = 14) 
     plt.yticks(np.linspace(1, 3, 3), fontsize = 14)
     plt.ylim(0.5, 3)
     plt.legend()
@@ -101,5 +101,5 @@ def rich_club_coefficients(variable, k, window = 3):
     return avg_rc_coeffs, std_rc_coeffs
 
 if __name__ == "__main__":
-    a, s = rich_club_coefficients('interactions', 3, 1)
+    a, s = rich_club_coefficients('interactions', 8, 3)
     

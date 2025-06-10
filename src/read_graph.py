@@ -438,11 +438,12 @@ def display_graph(path_to_file, ax, percentage_threshold = 0.0, mnn = None, avg_
         g = ig.Graph.Weighted_Adjacency(data, mode='directed')
         
     # default values
-    node_color = "blue"
+    node_color = "gray"
     default_node_size = kwargs["node_size"] if "node_size" in kwargs else 15
     default_edge_width = kwargs["edge_width"] if "edge_width" in kwargs else 5
 
-    cmap1 = cm.Reds
+    # cmap1 = cm.Reds
+    cmap1 = cm.Grays
     if "node_metric" in kwargs:
         if kwargs["node_metric"] == "none":
             node_size = default_node_size
@@ -484,12 +485,13 @@ def display_graph(path_to_file, ax, percentage_threshold = 0.0, mnn = None, avg_
             node_color = [cmap1(b) for b in edge_pagerank]
         elif kwargs["node_metric"] == "rich-club":
             k_degree = kwargs["deg"]
-            node_size = rich_club_weights(g, k_degree, 0.2)
-            node_color = [cmap1(0.99) if b == 1 else cmap1(0.2) for b in node_size]
+            node_size = rich_club_weights(g, k_degree, 0.3)
+            # node_color = [cmap1(0.5) if b == 1 else cmap1(0.2) for b in node_size]
+            node_color = ["gray" for b in node_size]
             node_size = [n*default_node_size for n in node_size]
         elif kwargs["node_metric"] == "k-core":
             k_degree = kwargs["deg"]
-            node_size = k_core_weights(data, k_degree, 0.2)
+            node_size = k_core_weights(data, k_degree, 0.5)
             node_color = [cmap1(0.99) if b == 1 else cmap1(0.2) for b in node_size]
             node_size = [n*default_node_size for n in node_size]
         
@@ -508,6 +510,8 @@ def display_graph(path_to_file, ax, percentage_threshold = 0.0, mnn = None, avg_
     visual_style = {}
     visual_style["vertex_size"] = node_size
     visual_style["vertex_color"] = node_color
+    visual_style["vertex_frame_color"] = marker_frame_color
+    # visual_style["vertex_frame_color"] = [(0.5, 0.5, 0.5, 0)] * g.vcount()
     edge_cmap = get_cmap('Greys')
     visual_style["edge_arrow_width"] = rescale(np.array([w['weight'] for w in g.es]), default_edge_width)*(default_edge_width)
     
@@ -516,18 +520,17 @@ def display_graph(path_to_file, ax, percentage_threshold = 0.0, mnn = None, avg_
             display_edge_width = rescale(np.array([w['weight'] for w in g.es]), default_edge_width)
             edge_color = [edge_cmap(edge) for edge in rescale(np.array([w['weight'] for w in g.es])) - 0.01]
         else:
-            display_edge_width = np.array([1 if w > 0.01 else 0 for w in g.es])*default_edge_width
+            display_edge_width = np.array([0.99 if w['weight'] > 0.01 else 0 for w in g.es])*default_edge_width
             edge_color = [edge_cmap(0.99) for edge in g.es]
     else:
         display_edge_width = rescale(np.array([w['weight'] for w in g.es]), default_edge_width)
         edge_color = [edge_cmap(edge) for edge in rescale(np.array([w['weight'] for w in g.es])) - 0.01]
 
-
     visual_style["edge_width"] = display_edge_width
     visual_style["edge_color"] = edge_color
     
     visual_style["layout"] = layout
-    visual_style["vertex_frame_color"] = marker_frame_color
+
     if isSymmetric(data):
         visual_style["edge_curved"] = 0.0
     else:
