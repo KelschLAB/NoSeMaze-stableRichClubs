@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 
-def mutants_in_rc_mnn2_k2(): #actually 4 mnn and rc 4
+def mutants_in_rc_mnn2_k2():
     number_of_hits = []
     mutants = np.array([1, 2])
     mutants_G11 = np.array([1,2,3,4])
@@ -13,53 +13,54 @@ def mutants_in_rc_mnn2_k2(): #actually 4 mnn and rc 4
         for j in range(1):
             # expID 1
             np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(mutants, shuffled_arr[:2]))
+            hits += np.sum(np.isin(mutants, shuffled_arr[:2]))
             # expID 2
             np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(mutants, shuffled_arr[:2]))
+            hits += np.sum(np.isin(mutants, shuffled_arr[:2]))
             # expID 3
             np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(mutants, shuffled_arr[:2]))
+            hits += np.sum(np.isin(mutants, shuffled_arr[:2]))
             # expID 4
             np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(mutants, shuffled_arr[:2]))
+            hits += np.sum(np.isin(mutants, shuffled_arr[:2]))
             # expID 5
             np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(mutants, shuffled_arr[:2]))
+            hits += np.sum(np.isin(mutants, shuffled_arr[:2]))
             # expID 6
             np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(mutants, shuffled_arr[:2]))
+            hits += np.sum(np.isin(mutants, shuffled_arr[:2]))
             # expID 7
             np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(mutants, shuffled_arr[:3]))
+            hits += np.sum(np.isin(mutants, shuffled_arr[:3]))
             # expID 8
             np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(mutants, shuffled_arr[:1]))
+            hits += np.sum(np.isin(mutants, shuffled_arr[:1]))
             # expID 10
             np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(mutants, shuffled_arr[:3]))
+            hits += np.sum(np.isin(mutants, shuffled_arr[:3]))
             # expID 11
             np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(mutants_G11, shuffled_arr[:1]))
+            hits += np.sum(np.isin(mutants_G11, shuffled_arr[:1]))
             # expID 12
             np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(mutants, shuffled_arr[:2]))
+            hits += np.sum(np.isin(mutants, shuffled_arr[:2]))
             # expID 15
             np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(mutants, shuffled_arr[:3]))
+            hits += np.sum(np.isin(mutants, shuffled_arr[:3]))
             # # expID 18
             np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(mutants, shuffled_arr[:2]))
+            hits += np.sum(np.isin(mutants, shuffled_arr[:2]))
             
         number_of_hits.append(hits)
-        
+    
+    fig = plt.figure()
     h = plt.hist(number_of_hits, bins = np.arange(15), density = True, align = 'left', label = "Expected by random chance")
     plt.axvline(np.percentile(number_of_hits, 5), ls = "--", color = 'k', label = "95% CI")
     # plt.axvline(np.percentile(number_of_hits, 95), ls = "--", color = 'k', label = "95% CI")
-    plt.axvline(1, color = 'red', label = "Experimentally observed")
-    plt.annotate("p-value = "+str(np.round(np.cumsum(h[0]), 4)[1]), (1.5, 0.2), bbox=dict(facecolor='white', edgecolor='none', pad=1.0), ha='center')
+    plt.axvline(2, color = 'red', label = "Experimentally observed")
+    plt.annotate("p-value = "+str(np.round(np.cumsum(h[0]), 4)[2]), (1.5, 0.2), bbox=dict(facecolor='white', edgecolor='none', pad=1.0), ha='center')
     plt.title("Random chance of mutant in rich-club\n both cohorts")
-    plt.xlabel("Groups with at least 1 mutants in RC", fontsize=15)
+    plt.xlabel("Number of mutants in sRC", fontsize=15)
     plt.ylabel("Probability", fontsize=15)
     plt.legend()
     plt.show()
@@ -84,57 +85,58 @@ def mutants_in_rc_mnn3_k3(weak = False): #mnn = 3, rc = 3
         for j in range(1):
             # expID 1
             np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(full_histo_mutants[0], shuffled_arr[:2]))
+            hits += np.sum(np.isin(full_histo_mutants[0], shuffled_arr[:2]))
             # expID 2
             np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(full_histo_mutants[1], shuffled_arr[:3]))
+            hits += np.sum(np.isin(full_histo_mutants[1], shuffled_arr[:3]))
             # expID 3
             np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(full_histo_mutants[2], shuffled_arr[:3]))
+            hits += np.sum(np.isin(full_histo_mutants[2], shuffled_arr[:3]))
             # expID 4
             np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(full_histo_mutants[3], shuffled_arr[:2]))
+            hits += np.sum(np.isin(full_histo_mutants[3], shuffled_arr[:2]))
             # expID 5
             np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(full_histo_mutants[4], shuffled_arr[:2]))
+            hits += np.sum(np.isin(full_histo_mutants[4], shuffled_arr[:2]))
             # expID 6
             np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(full_histo_mutants[5], shuffled_arr[:2]))
+            hits += np.sum(np.isin(full_histo_mutants[5], shuffled_arr[:2]))
             # expID 7
             np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(full_histo_mutants[6], shuffled_arr[:3]))
+            hits += np.sum(np.isin(full_histo_mutants[6], shuffled_arr[:3]))
             # expID 8
             np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(full_histo_mutants[7], shuffled_arr[:2]))
+            hits += np.sum(np.isin(full_histo_mutants[7], shuffled_arr[:2]))
             # expID 10
             np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(full_histo_mutants[8], shuffled_arr[:3]))
+            hits += np.sum(np.isin(full_histo_mutants[8], shuffled_arr[:3]))
             # expID 11
             np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(full_histo_mutants[9], shuffled_arr[:2]))
+            hits += np.sum(np.isin(full_histo_mutants[9], shuffled_arr[:2]))
             # expID 12
             np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(full_histo_mutants[10], shuffled_arr[:2]))
+            hits += np.sum(np.isin(full_histo_mutants[10], shuffled_arr[:2]))
             # expID 15
             np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(full_histo_mutants[11], shuffled_arr[:3]))
+            hits += np.sum(np.isin(full_histo_mutants[11], shuffled_arr[:3]))
             # # expID 17
             np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(full_histo_mutants[12], shuffled_arr[:2]))
+            hits += np.sum(np.isin(full_histo_mutants[12], shuffled_arr[:2]))
             
         number_of_hits.append(hits)
-        
+    
+    fig = plt.figure()
     h = plt.hist(number_of_hits, bins = np.arange(15), density = True, align = 'left', label = "Expected by random chance")
     if weak:
         observed = 2
     else:
-        observed = 1
+        observed = 2
     plt.axvline(np.percentile(number_of_hits, 5), ls = "--", color = 'k', label = "95% CI")
     # plt.axvline(np.percentile(number_of_hits, 95), ls = "--", color = 'k', label = "95% CI")
     plt.axvline(observed, color = 'red', label = "Experimentally observed")
     plt.annotate("p-value = "+str(np.round(np.cumsum(h[0]), 4)[observed]), (1.5, 0.2), bbox=dict(facecolor='white', edgecolor='none', pad=1.0), ha='center')
     plt.title("Random chance of mutant in rich-club\n both cohorts")
-    plt.xlabel("Groups with at least 1 mutants in RC", fontsize=15)
+    plt.xlabel("Number of mutants in sRC", fontsize=15)
     plt.ylabel("Probability", fontsize=15)
     plt.legend()
     plt.savefig("C:\\Users\\wolfgang.kelsch\\Downloads\\mutants_in_RC_mnn3_rc3.svg")
@@ -160,46 +162,46 @@ def mutants_in_rc_mnn4_k4(weak = False): #actually 4 mnn and rc 4
         for j in range(1):
             # expID 1
             np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(full_histo_mutants[0], shuffled_arr[:2]))
+            hits += np.sum(np.isin(full_histo_mutants[0], shuffled_arr[:2]))
             # expID 2
             np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(full_histo_mutants[1], shuffled_arr[:3]))
+            hits += np.sum(np.isin(full_histo_mutants[1], shuffled_arr[:3]))
             # expID 3
             np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(full_histo_mutants[2], shuffled_arr[:4]))
+            hits += np.sum(np.isin(full_histo_mutants[2], shuffled_arr[:4]))
             # expID 4
             np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(full_histo_mutants[3], shuffled_arr[:2]))
+            hits += np.sum(np.isin(full_histo_mutants[3], shuffled_arr[:2]))
             # expID 5
             np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(full_histo_mutants[4], shuffled_arr[:3]))
+            hits += np.sum(np.isin(full_histo_mutants[4], shuffled_arr[:3]))
             # expID 6
             np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(full_histo_mutants[5], shuffled_arr[:4]))
+            hits += np.sum(np.isin(full_histo_mutants[5], shuffled_arr[:4]))
             # expID 7
             np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(full_histo_mutants[6], shuffled_arr[:3]))
+            hits += np.sum(np.isin(full_histo_mutants[6], shuffled_arr[:3]))
             # expID 8
             np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(full_histo_mutants[7], shuffled_arr[:3]))
+            hits += np.sum(np.isin(full_histo_mutants[7], shuffled_arr[:3]))
             # expID 10
             np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(full_histo_mutants[8], shuffled_arr[:3]))
+            hits += np.sum(np.isin(full_histo_mutants[8], shuffled_arr[:3]))
             # expID 11
             np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(full_histo_mutants[9], shuffled_arr[:3]))
+            hits += np.sum(np.isin(full_histo_mutants[9], shuffled_arr[:3]))
             # expID 12
             np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(full_histo_mutants[10], shuffled_arr[:3]))
+            hits += np.sum(np.isin(full_histo_mutants[10], shuffled_arr[:3]))
             # expID 14
             np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(full_histo_mutants[11], shuffled_arr[:1]))
+            hits += np.sum(np.isin(full_histo_mutants[11], shuffled_arr[:1]))
             # expID 15
             np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(full_histo_mutants[12], shuffled_arr[:2]))
+            hits += np.sum(np.isin(full_histo_mutants[12], shuffled_arr[:2]))
             # # expID 17
             np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(full_histo_mutants[13], shuffled_arr[:2]))
+            hits += np.sum(np.isin(full_histo_mutants[13], shuffled_arr[:2]))
             
         number_of_hits.append(hits)
         
@@ -213,7 +215,7 @@ def mutants_in_rc_mnn4_k4(weak = False): #actually 4 mnn and rc 4
     plt.axvline(observed, color = 'red', label = "Experimentally observed")
     plt.annotate("p-value = "+str(np.round(np.cumsum(h[0]), 4)[observed]), (1.5, 0.2), bbox=dict(facecolor='white', edgecolor='none', pad=1.0), ha='center')
     plt.title("Random chance of mutant in rich-club\n both cohorts")
-    plt.xlabel("Groups with at least 1 mutants in RC", fontsize=15)
+    plt.xlabel("Number of mutants in sRC", fontsize=15)
     plt.ylabel("Probability", fontsize=15)
     plt.legend()
     plt.show()
@@ -237,46 +239,46 @@ def mutants_in_both_mnn5_k5(weak = False):
         for j in range(1):
             # expID 1
             np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(full_histo_mutants[0], shuffled_arr[:3]))
+            hits += np.sum(np.isin(full_histo_mutants[0], shuffled_arr[:3]))
             # expID 2
             np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(full_histo_mutants[1], shuffled_arr[:5]))
+            hits += np.sum(np.isin(full_histo_mutants[1], shuffled_arr[:5]))
             # expID 3
             np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(full_histo_mutants[2], shuffled_arr[:5]))
+            hits += np.sum(np.isin(full_histo_mutants[2], shuffled_arr[:5]))
             # expID 4
             np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(full_histo_mutants[3], shuffled_arr[:4]))
+            hits += np.sum(np.isin(full_histo_mutants[3], shuffled_arr[:4]))
             # expID 5
             np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(full_histo_mutants[4], shuffled_arr[:4]))
+            hits += np.sum(np.isin(full_histo_mutants[4], shuffled_arr[:4]))
             # expID 6
             np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(full_histo_mutants[5], shuffled_arr[:4]))
+            hits += np.sum(np.isin(full_histo_mutants[5], shuffled_arr[:4]))
             # expID 7
             np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(full_histo_mutants[6], shuffled_arr[:2]))
+            hits += np.sum(np.isin(full_histo_mutants[6], shuffled_arr[:2]))
             # expID 8
             np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(full_histo_mutants[7], shuffled_arr[:4]))
+            hits += np.sum(np.isin(full_histo_mutants[7], shuffled_arr[:4]))
             # expID 10
             np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(full_histo_mutants[8], shuffled_arr[:4]))
+            hits += np.sum(np.isin(full_histo_mutants[8], shuffled_arr[:4]))
             # expID 11
             np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(full_histo_mutants[9], shuffled_arr[:3]))
+            hits += np.sum(np.isin(full_histo_mutants[9], shuffled_arr[:3]))
             # expID 12
             np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(full_histo_mutants[10], shuffled_arr[:4]))
+            hits += np.sum(np.isin(full_histo_mutants[10], shuffled_arr[:4]))
             # expID 14
             np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(full_histo_mutants[11], shuffled_arr[:2]))
+            hits += np.sum(np.isin(full_histo_mutants[11], shuffled_arr[:2]))
             # expID 15
             np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(full_histo_mutants[12], shuffled_arr[:2]))
+            hits += np.sum(np.isin(full_histo_mutants[12], shuffled_arr[:2]))
             # # expID 17
             np.random.shuffle(shuffled_arr)
-            hits += np.any(np.isin(full_histo_mutants[13], shuffled_arr[:2]))
+            hits += np.sum(np.isin(full_histo_mutants[13], shuffled_arr[:2]))
             
         number_of_hits.append(hits)
     
@@ -290,7 +292,7 @@ def mutants_in_both_mnn5_k5(weak = False):
     plt.axvline(observed, color = 'red', label = "Experimentally observed")
     plt.annotate("p-value = "+str(np.round(np.cumsum(h[0]), 4)[observed]), (1.5, 0.2), bbox=dict(facecolor='white', edgecolor='none', pad=1.0), ha='center')
     plt.title("Random chance of mutant in rich-club\n both cohorts")
-    plt.xlabel("Groups with at least 1 mutants in RC", fontsize=15)
+    plt.xlabel("Number of mutants in sRC", fontsize=15)
     plt.ylabel("Probability", fontsize=15)
     plt.legend()
     plt.show()
@@ -861,10 +863,9 @@ def reshuffled_rc_mnn4_k4(cumulative = False):
 
     
 
-
 # mutants_in_rc_mnn2_k2()
-# mutants_in_rc_mnn3_k3()
-mutants_in_rc_mnn4_k4(False)
+# mutants_in_rc_mnn3_k3(True)
+# mutants_in_rc_mnn4_k4(True)
 # mutants_in_both_mnn5_k5(True)
 
 # littermates_in_rc_mnn2_k2()    
