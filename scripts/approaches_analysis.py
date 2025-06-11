@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 
 # path_to_data = "W:\\group_entwbio\\data\\Luise\\NoSeMaze2023\\DLC_output_windows\\GJ1\\D1\\G1D1_trajectoriesInfos_pre120frames.csv"
-path_to_data = "C:\\Users\\wolfgang.kelsch\\Documents\\GitHub\\RichClubs\\data\\approach_meta_data\\G1\\"
+path_to_data = "..\\data\\trajectories\G1\\"
 
 def load_data(path_to_data):
     if os.path.isfile(path_to_data):
