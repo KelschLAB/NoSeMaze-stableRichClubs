@@ -54,7 +54,7 @@ def graph_in_time_2d(graph_idx, var = "interactions", mnn = 3, deg = 3, mutual =
     after mnn cuting and k-core computation. Saves on svg format.
     """
     datapath = "..\\data\\both_cohorts_3days\\"+labels[graph_idx]+"\\"
-    fig, axs = plt.subplots(5, 1, figsize=(1, 2.5)) #putting all results directly on same figure
+    fig, axs = plt.subplots(5, 1, figsize=(2, 7)) #putting all results directly on same figure
     for i in range(5):
         try:
             file = f"{var}_resD3_"+str(i+1)+".csv"
@@ -63,10 +63,10 @@ def graph_in_time_2d(graph_idx, var = "interactions", mnn = 3, deg = 3, mutual =
                 mutants = np.ones(len(RFIDs))
                 mutants[mutants_idx] = 0
                 display_graph([datapath+file], axs[i], mnn = mnn, node_metric = "rich-club", deg = deg, mutual = mutual, layout = "circle",
-                              node_size = 5, node_labels = None, idx = mutants, edge_width = 1, scale_edge_width = False)
+                              node_size = 12, node_labels = None, idx = mutants, edge_width = 1.5, scale_edge_width = False)
             else:
                 display_graph([datapath+file], axs[i], mnn = mnn, node_metric = "rich-club", deg = deg, mutual = mutual,
-                              layout = "circle", node_size = 5, node_labels = None, edge_width = 1, scale_edge_width = False)
+                              layout = "circle", node_size = 12, node_labels = None, edge_width = 1.5, scale_edge_width = False)
         except:
             pass
     try:
@@ -104,8 +104,8 @@ def day_to_day_approachprop(dirname, mnn = 4, deg = 2):
 
 # for graph in ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G10"]:
 #     day_to_day_approach(graph, 4, 6, False)
-for i in range(8, 12):
-    graph_in_time_2d(i, "interactions", mnn = 3, deg = 3, mutual = True, show_mut = True)
+k = 5
+graph_in_time_2d(1, "interactions", mnn = k, deg = k, mutual = True, show_mut = False)
     # graph_in_time_3d(i, "approaches", mnn = 3, show_mut = False)
 # graph_in_time_2d(3, "interactions", mnn = 3, deg = 3, mutual = True, show_mut = True)
 

@@ -581,8 +581,8 @@ if __name__ == "__main__":
     # plot_timeseries_example(measure = "summed injaccard", derivative = True, window = 1, 
     #                        variable = "approaches", idx = [10, 57], mnn = None, mutual = mutual)
     
-    plot_timeseries_example(measure = "instrength", derivative = True, window = 1, 
-                           variable = "approaches", idx = [30, 92], mnn = None, mutual = mutual)
+    # plot_timeseries_example(measure = "instrength", derivative = True, window = 1, 
+    #                        variable = "approaches", idx = [30, 92], mnn = None, mutual = mutual)
 
     # plot_derivative_example("outdegree", 1, "approaches", [16, 67], None, mutual)
 
