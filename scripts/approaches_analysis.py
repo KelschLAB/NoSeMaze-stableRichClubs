@@ -12,7 +12,9 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 
 # path_to_data = "W:\\group_entwbio\\data\\Luise\\NoSeMaze2023\\DLC_output_windows\\GJ1\\D1\\G1D1_trajectoriesInfos_pre120frames.csv"
-path_to_data = "..\\data\\trajectories\G1\\"
+path_to_data = "..\\data\\trajectories\\"
+groups = ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G10", "G11", "G12", "G13", "G14", "G15", "G16", "G17"]
+path_to_groups = [path_to_data+g for g in groups]
 
 def load_data(path_to_data):
     if os.path.isfile(path_to_data):
@@ -31,104 +33,124 @@ def load_data(path_to_data):
         df = pd.read_csv(path_to_file)
         df = df.dropna()
         # Figure out who is approacher/approachee
-        approacher = ["A" if df.iloc[i]["total_length_a"] > df.iloc[i]["total_length_b"] else "B" for i in range(len(df))]
-        df["approacher"] = approacher
-    
-        for i in range(len(df)):
-            if df.iloc[i]["approacher"] == "A":
-                approach_start_x.append(df.iloc[i]["xstart_a"])
-                approach_start_y.append(df.iloc[i]["ystart_a"])
-                approach_end_x.append(df.iloc[i]["xend_a"])
-                approach_end_y.append(df.iloc[i]["yend_a"])
-                approachee_start_x.append(df.iloc[i]["xstart_b"])
-                approachee_start_y.append(df.iloc[i]["ystart_b"])
-                approacher_distance.append(df.iloc[i]["total_length_a"])
-                approachee_distance.append(df.iloc[i]["total_length_b"])
-
-            elif df.iloc[i]["approacher"] == "B":
-                approach_start_x.append(df.iloc[i]["xstart_b"])
-                approach_start_y.append(df.iloc[i]["ystart_b"])
-                approach_end_x.append(df.iloc[i]["xend_b"])
-                approach_end_y.append(df.iloc[i]["yend_b"])
-                approachee_start_x.append(df.iloc[i]["xstart_a"])
-                approachee_start_y.append(df.iloc[i]["ystart_a"])
-                approacher_distance.append(df.iloc[i]["total_length_b"])
-                approachee_distance.append(df.iloc[i]["total_length_a"])
+        df["approacher"] = np.where(df["total_length_a"] > df["total_length_b"], "A", "B")
+        
+        # Filter rows by approacher/approachee
+        a_mask = df["approacher"] == "A"
+        b_mask = ~a_mask
+        
+        # Process A approachers
+        approach_start_x.extend(df.loc[a_mask, "xstart_a"].tolist())
+        approach_start_y.extend(df.loc[a_mask, "ystart_a"].tolist())
+        approach_end_x.extend(df.loc[a_mask, "xend_a"].tolist())
+        approach_end_y.extend(df.loc[a_mask, "yend_a"].tolist())
+        approachee_start_x.extend(df.loc[a_mask, "xstart_b"].tolist())
+        approachee_start_y.extend(df.loc[a_mask, "ystart_b"].tolist())
+        approacher_distance.extend(df.loc[a_mask, "total_length_a"].tolist())
+        approachee_distance.extend(df.loc[a_mask, "total_length_b"].tolist())
+        
+        # Process B approachers
+        approach_start_x.extend(df.loc[b_mask, "xstart_b"].tolist())
+        approach_start_y.extend(df.loc[b_mask, "ystart_b"].tolist())
+        approach_end_x.extend(df.loc[b_mask, "xend_b"].tolist())
+        approach_end_y.extend(df.loc[b_mask, "yend_b"].tolist())
+        approachee_start_x.extend(df.loc[b_mask, "xstart_a"].tolist())
+        approachee_start_y.extend(df.loc[b_mask, "ystart_a"].tolist())
+        approacher_distance.extend(df.loc[b_mask, "total_length_b"].tolist())
+        approachee_distance.extend(df.loc[b_mask, "total_length_a"].tolist())
 
     return approach_start_x, approach_start_y, approach_end_x, approach_end_y, approachee_start_x, approachee_start_y, approacher_distance, approachee_distance 
 
 # define plotting functions
-def plot_2d_distribution(path_to_data, approach_type = "start_point", cutoff = 0.1, colmap = "bwr"):
+def plot_2d_distribution(path_to_data, approach_type = "start_point", cutoff = 0.1, colmap = "bwr", ax = None):
     """
     Function to show the distribution of approaches as described by "approach_type", as a scatter plot
     overlayed with a fit of the distribution via a 2d gaussian distribution.
     the cutoff argument serves to rescale the colormap
     """
-    approach_start_x, approach_start_y, approach_end_x, approach_end_y, approachee_start_x, approachee_start_y, approacher_d, approachee_d = load_data(path_to_data)
+    if type(path_to_data) == list:
+        plot_scatter = False
+        approach_start_x, approach_start_y, approach_end_x, approach_end_y, approachee_start_x, approachee_start_y, approacher_d, approachee_d = [], [], [], [], [], [], [], []
+        for p in path_to_data:
+            data = load_data(p)
+            approach_start_x.append(data[0])
+            approach_start_y.append(data[1])
+            approach_end_x.append(data[2])
+            approach_end_y.append(data[3])
+            approachee_start_x.append(data[4])
+            approachee_start_y.append(data[5])
+            approacher_d.append(data[6])
+            approachee_d.append(data[7])
+        approach_start_x = np.concatenate(approach_start_x)
+        approach_start_y = np.concatenate(approach_start_y)
+        approach_end_x = np.concatenate(approach_end_x)
+        approach_end_y = np.concatenate(approach_end_y)
+        approachee_start_x = np.concatenate(approachee_start_x)
+        approachee_start_y = np.concatenate(approachee_start_y)
+        approacher_d = np.concatenate(approacher_d)
+        approachee_d = np.concatenate(approachee_d)
+        
+    else:
+        plot_scatter = True
+        approach_start_x, approach_start_y, approach_end_x, approach_end_y, approachee_start_x, approachee_start_y, approacher_d, approachee_d = load_data(path_to_data)
     
     approacher_d, approachee_d = np.array(approacher_d), np.array(approachee_d)
     true_approaches = np.where(approacher_d > 1.5*approachee_d)
     
     scaling_factor = 0.1 # 1 pixel = 0.1 cm (From Luise's thesis)
     
-    fig, ax = plt.subplots(figsize=(6, 5))
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(6, 5))
+        ax.set_xlabel("x (cm)")
+        ax.set_ylabel("y (cm)")
+        ax.set_title(approach_type)
+    else:
+        ax.spines[['right', 'top', 'bottom', 'left']].set_visible(False)
+        ax.set_xticks([])
+        ax.set_yticks([])
     
-    c, s, alpha = "k", 12, 0.05
+    c, s, alpha = "k", 5, 0.1
     if approach_type == "start_point":
         x, y = np.array(approach_start_x)*scaling_factor, np.array(approach_start_y)*scaling_factor
-        plt.scatter(x[true_approaches], y[true_approaches], c=c, s=s, alpha=alpha, edgecolors=None)
-        plt.title("Approach start point")
+        if plot_scatter:
+            ax.scatter(x[true_approaches], y[true_approaches], c=c, s=s, alpha=alpha, edgecolors=None)
         
     elif approach_type == "end_point":
         x, y = np.array(approach_end_x)*scaling_factor, np.array(approach_end_y)*scaling_factor
-        plt.scatter(x[true_approaches], y[true_approaches], c=c, s=s, alpha=alpha)
-        plt.title("Approach end point")
+        if plot_scatter:
+            ax.scatter(x[true_approaches], y[true_approaches], c=c, s=s, alpha=alpha)
 
     elif approach_type == "approachee_start":
         x, y = np.array(approachee_start_x)*scaling_factor, np.array(approachee_start_y)*scaling_factor
-        plt.scatter(x, y, c=c, s=s, alpha=alpha, edgecolors=None)
-        plt.title("Approachee start point")
+        if plot_scatter:
+            ax.scatter(x, y, c=c, s=s, alpha=alpha, edgecolors=None)
         
     elif approach_type == "interactions":   
         x, y = np.array(approach_end_x)*scaling_factor, np.array(approach_end_y)*scaling_factor
-        plt.scatter(x, y, c=c, s=s, alpha=alpha)
-        plt.title("Interactions")
+        if plot_scatter:
+            ax.scatter(x, y, c=c, s=s, alpha=alpha, edgecolor='none')
         
     else:
         raise("unknwon input type")
     
-    # Compute 2D histogram
-    xmin, xmax = min(x), max(x)
-    ymin, ymax = min(y), max(y)
-    H, xedges, yedges = np.histogram2d(x, y, bins=[int(np.round(xmax)), int(np.round(ymax))], range=[[xmin, xmax], [ymin, ymax]])
-    # H[np.where(H == 0)] = 1e-15
-    # H = np.log(H)
-    # max_val = np.max(H) # to recover correct scaling of colorbar after plotting (imshow normalizes colormap from 0 to 1)
+    if not plot_scatter:
+        # Compute 2D histogram
+        xmin, xmax = min(x), max(x)
+        ymin, ymax = min(y), max(y)
+        H, xedges, yedges = np.histogram2d(x, y, bins=[int(np.round(xmax)), int(np.round(ymax))], range=[[xmin, xmax], [ymin, ymax]])
+        sigma = 1.25 # Adjust sigma for better smoothing
+        H_smooth = gaussian_filter(H, sigma=sigma)  # Smooth the histogram with a Gaussian filter
+    
+        # Plot heatmap
+        extent = [xedges[0], xedges[-1], yedges[0], yedges[-1]]
+        plt.imshow(H_smooth.T, extent=extent, origin='lower', cmap=colmap, aspect = "equal")
+        cbar = plt.colorbar(label = "Density (events / cm²)", shrink = 0.6)
+        # norm = mpl.colors.Normalize(vmin=cutoff, vmax=1-cutoff)
+        # cbar = plt.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=colmap), ax = ax, label = "Density (events / cm²)", shrink=0.7)
+        ax.spines[['right', 'top']].set_visible(False)
+        plt.savefig("C:\\Users\\wolfgang.kelsch\\Documents\\GitHub\\RichClubs\\plots\\interactions_heatmap\\all_groups.svg", dpi = 600)
+    
 
-    
-    # Smooth the histogram with a Gaussian filter
-    sigma = 2 # Adjust sigma for better smoothing
-    H_smooth = gaussian_filter(H, sigma=sigma)
-    
-    # Normalize the heatmap
-    # H_smooth = H_smooth / np.max(H_smooth)
-    # H_smooth[H_smooth < cutoff] = 0
-    # H_smooth[H_smooth > 1 - cutoff] = 1
-    
-    # Plot the heatmap
-    extent = [xedges[0], xedges[-1], yedges[0], yedges[-1]]
-    plt.imshow(H_smooth.T, extent=extent, origin='lower', cmap=colmap, aspect='auto')
-    plt.xlabel("x (cm)")
-    plt.ylabel("y (cm)")
-    cbar = plt.colorbar(label="Density")
-    # norm = mpl.colors.Normalize(vmin=cutoff, vmax=1-cutoff)
-    # cbar = plt.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=colmap), ax = ax, label = "Density (events / cm²)", shrink=0.7)
-    # ticks = np.array([float(t.get_text().replace('−','-')) for t in cbar.ax.get_yticklabels()])
-    # cbar.set_ticks([ticks[i] for i in range(1, len(ticks), 2)])
-    # ticks_val = [int(np.round(np.exp(t*max_val))) for t in ticks]
-    # cbar.set_ticklabels([ticks_val[i] for i in range(1, len(ticks_val), 2)])
-    ax.spines[['right', 'top']].set_visible(False)
-    plt.show()
     
 # define plotting functions
 def plot_approach_quiver(path_to_data, approach_type = "start_point"):
@@ -230,7 +252,10 @@ def plot_traj(path_to_data, index):
     plt.tight_layout()
     plt.show()
     
-# plot_2d_distribution(path_to_data, "start_point", 0, "hot_r")
-plot_2d_distribution(path_to_data, "interactions", 0, "hot_r")
+# plot_2d_distribution(path_to_groups, "interactions", 0, "turbo")
+fig, axs = plt.subplots(4, 4, figsize = (10, 10))
+for i in range(16):
+    plot_2d_distribution(path_to_data+groups[i], "interactions", 0, "turbo", ax = axs.flatten()[i])
+    axs.flatten()[i].set_title(groups[i])
 # hist_travelled_dist(path_to_data)
 # plot_traj("C:\\Users\\wolfgang.kelsch\\Documents\\GitHub\\RichClubs\\data\\approach_meta_data\\trajectories\\", 35)
