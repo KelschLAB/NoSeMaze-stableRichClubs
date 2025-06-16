@@ -14,7 +14,17 @@ import matplotlib as mpl
 # path_to_data = "W:\\group_entwbio\\data\\Luise\\NoSeMaze2023\\DLC_output_windows\\GJ1\\D1\\G1D1_trajectoriesInfos_pre120frames.csv"
 path_to_data = "..\\data\\trajectories\\"
 groups = ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G10", "G11", "G12", "G13", "G14", "G15", "G16", "G17"]
+setup_name = ["AM2", "AM1", "AM2", "AM2", "AM2", "AM1", "AM2", "AM1", "AM2", "AM1", "AM2", "AM3", "AM4", "AM1", "AM3", "AM4"]
 path_to_groups = [path_to_data+g for g in groups]
+
+def flip(arr):
+    min_val = np.min(arr)
+    max_val = np.max(arr)
+    span = max_val - min_val
+    midpoint = min_val + span / 2
+    mirrored = 2 * midpoint - arr
+    return mirrored
+
 
 def load_data(path_to_data):
     if os.path.isfile(path_to_data):
@@ -62,25 +72,49 @@ def load_data(path_to_data):
     return approach_start_x, approach_start_y, approach_end_x, approach_end_y, approachee_start_x, approachee_start_y, approacher_distance, approachee_distance 
 
 # define plotting functions
-def plot_2d_distribution(path_to_data, approach_type = "start_point", cutoff = 0.1, colmap = "bwr", ax = None):
+def plot_2d_distribution(group_idx = "all", approach_type = "start_point", cutoff = 0.1, colmap = "bwr", ax = None):
     """
     Function to show the distribution of approaches as described by "approach_type", as a scatter plot
     overlayed with a fit of the distribution via a 2d gaussian distribution.
     the cutoff argument serves to rescale the colormap
     """
-    if type(path_to_data) == list:
+    paths = [path_to_data+g for g in groups]
+    if group_idx == "all":
         plot_scatter = False
         approach_start_x, approach_start_y, approach_end_x, approach_end_y, approachee_start_x, approachee_start_y, approacher_d, approachee_d = [], [], [], [], [], [], [], []
-        for p in path_to_data:
+        for idx, p in enumerate(paths):
             data = load_data(p)
-            approach_start_x.append(data[0])
-            approach_start_y.append(data[1])
-            approach_end_x.append(data[2])
-            approach_end_y.append(data[3])
-            approachee_start_x.append(data[4])
-            approachee_start_y.append(data[5])
-            approacher_d.append(data[6])
-            approachee_d.append(data[7])
+            print(len(data[0]))
+            if setup_name[idx] == "AM2" or setup_name[idx] == "AM4":
+                approach_start_x.append(np.array(data[0]))
+                approach_start_y.append(np.array(data[1]))
+                approach_end_x.append(np.array(data[2]))
+                approach_end_y.append(np.array(data[3]))
+                approachee_start_x.append(np.array(data[4]))
+                approachee_start_y.append(np.array(data[5]))
+                approacher_d.append(np.array(data[6]))
+                approachee_d.append(np.array(data[7]))
+            elif setup_name[idx] == "AM1":
+                approach_start_x.append(np.array(data[0]))
+                approach_start_y.append(flip(np.array(data[1])))
+                approach_end_x.append(np.array(data[2]))
+                approach_end_y.append(flip(np.array(data[3])))
+                approachee_start_x.append(np.array(data[4]))
+                approachee_start_y.append(flip(np.array(data[5])))
+                approacher_d.append(np.array(data[6]))
+                approachee_d.append(np.array(data[7]))
+            elif setup_name[idx] == "AM3":
+                approach_start_x.append(flip(np.array(data[0])))
+                approach_start_y.append(np.array(data[1]))
+                approach_end_x.append(flip(np.array(data[2])))
+                approach_end_y.append(np.array(data[3]))
+                approachee_start_x.append(flip(np.array(data[4])))
+                approachee_start_y.append(np.array(data[5]))
+                approacher_d.append(np.array(data[6]))
+                approachee_d.append(np.array(data[7]))
+            else:
+                continue
+                
         approach_start_x = np.concatenate(approach_start_x)
         approach_start_y = np.concatenate(approach_start_y)
         approach_end_x = np.concatenate(approach_end_x)
@@ -92,7 +126,15 @@ def plot_2d_distribution(path_to_data, approach_type = "start_point", cutoff = 0
         
     else:
         plot_scatter = True
-        approach_start_x, approach_start_y, approach_end_x, approach_end_y, approachee_start_x, approachee_start_y, approacher_d, approachee_d = load_data(path_to_data)
+        approach_start_x, approach_start_y, approach_end_x, approach_end_y, approachee_start_x, approachee_start_y, approacher_d, approachee_d = load_data(paths[group_idx])
+        if setup_name[group_idx] == "AM1":
+            approach_start_y = flip(np.array(approach_start_y))
+            approach_end_y = flip(np.array(approach_end_y))
+            approachee_start_y = flip(np.array(approachee_start_y))
+        if setup_name[group_idx] == "AM3":
+            approach_start_x = flip(np.array(approach_start_x))
+            approach_end_x = flip(np.array(approach_end_x))
+            approachee_start_x = flip(np.array(approachee_start_x))
     
     approacher_d, approachee_d = np.array(approacher_d), np.array(approachee_d)
     true_approaches = np.where(approacher_d > 1.5*approachee_d)
@@ -100,7 +142,7 @@ def plot_2d_distribution(path_to_data, approach_type = "start_point", cutoff = 0
     scaling_factor = 0.1 # 1 pixel = 0.1 cm (From Luise's thesis)
     
     if ax is None:
-        fig, ax = plt.subplots(figsize=(6, 5))
+        fig, ax = plt.subplots(figsize=(3, 2.5))
         ax.set_xlabel("x (cm)")
         ax.set_ylabel("y (cm)")
         ax.set_title(approach_type)
@@ -129,7 +171,9 @@ def plot_2d_distribution(path_to_data, approach_type = "start_point", cutoff = 0
         x, y = np.array(approach_end_x)*scaling_factor, np.array(approach_end_y)*scaling_factor
         if plot_scatter:
             ax.scatter(x, y, c=c, s=s, alpha=alpha, edgecolor='none')
-        
+            ax.set_aspect('equal')
+           # plt.savefig(f"C:\\Users\\wolfgang.kelsch\\Documents\\GitHub\\RichClubs\\plots\\interactions_heatmap\\{path_to_data[-2:]}.tif", dpi = 300)
+
     else:
         raise("unknwon input type")
     
@@ -251,11 +295,13 @@ def plot_traj(path_to_data, index):
     ax.spines[['right', 'top']].set_visible(False)
     plt.tight_layout()
     plt.show()
-    
-# plot_2d_distribution(path_to_groups, "interactions", 0, "turbo")
+
+# fig, ax = plt.subplots(1, 1, figsize = (3,  2.5))
+
+plot_2d_distribution("all", "interactions", 0, "turbo")
 fig, axs = plt.subplots(4, 4, figsize = (10, 10))
 for i in range(16):
-    plot_2d_distribution(path_to_data+groups[i], "interactions", 0, "turbo", ax = axs.flatten()[i])
+    plot_2d_distribution(i, "interactions", 0, "turbo", ax = axs.flatten()[i])
     axs.flatten()[i].set_title(groups[i])
 # hist_travelled_dist(path_to_data)
 # plot_traj("C:\\Users\\wolfgang.kelsch\\Documents\\GitHub\\RichClubs\\data\\approach_meta_data\\trajectories\\", 35)
