@@ -873,7 +873,7 @@ def reshuffled_rc_mnn4_k4(cumulative = False):
 # littermates_in_rc_mnn4_k4()
 
 # reshuffled_rc_mnn2_k2()
-# reshuffled_rc_mnn3_k3()
+reshuffled_rc_mnn3_k3()
 # reshuffled_rc_mnn4_k4()
 
 

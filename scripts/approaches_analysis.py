@@ -78,13 +78,29 @@ def plot_2d_distribution(group_idx = "all", approach_type = "start_point", cutof
     overlayed with a fit of the distribution via a 2d gaussian distribution.
     the cutoff argument serves to rescale the colormap
     """
+    
+    scaling_factor = 0.1 # 1 pixel = 0.1 cm (From Luise's thesis)
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(3, 2.5))
+        ax.set_xlabel("x (cm)")
+        ax.set_ylabel("y (cm)")
+        ax.set_title(approach_type)
+    else:
+        ax.spines[['right', 'top', 'bottom', 'left']].set_visible(False)
+        ax.set_xticks([])
+        ax.set_yticks([])
+    
     paths = [path_to_data+g for g in groups]
     if group_idx == "all":
         plot_scatter = False
         approach_start_x, approach_start_y, approach_end_x, approach_end_y, approachee_start_x, approachee_start_y, approacher_d, approachee_d = [], [], [], [], [], [], [], []
+        # xmin, xmax = 5, 58
+        # ymin, ymax = 1, 44
+        xmin, xmax = 0, 56
+        ymin, ymax = 0, 43
+        H = np.zeros((xmax, ymax))
         for idx, p in enumerate(paths):
             data = load_data(p)
-            print(len(data[0]))
             if setup_name[idx] == "AM2" or setup_name[idx] == "AM4":
                 approach_start_x.append(np.array(data[0]))
                 approach_start_y.append(np.array(data[1]))
@@ -94,6 +110,8 @@ def plot_2d_distribution(group_idx = "all", approach_type = "start_point", cutof
                 approachee_start_y.append(np.array(data[5]))
                 approacher_d.append(np.array(data[6]))
                 approachee_d.append(np.array(data[7]))
+                x = np.array(data[2])*scaling_factor
+                y = np.array(data[3])*scaling_factor
             elif setup_name[idx] == "AM1":
                 approach_start_x.append(np.array(data[0]))
                 approach_start_y.append(flip(np.array(data[1])))
@@ -103,6 +121,8 @@ def plot_2d_distribution(group_idx = "all", approach_type = "start_point", cutof
                 approachee_start_y.append(flip(np.array(data[5])))
                 approacher_d.append(np.array(data[6]))
                 approachee_d.append(np.array(data[7]))
+                x = np.array(data[2])*scaling_factor
+                y = flip(np.array(data[3]))*scaling_factor
             elif setup_name[idx] == "AM3":
                 approach_start_x.append(flip(np.array(data[0])))
                 approach_start_y.append(np.array(data[1]))
@@ -112,9 +132,20 @@ def plot_2d_distribution(group_idx = "all", approach_type = "start_point", cutof
                 approachee_start_y.append(np.array(data[5]))
                 approacher_d.append(np.array(data[6]))
                 approachee_d.append(np.array(data[7]))
+                x = flip(np.array(data[2]))*scaling_factor
+                y = np.array(data[3])*scaling_factor
             else:
                 continue
-                
+            x = (x - np.min(x))/(np.max(x) - np.min(x))
+            y = (y - np.min(y))/(np.max(y) - np.min(y))
+            x = x*xmax
+            y = y*ymax
+            hist, xedges, yedges = np.histogram2d(x, y,
+                                                  bins=[int(np.round(xmax)), int(np.round(ymax))], 
+                                                  range=[[xmin, xmax], [ymin, ymax]])
+            # hist = (hist - np.min(hist))/(np.max(hist) - np.min(hist))
+            H += hist
+
         approach_start_x = np.concatenate(approach_start_x)
         approach_start_y = np.concatenate(approach_start_y)
         approach_end_x = np.concatenate(approach_end_x)
@@ -123,6 +154,22 @@ def plot_2d_distribution(group_idx = "all", approach_type = "start_point", cutof
         approachee_start_y = np.concatenate(approachee_start_y)
         approacher_d = np.concatenate(approacher_d)
         approachee_d = np.concatenate(approachee_d)
+        
+        sigma = 1.2 # Adjust sigma for better smoothing
+        H_smooth = gaussian_filter(H, sigma=sigma)  # Smooth the histogram with a Gaussian filter
+        H_smooth = np.log(H_smooth)
+    
+        # Plot heatmap
+        extent = [xedges[0], xedges[-1], yedges[0], yedges[-1]]
+        norm = mpl.colors.Normalize(vmin=0, vmax=np.max(H_smooth))
+        plt.imshow(H_smooth.T, extent=extent, origin='lower', cmap=colmap, aspect = "equal")
+        plt.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=colmap), ax = ax, label = "Log Density (events / cm²)", shrink = 0.6)
+
+        # cbar = plt.colorbar(label = "Density (events / cm²)", shrink = 0.6)
+        # norm = mpl.colors.Normalize(vmin=cutoff, vmax=1-cutoff)
+        # cbar = plt.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=colmap), ax = ax, label = "Density (events / cm²)", shrink=0.7)
+        ax.spines[['right', 'top']].set_visible(False)
+        # plt.savefig("C:\\Users\\wolfgang.kelsch\\Documents\\GitHub\\RichClubs\\plots\\interactions_heatmap\\all_groups_log.svg", dpi = 600)
         
     else:
         plot_scatter = True
@@ -138,19 +185,7 @@ def plot_2d_distribution(group_idx = "all", approach_type = "start_point", cutof
     
     approacher_d, approachee_d = np.array(approacher_d), np.array(approachee_d)
     true_approaches = np.where(approacher_d > 1.5*approachee_d)
-    
-    scaling_factor = 0.1 # 1 pixel = 0.1 cm (From Luise's thesis)
-    
-    if ax is None:
-        fig, ax = plt.subplots(figsize=(3, 2.5))
-        ax.set_xlabel("x (cm)")
-        ax.set_ylabel("y (cm)")
-        ax.set_title(approach_type)
-    else:
-        ax.spines[['right', 'top', 'bottom', 'left']].set_visible(False)
-        ax.set_xticks([])
-        ax.set_yticks([])
-    
+        
     c, s, alpha = "k", 5, 0.1
     if approach_type == "start_point":
         x, y = np.array(approach_start_x)*scaling_factor, np.array(approach_start_y)*scaling_factor
@@ -177,22 +212,7 @@ def plot_2d_distribution(group_idx = "all", approach_type = "start_point", cutof
     else:
         raise("unknwon input type")
     
-    if not plot_scatter:
-        # Compute 2D histogram
-        xmin, xmax = min(x), max(x)
-        ymin, ymax = min(y), max(y)
-        H, xedges, yedges = np.histogram2d(x, y, bins=[int(np.round(xmax)), int(np.round(ymax))], range=[[xmin, xmax], [ymin, ymax]])
-        sigma = 1.25 # Adjust sigma for better smoothing
-        H_smooth = gaussian_filter(H, sigma=sigma)  # Smooth the histogram with a Gaussian filter
     
-        # Plot heatmap
-        extent = [xedges[0], xedges[-1], yedges[0], yedges[-1]]
-        plt.imshow(H_smooth.T, extent=extent, origin='lower', cmap=colmap, aspect = "equal")
-        cbar = plt.colorbar(label = "Density (events / cm²)", shrink = 0.6)
-        # norm = mpl.colors.Normalize(vmin=cutoff, vmax=1-cutoff)
-        # cbar = plt.colorbar(mpl.cm.ScalarMappable(norm=norm, cmap=colmap), ax = ax, label = "Density (events / cm²)", shrink=0.7)
-        ax.spines[['right', 'top']].set_visible(False)
-        plt.savefig("C:\\Users\\wolfgang.kelsch\\Documents\\GitHub\\RichClubs\\plots\\interactions_heatmap\\all_groups.svg", dpi = 600)
     
 
     
@@ -298,10 +318,10 @@ def plot_traj(path_to_data, index):
 
 # fig, ax = plt.subplots(1, 1, figsize = (3,  2.5))
 
-plot_2d_distribution("all", "interactions", 0, "turbo")
-fig, axs = plt.subplots(4, 4, figsize = (10, 10))
-for i in range(16):
-    plot_2d_distribution(i, "interactions", 0, "turbo", ax = axs.flatten()[i])
-    axs.flatten()[i].set_title(groups[i])
+plot_2d_distribution("all", "interactions", 0, "jet")
+# fig, axs = plt.subplots(4, 4, figsize = (10, 10))
+# for i in range(16):
+#     plot_2d_distribution(i, "interactions", 0, "turbo", ax = axs.flatten()[i])
+#     axs.flatten()[i].set_title(groups[i])
 # hist_travelled_dist(path_to_data)
 # plot_traj("C:\\Users\\wolfgang.kelsch\\Documents\\GitHub\\RichClubs\\data\\approach_meta_data\\trajectories\\", 35)

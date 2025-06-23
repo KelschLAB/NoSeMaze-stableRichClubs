@@ -24,9 +24,9 @@
      inkscape:deskcolor="#d1d1d1"
      inkscape:document-units="mm"
      showgrid="true"
-     inkscape:zoom="1.0456808"
-     inkscape:cx="131.97144"
-     inkscape:cy="367.70304"
+     inkscape:zoom="2.0913616"
+     inkscape:cx="118.58303"
+     inkscape:cy="423.40837"
      inkscape:window-width="1920"
      inkscape:window-height="991"
      inkscape:window-x="-9"
@@ -7621,7 +7621,10 @@
            style="opacity:0.621483;fill:#0000ff;fill-opacity:0.605634;stroke:#0000d3;stroke-opacity:0.853521"
            transform="translate(163.8,147.35172)" /><g
            id="g49154"
-           transform="matrix(0.50522646,0,0,0.55316462,154.40533,-495.20587)"><g
+           transform="matrix(0.22419163,0,0,0.24546394,132.25419,-137.84388)"
+           inkscape:export-filename="video_data_stackings.pdf"
+           inkscape:export-xdpi="96"
+           inkscape:export-ydpi="96"><g
              id="patch_3-3"
              transform="matrix(1,0,0,1.107251,23.566716,351.37371)"
              style="opacity:0.549872;fill:#3da5eb;fill-opacity:0.0704225"><path
@@ -7847,7 +7850,7 @@
            id="matplotlib.axis_4-2"
            transform="matrix(1,0,0,1.107251,-177.73328,508.87371)" /><g
            id="VertexCollection_3-27"
-           transform="matrix(0.50522646,0,0,0.60886133,236.53087,-226.94087)"
+           transform="matrix(0.22419163,0,0,0.27017907,168.69698,-18.802677)"
            style="opacity:0.907928;fill:#0044de;fill-opacity:1;stroke:#0114c1;stroke-opacity:0.523944"><g
              id="g48824"
              transform="translate(-11.390585,-356.80274)"><g
@@ -8083,7 +8086,7 @@
            id="matplotlib.axis_6-39"
            transform="matrix(1,0,0,1.1006874,-80.991103,304.52899)" /><g
            id="g47965"
-           transform="matrix(0.50522646,0,0,0.55316462,175.14136,-547.77705)"><g
+           transform="matrix(0.22419163,0,0,0.24546394,141.4557,-161.17207)"><g
              id="patch_5"
              transform="matrix(1,0,0,1.0943141,-110.98329,231.22504)"
              style="opacity:0.567775;fill:#3e3ee9;fill-opacity:0.256338"><path
@@ -8315,7 +8318,7 @@
            style="fill:#0000ff;fill-opacity:1;stroke:#0000c1;stroke-opacity:0.669483"
            transform="translate(196.45296,-7.3429993)" /><g
            id="g52102"
-           transform="matrix(0.50522646,0,0,0.55316462,100.41574,-493.58427)"><g
+           transform="matrix(0.22419163,0,0,0.24546394,108.29659,-137.12431)"><g
              id="patch_3-5"
              transform="matrix(1,0,0,1.1342342,398.56671,340.86477)"
              style="opacity:0.337596;fill:#ff3333;fill-opacity:0.0980392"><path
@@ -8477,7 +8480,7 @@
            id="matplotlib.axis_4-29"
            transform="matrix(1,0,0,1.1342342,293.07034,478.06306)" /><g
            id="g51121"
-           transform="matrix(0.50522646,0,0,0.55316462,123.42953,-489.47227)"><g
+           transform="matrix(0.22419163,0,0,0.24546394,118.50884,-135.29963)"><g
              id="patch_4-0"
              transform="matrix(1,0,0,1.0884741,308.56671,224.5857)"
              style="opacity:0.828645;fill:#ff3333;fill-opacity:0.117647"><path
@@ -8635,7 +8638,7 @@
                style="fill:#e70000;fill-opacity:0.368627;stroke:#e50000;stroke-width:3;stroke-opacity:0.405634"
                id="path43410" /></g></g><g
            id="g50140"
-           transform="matrix(0.50522646,0,0,0.55316462,150.98707,-496.17228)"><g
+           transform="matrix(0.22419163,0,0,0.24546394,130.73736,-138.27272)"><g
              id="patch_5-4"
              transform="matrix(1,0,0,1.0819453,203.56671,141.53363)"
              style="opacity:0.84399;fill:#ff0505;fill-opacity:0.136872"><path
@@ -8801,7 +8804,7 @@
            id="matplotlib.axis_8-4"
            transform="matrix(1,0,0,1.0819453,203.74425,14.386465)" /><g
            id="axes_5-8"
-           transform="matrix(0.50522646,0,0,0.606122,217.20761,-336.84039)"><g
+           transform="matrix(0.22419163,0,0,0.26896351,160.12238,-67.570021)"><g
              id="g49468"
              transform="translate(-212.52247,-87.826989)"><g
                id="patch_6-6"
@@ -8943,13 +8946,13 @@
              id="matplotlib.axis_10-6" /></g><g
            id="patch_6"
            style="opacity:0.496164;fill:#3737c8;fill-opacity:0.791549;stroke:none;stroke-opacity:0.669483"
-           transform="matrix(0.49798307,0,0,0.6021053,102.11062,-475.69563)"><path
+           transform="matrix(0.22097741,0,0,0.26718112,109.04868,-129.18632)"><path
              d="M 27,768.96 H 194.4 V 654.25655 H 27 Z"
              style="fill:#3737c8;fill-opacity:0.791549;stroke:none;stroke-opacity:0.669483"
              id="path42683" /></g><g
            id="EdgeCollection_5-4"
            style="fill:#0000ff;fill-opacity:1;stroke:#000092;stroke-opacity:0.669483"
-           transform="matrix(0.50522646,0,0,0.6021053,101.30878,-475.69563)"><path
+           transform="matrix(0.22419163,0,0,0.26718112,108.69287,-129.18632)"><path
              d="M 178.10504,709.33151 167.09986,685.0669"
              clip-path="url(#pd54863b941)"
              style="fill:#0000ff;fill-opacity:1;stroke:#000092;stroke-width:0.614554;stroke-opacity:0.669483"
@@ -9104,7 +9107,7 @@
              id="path42770" /></g><g
            id="VertexCollection_5"
            style="fill:#0000ff;fill-opacity:1;stroke:#000092;stroke-opacity:0.669483"
-           transform="matrix(0.50522646,0,0,0.6021053,101.30878,-475.69563)"><path
+           transform="matrix(0.22419163,0,0,0.26718112,108.69287,-129.18632)"><path
              d="m 179.13766,714.10828 c 0.66301,0 1.29895,-0.26342 1.76777,-0.73224 0.46882,-0.46881 0.73223,-1.10476 0.73223,-1.76776 0,-0.66301 -0.26341,-1.29895 -0.73223,-1.76777 -0.46882,-0.46882 -1.10476,-0.73223 -1.76777,-0.73223 -0.663,0 -1.29895,0.26341 -1.76776,0.73223 -0.46882,0.46882 -0.73224,1.10476 -0.73224,1.76777 0,0.663 0.26342,1.29895 0.73224,1.76776 0.46881,0.46882 1.10476,0.73224 1.76776,0.73224 z"
              clip-path="url(#pd54863b941)"
              style="fill:#030495;fill-opacity:1;stroke:#010193;stroke-width:3;stroke-opacity:0.92549"
@@ -9151,7 +9154,7 @@
              transform="translate(-12.450005,-5.2965394)"
              style="stroke:#1cff71;stroke-opacity:0.28450704" /><g
              id="g57025"
-             transform="matrix(0.50522646,0,0,0.55316462,-151.36959,-564.86228)"><g
+             transform="matrix(0.22419163,0,0,0.24546394,-385.91696,-318.9104)"><g
                id="patch_3"
                transform="matrix(1,0,0,1.0817903,-256.64059,38.578366)"
                style="opacity:0.381074;fill:#28ff7c;fill-opacity:0.0949721;stroke:none;stroke-opacity:0.369014"><path
@@ -9341,7 +9344,7 @@
                  style="fill:#00ae41;fill-opacity:0.368627;stroke:#00ae43;stroke-width:3;stroke-opacity:0.369014"
                  id="path53426" /></g></g><g
              id="g57444"
-             transform="matrix(0.50522646,0,0,0.60290629,-152.03796,-464.79615)"><g
+             transform="matrix(0.22419163,0,0,0.26753655,-386.21355,-274.50657)"><g
                id="patch_2"
                transform="translate(-218.64059,-28.539519)"
                style="opacity:0.57289;fill:#2cff7b;fill-opacity:0.0352941;stroke:#1cff71;stroke-opacity:0.0352941"><path
@@ -9605,7 +9608,7 @@
              transform="matrix(1,0,0,1.0817904,-285.65292,-110.32376)"
              style="stroke:#00ae43;stroke-opacity:0.36901408;fill:#00ae43;fill-opacity:0.50279331" /><g
              id="g55710"
-             transform="matrix(0.50522646,0,0,0.55316462,-272.1365,-516.34701)"><g
+             transform="matrix(0.22419163,0,0,0.24546394,-439.50665,-297.382)"><g
                id="patch_4"
                transform="matrix(1,0,0,1.0817904,-49.040588,-144.40885)"
                style="opacity:0.659847;fill:#00f960;fill-opacity:0.175978"><path
@@ -9813,7 +9816,7 @@
              transform="matrix(1,0,0,1.1007256,-468.59841,-277.33425)"
              style="fill:#00ae43;fill-opacity:0.94972068;stroke:#00ae43;stroke-opacity:0.70140845" /><g
              id="g54818"
-             transform="matrix(0.50522646,0,0,0.55316462,-169.71397,-519.8431)"><g
+             transform="matrix(0.22419163,0,0,0.24546394,-394.05719,-298.93337)"><g
                id="patch_5-0"
                transform="matrix(1,0,0,1.1007256,-296.54059,-261.50803)"
                style="opacity:0.603581;fill:#00aa44;fill-opacity:0.452514"><path
@@ -10067,7 +10070,7 @@
                  x="1493.007"
                  y="-261.48941">G6</tspan></text></g><g
              id="figure_1-10"
-             transform="matrix(0.50863107,0,0,0.63424645,-373.85198,-565.5238)"><g
+             transform="matrix(0.22570241,0,0,0.28144359,-484.64237,-319.20395)"><g
                id="patch_1" /><g
                id="g109236"
                transform="translate(-482.52767,39.407565)"><g
@@ -11108,7 +11111,7 @@
                id="matplotlib.axis_9-1" /><g
                id="matplotlib.axis_10-5" /></g><g
              id="figure_1-4"
-             transform="matrix(0.50863107,0,0,0.63424645,-298.50658,-418.86455)"><g
+             transform="matrix(0.22570241,0,0,0.28144359,-451.20824,-254.12466)"><g
                id="patch_1-6" /><g
                id="EdgeCollection_1-4"
                transform="translate(784.84311,-90.830032)"
@@ -13203,7 +13206,7 @@
              transform="matrix(1,0,0,1.1389033,146.2395,-382.54371)"
              style="fill:#c5ffd2;fill-opacity:1;stroke:#b9ffd4;stroke-opacity:1" /><g
              id="g116142"
-             transform="matrix(0.50863107,0,0,0.55689228,341.92714,-371.00566)"><g
+             transform="matrix(0.22570241,0,0,0.24711807,-167.01909,-232.88753)"><g
                id="patch_3-0"
                transform="matrix(1,0,0,1.1389033,-1190.1,-75.116616)"
                style="fill:#33ff66;fill-opacity:0.0196078"><path
@@ -13493,7 +13496,7 @@
              transform="matrix(1,0,0,1.1389033,204.83629,-542.64032)"
              style="fill:#1cff71;fill-opacity:1;stroke:#06ff64;stroke-opacity:1" /><g
              id="g115909"
-             transform="matrix(0.50863107,0,0,0.55689228,302.44697,-347.81623)"><g
+             transform="matrix(0.22570241,0,0,0.24711807,-184.53821,-222.59734)"><g
                id="patch_4-7"
                transform="matrix(1,0,0,1.1389033,-1146.3,-226.56191)"
                style="fill:#1cff71;fill-opacity:0.0352941"><path
@@ -13746,7 +13749,7 @@
              transform="matrix(1,0,0,1.1389033,220.81545,-526.02634)"
              style="fill:#00ee5e;fill-opacity:1;stroke:#00e557;stroke-opacity:1" /><g
              id="g113618"
-             transform="matrix(0.50863107,0,0,0.55689228,496.2304,-360.98009)"><g
+             transform="matrix(0.22570241,0,0,0.24711807,-98.547811,-228.43873)"><g
                id="g114655"
                transform="translate(-283.8,39.068073)"><g
                  id="patch_5-7"
@@ -14041,7 +14044,7 @@
              id="matplotlib.axis_8-5"
              transform="matrix(1,0,0,1.1389033,220.81545,-526.02634)" /><g
              id="axes_5-5"
-             transform="matrix(0.50863107,0,0,0.63424645,-516.59068,-669.7867)"><g
+             transform="matrix(0.22570241,0,0,0.28144359,-547.98193,-365.47007)"><g
                id="g113244"
                transform="translate(553.13829,-100.11836)"><path
                  d="M -135.6,962.68684 H 31.800003 V 847.98339 H -135.6 Z"
