@@ -507,7 +507,49 @@ def social_time(sep = False, all_wt = False):
             format_plot(ax, bp, xticklabels = ["Mutants", "WT"]) # set x_axis, and colors of each bar
     plt.tight_layout()
     plt.show()
+    
+def tube_rank(sep = False, all_wt = False):
+    path_to_first_cohort = "..\\data\\reduced_data.xlsx"
+    path_to_second_cohort = "..\\data\\validation_cohort_full.xlsx"
+    
+    # first cohort
+    df1 = pd.read_excel(path_to_first_cohort)
+    rc1 = df1.loc[:, "RC"]
+    mutants1 = df1.loc[:, "mutant"]
+    ranks1 = np.array(df1.rank_by_tube.values)
+    ranks_wt1, ranks_mutants1 = ranks1[~mutants1], ranks1[mutants1]
+    
+    #second cohort
+    df2 = pd.read_excel(path_to_second_cohort)
+    rc2 = df2.loc[:, "RC"]
+    mutants2 = df2.loc[:, "mutant"]
+    ranks2 = np.array(df2.rank_by_tube.values)
+    ranks_wt2, ranks_mutants2 = ranks2[~mutants2], ranks2[mutants2]
 
+    ranks_wt = np.concatenate((ranks_wt1, ranks_wt2))
+    ranks_mutants = np.concatenate((ranks_mutants1, ranks_mutants2))
+
+    data = [ranks_mutants, ranks_wt]
+    
+    fig, ax = plt.subplots(1, 1)
+    # bp = ax.boxplot(data, widths=0.6, patch_artist=True, showfliers = False, zorder=1)
+    # add_significance(data, ax, bp)
+
+    alpha, size = 0.5, 30
+    # ax.scatter([1 + np.random.normal()*0.05 for i in range(len(data[0]))], 
+    #             data[0], alpha = alpha, s = size, label = "mutant", zorder=2); 
+    # ax.scatter([2 + np.random.normal()*0.05 for i in range(len(data[1]))], 
+    #             data[1], alpha = alpha, s = size, label = "non-member", zorder=2); 
+    
+    plt.hist(ranks_wt, bins = 10, color = "green", alpha = alpha, density=False, rwidth = 0.95)
+    plt.hist(ranks_mutants, bins = 10, color = "red", alpha = alpha, density=False, rwidth=0.95)
+
+    
+    ax.set_ylabel("Tube rank", fontsize = 20)
+    # format_plot(ax, bp, xticklabels = ["Mutants", "WT"]) # set x_axis, and colors of each bar
+    plt.tight_layout()
+    plt.show()
+  
 def rc_size():
     rcs = [2, 3, 3, 2, 2, 2, 3, 2, 2, 2, 2, 3, 2, 2]
     plt.hist(rcs, bins = [1.5, 2.5, 3.5], rwidth = 0.8)
@@ -517,9 +559,10 @@ def rc_size():
     plt.show()
     
 if __name__ == "__main__":
+    tube_rank()
 # rc_size()
-    time_in_arena(False, True)
-    social_time(False, True)
+    # time_in_arena(False, True)
+    # social_time(False, True)
 # chasings()
     # boxplot_approaches(True, True, all_wt = True)
     # boxplot_approaches(False, True, all_wt = True)

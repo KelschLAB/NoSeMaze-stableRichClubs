@@ -179,8 +179,9 @@ def time_measures(measure, graph_idx, window = 1, variable = "approaches", mnn =
                 except:
                     time_mean[i, j] = np.nan    
 
+        n = np.sum(~np.all(np.isnan(all_data), axis=(1, 2)))
         time_std, time_mean = np.nanstd(all_data, axis = 0), np.nanmean(all_data, axis = 0)
-        all_scores = (time_std - time_mean)/(time_std + time_mean)
+        all_scores = (np.sqrt(n+1)*time_std - np.sqrt(n-1)*time_mean)/((np.sqrt(n+1)-2)*time_std + np.sqrt(n-1)*time_mean)
         all_Scores = time_std
         
     elif measure == "summed outNEF" or measure == "summed inNEF": # NEF = normalized edge fluctuations
@@ -270,7 +271,7 @@ temporal_metrics = ["summed outNEF", "summed inNEF", "summed outICI", "summed in
 
 
 if __name__ == "__main__":
-    # bp_metric_mutants("summed outburstiness", mnn = None, mutual = True, weighted = False, threshold=5)    
-    bp_metric_mutants("summed outNEF", mnn = None, mutual = False, weighted = False, threshold = 5)
+    bp_metric_mutants("summed outburstiness", mnn = None, mutual = True, weighted = False, threshold=5)    
+    # bp_metric_mutants("summed outNEF", mnn = None, mutual = False, weighted = False, threshold = 5)
 
     

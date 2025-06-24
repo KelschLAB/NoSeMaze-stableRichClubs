@@ -29,7 +29,7 @@ datapath = "..\\data\\averaged\\"
 
 labels = ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G10", "G11", "G12", "G13", "G14", "G15", "G16", "G17"]
 
-def get_rc(graph_idx, variable = "interactions", window = 3, deg = 3, nn = 3, mutual = True, rm_weak_histo = True):
+def get_src(graph_idx, variable = "interactions", window = 3, deg = 3, nn = 3, mutual = True, rm_weak_histo = True):
     """Detects the stable rich club members in the graph indexed by 'graph_idx' after the cut specified by the input params.
     print the RFIDs of the detected members.
 
@@ -129,7 +129,7 @@ def process_all_cohorts(variable = "interactions", window = 3, deg = 3, nn = 3, 
     print(colored(params, "green"))
    
     for graph_idx in range(len(labels)):
-        res = get_rc(graph_idx, variable, window, deg, nn, mutual, rm_weak_histo)
+        res = get_src(graph_idx, variable, window, deg, nn, mutual, rm_weak_histo)
         sRC.append(res[0])
         sRC_count += len(res[0])
         mut_count += res[1]
@@ -186,7 +186,7 @@ def get_results_significance(sRC,  mut_count, rm_weak = True):
         
 
 if __name__ == "__main__":
-    sRC, mut_count, mutants = process_all_cohorts("approaches", 3, 2, 2, True, True)
+    sRC, mut_count, mutants = process_all_cohorts("interactions", 1, 2, 3, True, True)
     get_results_significance(sRC, 1)
     
       
