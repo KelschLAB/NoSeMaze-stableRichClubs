@@ -2,15 +2,18 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
-from weighted_rc import weighted_rich_club
 import sys
 import os
 abspath = os.path.abspath(__file__)
 dname = os.path.dirname(abspath)
 os.chdir(dname)
 os.chdir('..\\src\\')
+sys.path.append('..\\scripts\\')
 sys.path.append(os.getcwd())
 from read_graph import read_graph
+# from weighted_rc import weighted_rich_club
+from utils import get_category_indices, format_plot, add_significance
+
 from HierarchiaPy import Hierarchia
 
 datapath = "..\\data\\chasing\\single\\"
@@ -363,6 +366,106 @@ def approachRank_mutants():
     plt.ylabel(r"Count", fontsize = 15)
     plt.title(r"Appraoch rank of mutants", fontsize = 18)
     plt.show()
+    
+def chasingFraction_MutVsWT(out = True, ax = None):
+    """ 
+    Histogram of the chasing fraction for mutants vs WT mice
+    """
+    path_cohort1 = "..\\data\\reduced_data.xlsx"
+    path_cohort2 = "..\\data\\validation_cohort.xlsx"
+    chasing_dir = "..\\data\\chasing\\single\\"
+
+    approach_order_out_Mut, approach_order_in_Mut = [], []
+    approach_order_out_WT, approach_order_in_WT = [], []
+
+    # first cohort
+    df1 = pd.read_excel(path_cohort1)
+    groups1 = df1.loc[:, "group"].to_numpy()
+    Mut1 = df1.loc[:, "mutant"].to_numpy()
+    RFIDs1 = df1.loc[:, "Mouse_RFID"].to_numpy()
+
+    for group_idx in range(1, np.max(groups1)+1): #iterate over groups
+        mouse_indices = np.where(groups1 == group_idx) # find out indices of mice from current group
+        mouse_names = RFIDs1[mouse_indices]
+        approach_matrix = np.loadtxt(chasing_dir+"G"+str(group_idx)+"_single_chasing.csv",
+                                    delimiter = ",", dtype=str)[1:, 1:].astype(np.int16)
+        names_in_approach_matrix =  np.loadtxt(chasing_dir+"G"+str(group_idx)+"_single_chasing.csv",
+                                            delimiter=",", dtype=str)[0, :][1:]
+
+        chasings_out = np.sum(approach_matrix, axis = 1)
+        chasings_out = chasings_out/np.sum(chasings_out)
+        chasings_in = np.sum(approach_matrix, axis = 0)
+        chasings_in = chasings_in/np.sum(chasings_in)
+        for idx, mut in enumerate(Mut1[mouse_indices]):
+            if np.any(mouse_names[idx] == names_in_approach_matrix):
+                if mut:
+                    mut_idx = np.where(mouse_names[idx] == names_in_approach_matrix)[0][0]
+                    approach_order_out_Mut.append(list(chasings_out)[mut_idx])
+                    approach_order_in_Mut.append(list(chasings_in)[mut_idx])
+                else:
+                    wt_idx = np.where(mouse_names[idx] == names_in_approach_matrix)[0][0]
+                    approach_order_out_WT.append(list(chasings_out)[wt_idx])
+                    approach_order_in_WT.append(list(chasings_in)[wt_idx])
+
+    df2 = pd.read_excel(path_cohort2)
+    groups2 = df2.loc[:, "Group_ID"].to_numpy()
+    Mut2 = np.array(df2["genotype"] == "Oxt")
+    RFIDs2 = df2.loc[:, "Mouse_RFID"].to_numpy()
+
+    for group_idx in range(11, 18): #iterate over groups
+        mouse_indices = np.where(groups2 == group_idx) # find out indices of mice from current group
+        mouse_names = RFIDs2[mouse_indices]
+        approach_matrix = np.loadtxt(chasing_dir+"G"+str(group_idx)+"_single_chasing.csv",
+                                    delimiter = ",", dtype=str)[1:, 1:].astype(np.int16)
+        names_in_approach_matrix =  np.loadtxt(chasing_dir+"G"+str(group_idx)+"_single_chasing.csv",
+                                            delimiter=",", dtype=str)[0, :][1:]
+       
+        chasings_out = np.sum(approach_matrix, axis = 1)
+        chasings_out = chasings_out/np.sum(chasings_out)
+        chasings_in = np.sum(approach_matrix, axis = 0)
+        chasings_in = chasings_in/np.sum(chasings_in)
+        for idx, mut in enumerate(Mut2[mouse_indices]):
+            if np.any(mouse_names[idx] == names_in_approach_matrix):
+                if mut:
+                    mut_idx = np.where(mouse_names[idx] == names_in_approach_matrix)[0][0]
+                    approach_order_out_Mut.append(list(chasings_out)[mut_idx])
+                    approach_order_in_Mut.append(list(chasings_in)[mut_idx])
+                else:
+                    wt_idx = np.where(mouse_names[idx] == names_in_approach_matrix)[0][0]
+                    approach_order_out_WT.append(list(chasings_out)[wt_idx])
+                    approach_order_in_WT.append(list(chasings_in)[wt_idx])
+                      
+    if ax is None:
+        fig, ax = plt.subplots(1, 1, figsize = (5,4))
+
+    if out:
+        ax.hist(approach_order_out_WT, bins = np.linspace(0, 0.5, 10), rwidth= 0.9, align='mid', color = 'gray')
+        ax.hist(approach_order_out_Mut, bins = np.linspace(0, 0.5, 10), rwidth= 0.75, align='mid', color = 'darkred')
+
+    else:
+        ax.hist(approach_order_in_WT, bins = np.linspace(0, 0.5, 10), rwidth= 0.9, align='mid', color = 'gray')
+        ax.hist(approach_order_in_Mut, bins = np.linspace(0, 0.5, 10), rwidth= 0.75, align='mid', color = 'darkred')
+
+    if out:
+        ax.set_xlabel(r"Chasing fraction (outgoing)", fontsize = 17)
+    else:
+        ax.set_xlabel(r"Chasing fraction (ingoing)", fontsize = 17)
+        
+    ax.set_ylabel(r"Count", fontsize = 17)
+    ax.tick_params(axis='x', labelsize=15)
+    ax.tick_params(axis='y', labelsize=15)
+    fig.tight_layout()
+    
+    ###### ATTENTION!!! THIS BOXPLOT STATISTIC DOES NOT RESPECT THE GROUP STRUCTURE!!
+    # fig2, ax2 = plt.subplots(1, 1)
+    # data = [approach_order_out_Mut, approach_order_out_WT]
+    # bp = ax2.boxplot(data, widths=0.6, patch_artist=True, showfliers = False, zorder=1)
+    # ax2.scatter([1 + np.random.normal()*0.05 for i in range(len(data[0]))], 
+    #             data[0], label = "mutant", zorder=2); 
+    # ax2.scatter([2 + np.random.normal()*0.05 for i in range(len(data[1]))], 
+    #             data[1], label = "non-member", zorder=2); 
+    # add_significance(data, ax2, bp)
+
 
             
 if __name__ == "__main__":
@@ -373,5 +476,6 @@ if __name__ == "__main__":
     # histogram_approaches_mutants()
     # approach_order_mutants(both = True)
     # approachRank_mutants()
-    mutants_in_club_piechart()
+    # mutants_in_club_piechart()
+    chasingFraction_MutVsWT(True)
 

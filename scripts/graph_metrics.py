@@ -311,8 +311,6 @@ def measures(graph_idx, day, window = 3, measure = "hub", variable = "approaches
          scores_wt = [g.transitivity_local_undirected()[i] for i in wt]  
          scores_all = [g.transitivity_local_undirected()[i] for i in range(len(RFIDs))]
          
-         
-         
     elif measure == "out persistence" or measure == "in persistence":
         datapath2 = f"..\\data\\both_cohorts_{window}days\\"+labels[graph_idx]+"\\"+variable+f"_resD{window}_"+str(day+1)+".csv"
         if window not in [1, 3, 7]:

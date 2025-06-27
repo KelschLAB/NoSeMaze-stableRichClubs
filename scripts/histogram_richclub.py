@@ -13,6 +13,7 @@ from read_graph import read_graph
 import pandas as pd
 from HierarchiaPy import Hierarchia
 
+plt.rcParams["font.family"] = "Arial"
 
 
 # indices of rc and mutants in excel sheet for cohort 1
@@ -190,7 +191,7 @@ def tuberank_vs_rc(ax = None):
     
     if ax is None:
         fig, ax = plt.subplots(1, 1, figsize = (4, 4))
-    ax.hist(arr, bins = [i for i in range(1, 12)], align = 'mid', rwidth = 0.95, color = "gray") 
+    ax.hist(arr, bins = [i for i in range(1, 12)], align = 'mid', rwidth = 0.6, color = "blue") 
     ax.set_xlabel("Tube rank", fontsize = 15)
     ax.set_ylabel("Count", fontsize = 15); 
     ticklabels = [i for i in range(1, 11)]
@@ -220,7 +221,7 @@ def tuberank_vs_exrc(ax = None):
     if ax is None:
         fig, ax = plt.subplots(1, 1, figsize = (4, 4))
         ax.legend()
-    ax.hist(arr, bins = [i for i in range(1, 12)], align = 'mid', rwidth = 0.95, color = "gray", alpha = 0.5, label = "ex sRC") 
+    ax.hist(arr, bins = [i for i in range(1, 12)], align = 'mid', rwidth = 0.8, color = "gray", alpha = 0.7, label = "ex sRC") 
     ax.set_xlabel("Tube rank", fontsize = 15)
     ax.set_ylabel("Count", fontsize = 15); 
     ticklabels = [i for i in range(1, 11)]
@@ -249,7 +250,7 @@ def chasingrank_vs_rc(ax = None):
     
     if ax is None:
         fig, ax = plt.subplots(1, 1, figsize = (4, 4))
-    ax.hist(arr, bins = [i for i in range(1, 12)], align = 'mid', rwidth = 0.95, color = "gray", alpha = 0.5) 
+    ax.hist(arr, bins = [i for i in range(1, 12)], align = 'mid', rwidth = 0.6, color = "blue") 
     ax.set_xlabel("Chasing rank", fontsize = 15)
     ax.set_ylabel("Count", fontsize = 15); 
     ticklabels = [i for i in range(1, 11)]
@@ -276,7 +277,7 @@ def chasingrank_vs_exrc(ax = None):
     
     if ax is None:
         fig, ax = plt.subplots(1, 1, figsize = (4, 4))
-    ax.hist(arr, bins = [i for i in range(1, 12)], align = 'mid', rwidth = 0.95, color = "gray", alpha = 0.5) 
+    ax.hist(arr, bins = [i for i in range(1, 12)], align = 'mid', alpha = 0.7, rwidth = 0.8, color = "gray") 
     ax.set_xlabel("Chasing rank", fontsize = 15)
     ax.set_ylabel("Count", fontsize = 15); 
     ticklabels = [i for i in range(1, 11)]
@@ -290,7 +291,7 @@ def tuberank_vs_nonrc():
                                        sheet_name = 0).to_numpy()[:, 1:][other_index_in_excel2, 9].astype(float)
     arr = np.concatenate((tuberank_others1, tuberank_others2))
     plt.figure()
-    plt.hist(arr, bins = [i for i in range(1, 12)], align = 'mid', rwidth = 0.95, color = "gray") 
+    plt.hist(arr, bins = [i for i in range(1, 12)], align = 'mid', rwidth = 0.9, color = "gray") 
     plt.xlabel("Tube rank", fontsize = 15)
     plt.ylabel("Number of observations", fontsize = 15); 
     ticklabels = [i for i in range(1, 12)]
@@ -306,7 +307,7 @@ def chasingrank_vs_nonrc():
                                        sheet_name = 0).to_numpy()[:, 1:][other_index_in_excel2, 11].astype(float)
     arr = np.concatenate((chasingrank_others1, chasingrank_others2))
     plt.figure()
-    plt.hist(arr, bins = [i for i in range(1, 12)], align = 'mid', rwidth = 0.95, color = "gray") 
+    plt.hist(arr, bins = [i for i in range(1, 12)], align = 'mid', rwidth = 0.9, color = "gray") 
     plt.xlabel("Chasing rank", fontsize = 15) 
     plt.ylabel("Number of observations", fontsize = 15); 
     ticklabels = [i for i in range(1, 12)]
@@ -484,226 +485,226 @@ def approach_order_WT(out = True, both = False):
     plt.title("Approach order of WT", fontsize = 18)
     plt.show()
 
-# def approach_order_RC(out = True, both = False):
-#     """ Histogram of the approach order for RC members (i.e., if we rank them by according to how much total approaches they perform.)
-#     """
-#     path_cohort1 = "C:\\Users\\Corentin offline\\Documents\\GitHub\\clusterGUI\\data\\reduced_data.xlsx"
-#     path_cohort2 = "C:\\Users\\Corentin offline\\Documents\\GitHub\\clusterGUI\\data\\validation_cohort.xlsx"
-#     approach_dir = "C:\\Users\\Corentin offline\\Documents\\GitHub\\clusterGUI\\data\\averaged\\"
+def approach_order_RC(out = True, both = False):
+    """ Histogram of the approach order for RC members (i.e., if we rank them by according to how much total approaches they perform.)
+    """
+    path_cohort1 = "C:\\Users\\Corentin offline\\Documents\\GitHub\\clusterGUI\\data\\reduced_data.xlsx"
+    path_cohort2 = "C:\\Users\\Corentin offline\\Documents\\GitHub\\clusterGUI\\data\\validation_cohort.xlsx"
+    approach_dir = "C:\\Users\\Corentin offline\\Documents\\GitHub\\clusterGUI\\data\\averaged\\"
 
-#     approach_order_out, approach_order_in = [], []
-#     # first cohort
-#     df1 = pd.read_excel(path_cohort1)
-#     groups1 = df1.loc[:, "group"].to_numpy()
-#     RCs1 = df1.loc[:, "RC"].to_numpy()
-#     RFIDs1 = df1.loc[:, "Mouse_RFID"].to_numpy()
+    approach_order_out, approach_order_in = [], []
+    # first cohort
+    df1 = pd.read_excel(path_cohort1)
+    groups1 = df1.loc[:, "group"].to_numpy()
+    RCs1 = df1.loc[:, "RC"].to_numpy()
+    RFIDs1 = df1.loc[:, "Mouse_RFID"].to_numpy()
 
-#     for group_idx in range(1, np.max(groups1)+1): #iterate over groups
-#         mouse_indices = np.where(groups1 == group_idx) # find out indices of mice from current group
-#         mouse_names = RFIDs1[mouse_indices]
-#         approach_matrix = np.loadtxt(approach_dir+"G"+str(group_idx)+"\\approaches_resD7_1.csv",
-#                                     delimiter = ",", dtype=str)[1:, 1:].astype(np.int16) + np.loadtxt(approach_dir+"G"+str(group_idx)+"\\approaches_resD7_2.csv",
-#                                     delimiter = ",", dtype=str)[1:, 1:].astype(np.int16) 
-#         names_in_approach_matrix =  np.loadtxt(approach_dir+"G"+str(group_idx)+"\\approaches_resD7_1.csv",
-#                                         delimiter=",", dtype=str)[0, :][1:]
-#         approaches_out = np.sum(approach_matrix, axis = 1)
-#         approaches_in = np.sum(approach_matrix, axis = 0)
-#         current_orders_out = np.argsort(-approaches_out)
-#         current_orders_in = np.argsort(-approaches_in)
-#         for idx, rc in enumerate(RCs1[mouse_indices]):
-#             if np.any(mouse_names[idx] == names_in_approach_matrix):
-#                 if rc:
-#                     rc_idx = np.where(mouse_names[idx] == names_in_approach_matrix)[0][0]
-#                     approach_order_out.append(list(current_orders_out).index(rc_idx))
-#                     approach_order_in.append(list(current_orders_in).index(rc_idx))
+    for group_idx in range(1, np.max(groups1)+1): #iterate over groups
+        mouse_indices = np.where(groups1 == group_idx) # find out indices of mice from current group
+        mouse_names = RFIDs1[mouse_indices]
+        approach_matrix = np.loadtxt(approach_dir+"G"+str(group_idx)+"\\approaches_resD7_1.csv",
+                                    delimiter = ",", dtype=str)[1:, 1:].astype(np.int16) + np.loadtxt(approach_dir+"G"+str(group_idx)+"\\approaches_resD7_2.csv",
+                                    delimiter = ",", dtype=str)[1:, 1:].astype(np.int16) 
+        names_in_approach_matrix =  np.loadtxt(approach_dir+"G"+str(group_idx)+"\\approaches_resD7_1.csv",
+                                        delimiter=",", dtype=str)[0, :][1:]
+        approaches_out = np.sum(approach_matrix, axis = 1)
+        approaches_in = np.sum(approach_matrix, axis = 0)
+        current_orders_out = np.argsort(-approaches_out)
+        current_orders_in = np.argsort(-approaches_in)
+        for idx, rc in enumerate(RCs1[mouse_indices]):
+            if np.any(mouse_names[idx] == names_in_approach_matrix):
+                if rc:
+                    rc_idx = np.where(mouse_names[idx] == names_in_approach_matrix)[0][0]
+                    approach_order_out.append(list(current_orders_out).index(rc_idx))
+                    approach_order_in.append(list(current_orders_in).index(rc_idx))
 
-#     df2 = pd.read_excel(path_cohort2)
-#     groups2 = df2.loc[:, "Group_ID"].to_numpy()
-#     RCs2 = df2.loc[:, "RC"].to_numpy()
-#     RFIDs2 = df2.loc[:, "Mouse_RFID"].to_numpy()
+    df2 = pd.read_excel(path_cohort2)
+    groups2 = df2.loc[:, "Group_ID"].to_numpy()
+    RCs2 = df2.loc[:, "RC"].to_numpy()
+    RFIDs2 = df2.loc[:, "Mouse_RFID"].to_numpy()
 
-#     for group_idx in range(11, 18): #iterate over groups
-#         mouse_indices = np.where(groups2 == group_idx) # find out indices of mice from current group
-#         mouse_names = RFIDs2[mouse_indices]
-#         approach_matrix = np.loadtxt(approach_dir+"G"+str(group_idx)+"\\approaches_resD7_1.csv",
-#                                     delimiter = ",", dtype=str)[1:, 1:].astype(np.int16) + np.loadtxt(approach_dir+"G"+str(group_idx)+"\\approaches_resD7_2.csv",
-#                                     delimiter = ",", dtype=str)[1:, 1:].astype(np.int16)
-#         names_in_approach_matrix =  np.loadtxt(approach_dir+"G"+str(group_idx)+"\\approaches_resD7_1.csv",
-#                                         delimiter=",", dtype=str)[0, :][1:]
-#         approaches_out = np.sum(approach_matrix, axis = 1)
-#         approaches_in = np.sum(approach_matrix, axis = 0)
-#         current_orders_out = np.argsort(-approaches_out)
-#         current_orders_in = np.argsort(-approaches_in)
-#         for idx, rc in enumerate(RCs2[mouse_indices]):
-#             if np.any(mouse_names[idx] == names_in_approach_matrix):
-#                 if rc:
-#                     rc_idx = np.where(mouse_names[idx] == names_in_approach_matrix)[0][0]
-#                     approach_order_out.append(list(current_orders_out).index(rc_idx))
-#                     approach_order_in.append(list(current_orders_in).index(rc_idx))
+    for group_idx in range(11, 18): #iterate over groups
+        mouse_indices = np.where(groups2 == group_idx) # find out indices of mice from current group
+        mouse_names = RFIDs2[mouse_indices]
+        approach_matrix = np.loadtxt(approach_dir+"G"+str(group_idx)+"\\approaches_resD7_1.csv",
+                                    delimiter = ",", dtype=str)[1:, 1:].astype(np.int16) + np.loadtxt(approach_dir+"G"+str(group_idx)+"\\approaches_resD7_2.csv",
+                                    delimiter = ",", dtype=str)[1:, 1:].astype(np.int16)
+        names_in_approach_matrix =  np.loadtxt(approach_dir+"G"+str(group_idx)+"\\approaches_resD7_1.csv",
+                                        delimiter=",", dtype=str)[0, :][1:]
+        approaches_out = np.sum(approach_matrix, axis = 1)
+        approaches_in = np.sum(approach_matrix, axis = 0)
+        current_orders_out = np.argsort(-approaches_out)
+        current_orders_in = np.argsort(-approaches_in)
+        for idx, rc in enumerate(RCs2[mouse_indices]):
+            if np.any(mouse_names[idx] == names_in_approach_matrix):
+                if rc:
+                    rc_idx = np.where(mouse_names[idx] == names_in_approach_matrix)[0][0]
+                    approach_order_out.append(list(current_orders_out).index(rc_idx))
+                    approach_order_in.append(list(current_orders_in).index(rc_idx))
         
-#     plt.figure()
-#     if both:
-#         plt.hist(approach_order_in, bins = np.arange(-0.5, 10.5), stacked = True, rwidth= 0.8, align='mid', edgecolor='black', label = "Ingoing", alpha = 0.5)
-#         plt.hist(approach_order_out, bins = np.arange(-0.5, 10.5), stacked = True, rwidth= 0.8, align='mid', edgecolor='black', label = "Outgoing", alpha = 0.5)
-#         plt.legend()
-#     elif out:
-#         plt.hist(approach_order_out, bins = np.arange(-0.5, 10.5), rwidth= 0.8, align='mid', color = 'gray', edgecolor='black')
-#     else:
-#         plt.hist(approach_order_in, bins = np.arange(-0.5, 10.5), rwidth= 0.8, align='mid', color = 'gray', edgecolor='black')
+    plt.figure()
+    if both:
+        plt.hist(approach_order_in, bins = np.arange(-0.5, 10.5), stacked = True, rwidth= 0.8, align='mid', edgecolor='black', label = "Ingoing", alpha = 0.5)
+        plt.hist(approach_order_out, bins = np.arange(-0.5, 10.5), stacked = True, rwidth= 0.8, align='mid', edgecolor='black', label = "Outgoing", alpha = 0.5)
+        plt.legend()
+    elif out:
+        plt.hist(approach_order_out, bins = np.arange(-0.5, 10.5), rwidth= 0.8, align='mid', color = 'gray', edgecolor='black')
+    else:
+        plt.hist(approach_order_in, bins = np.arange(-0.5, 10.5), rwidth= 0.8, align='mid', color = 'gray', edgecolor='black')
 
-#     plt.xticks(np.arange(0, 10), labels=["1","2","3","4","5","6","7","8","9","10"], fontsize = 15) 
-#     plt.yticks(np.arange(0, 12, 2), fontsize = 15)  # Ensure ticks are centered on 0 through 9
+    plt.xticks(np.arange(0, 10), labels=["1","2","3","4","5","6","7","8","9","10"], fontsize = 15) 
+    plt.yticks(np.arange(0, 12, 2), fontsize = 15)  # Ensure ticks are centered on 0 through 9
 
-#     if both:
-#         plt.xlabel(r"Approach order", fontsize = 19)
-#     elif out:
-#         plt.xlabel(r"Approach order (outgoing)", fontsize = 20)
-#     else:
-#         plt.xlabel(r"Approach order (ingoing)", fontsize = 20)
-#     plt.ylabel(r"Count", fontsize = 19)
-#     # plt.title("Approach order of RC members", fontsize = 18)
-#     plt.tight_layout()
-#     plt.show()
+    if both:
+        plt.xlabel(r"Approach order", fontsize = 19)
+    elif out:
+        plt.xlabel(r"Approach order (outgoing)", fontsize = 20)
+    else:
+        plt.xlabel(r"Approach order (ingoing)", fontsize = 20)
+    plt.ylabel(r"Count", fontsize = 19)
+    # plt.title("Approach order of RC members", fontsize = 18)
+    plt.tight_layout()
+    plt.show()
 
-# def approachRank_RC():
-#     """ Histogram of the approach david score for RC members.
-#     """
-#     path_cohort1 = "C:\\Users\\Agarwal Lab\\Corentin\\Python\\NoSeMaze\\data\\reduced_data.xlsx"
-#     path_cohort2 = "C:\\Users\\Agarwal Lab\\Corentin\\Python\\NoSeMaze\\data\\validation_cohort.xlsx"
-#     approach_dir = "C:\\Users\\Agarwal Lab\\Corentin\\Python\\NoSeMaze\data\\averaged\\"
+def approachRank_RC():
+    """ Histogram of the approach david score for RC members.
+    """
+    path_cohort1 = "C:\\Users\\Agarwal Lab\\Corentin\\Python\\NoSeMaze\\data\\reduced_data.xlsx"
+    path_cohort2 = "C:\\Users\\Agarwal Lab\\Corentin\\Python\\NoSeMaze\\data\\validation_cohort.xlsx"
+    approach_dir = "C:\\Users\\Agarwal Lab\\Corentin\\Python\\NoSeMaze\data\\averaged\\"
 
-#     # first cohort
-#     df1 = pd.read_excel(path_cohort1)
-#     groups1 = df1.loc[:, "group"].to_numpy()
-#     RCs1 = df1.loc[:, "RC"].to_numpy()
-#     RFIDs1 = df1.loc[:, "Mouse_RFID"].to_numpy()
-#     scores = []
+    # first cohort
+    df1 = pd.read_excel(path_cohort1)
+    groups1 = df1.loc[:, "group"].to_numpy()
+    RCs1 = df1.loc[:, "RC"].to_numpy()
+    RFIDs1 = df1.loc[:, "Mouse_RFID"].to_numpy()
+    scores = []
 
-#     for group_idx in range(1, np.max(groups1)+1): #iterate over groups
-#         mouse_indices = np.where(groups1 == group_idx) # find out indices of mice from current group
-#         mouse_names = RFIDs1[mouse_indices]
-#         approach_matrix = np.loadtxt(approach_dir+"G"+str(group_idx)+"\\approaches_resD7_1.csv",
-#                                     delimiter = ",", dtype=str)[1:, 1:].astype(np.int16) + np.loadtxt(approach_dir+"G"+str(group_idx)+"\\approaches_resD7_2.csv",
-#                                     delimiter = ",", dtype=str)[1:, 1:].astype(np.int16)
-#         names_in_approach_matrix =  np.loadtxt(approach_dir+"G"+str(group_idx)+"\\approaches_resD7_1.csv",
-#                                         delimiter=",", dtype=str)[0, :][1:]
-#         hier_mat = Hierarchia(approach_matrix, name_seq=names_in_approach_matrix)
-#         for idx, rc in enumerate(RCs1[mouse_indices]):
-#             if np.any(mouse_names[idx] == names_in_approach_matrix):
-#                 if rc:
-#                     scores.append(list(hier_mat.davids_score().keys()).index(mouse_names[idx]))
+    for group_idx in range(1, np.max(groups1)+1): #iterate over groups
+        mouse_indices = np.where(groups1 == group_idx) # find out indices of mice from current group
+        mouse_names = RFIDs1[mouse_indices]
+        approach_matrix = np.loadtxt(approach_dir+"G"+str(group_idx)+"\\approaches_resD7_1.csv",
+                                    delimiter = ",", dtype=str)[1:, 1:].astype(np.int16) + np.loadtxt(approach_dir+"G"+str(group_idx)+"\\approaches_resD7_2.csv",
+                                    delimiter = ",", dtype=str)[1:, 1:].astype(np.int16)
+        names_in_approach_matrix =  np.loadtxt(approach_dir+"G"+str(group_idx)+"\\approaches_resD7_1.csv",
+                                        delimiter=",", dtype=str)[0, :][1:]
+        hier_mat = Hierarchia(approach_matrix, name_seq=names_in_approach_matrix)
+        for idx, rc in enumerate(RCs1[mouse_indices]):
+            if np.any(mouse_names[idx] == names_in_approach_matrix):
+                if rc:
+                    scores.append(list(hier_mat.davids_score().keys()).index(mouse_names[idx]))
 
-#     df2 = pd.read_excel(path_cohort2)
-#     groups2 = df2.loc[:, "Group_ID"].to_numpy()
-#     RCs2 = df2.loc[:, "genotype"].to_numpy()
-#     RFIDs2 = df2.loc[:, "Mouse_RFID"].to_numpy()
+    df2 = pd.read_excel(path_cohort2)
+    groups2 = df2.loc[:, "Group_ID"].to_numpy()
+    RCs2 = df2.loc[:, "genotype"].to_numpy()
+    RFIDs2 = df2.loc[:, "Mouse_RFID"].to_numpy()
 
-#     for group_idx in range(11, 18): #iterate over groups
-#         mouse_indices = np.where(groups2 == group_idx) # find out indices of mice from current group
-#         mouse_names = RFIDs2[mouse_indices]
-#         approach_matrix = np.loadtxt(approach_dir+"G"+str(group_idx)+"\\approaches_resD7_1.csv",
-#                                     delimiter = ",", dtype=str)[1:, 1:].astype(np.int16) + np.loadtxt(approach_dir+"G"+str(group_idx)+"\\approaches_resD7_2.csv",
-#                                     delimiter = ",", dtype=str)[1:, 1:].astype(np.int16)
-#         names_in_approach_matrix =  np.loadtxt(approach_dir+"G"+str(group_idx)+"\\approaches_resD7_1.csv",
-#                                         delimiter=",", dtype=str)[0, :][1:]
-#         hier_mat = Hierarchia(approach_matrix, name_seq=names_in_approach_matrix)
-#         for idx, rc in enumerate(RCs2[mouse_indices]):
-#             if np.any(mouse_names[idx] == names_in_approach_matrix):
-#                 if rc:
-#                     scores.append(list(hier_mat.davids_score().keys()).index(mouse_names[idx]))
+    for group_idx in range(11, 18): #iterate over groups
+        mouse_indices = np.where(groups2 == group_idx) # find out indices of mice from current group
+        mouse_names = RFIDs2[mouse_indices]
+        approach_matrix = np.loadtxt(approach_dir+"G"+str(group_idx)+"\\approaches_resD7_1.csv",
+                                    delimiter = ",", dtype=str)[1:, 1:].astype(np.int16) + np.loadtxt(approach_dir+"G"+str(group_idx)+"\\approaches_resD7_2.csv",
+                                    delimiter = ",", dtype=str)[1:, 1:].astype(np.int16)
+        names_in_approach_matrix =  np.loadtxt(approach_dir+"G"+str(group_idx)+"\\approaches_resD7_1.csv",
+                                        delimiter=",", dtype=str)[0, :][1:]
+        hier_mat = Hierarchia(approach_matrix, name_seq=names_in_approach_matrix)
+        for idx, rc in enumerate(RCs2[mouse_indices]):
+            if np.any(mouse_names[idx] == names_in_approach_matrix):
+                if rc:
+                    scores.append(list(hier_mat.davids_score().keys()).index(mouse_names[idx]))
         
-#     plt.figure()
-#     plt.hist(scores, bins = np.arange(-0.5, 10.5), rwidth= 0.8, align='mid', color = 'gray', edgecolor='black')#
-#     plt.xticks(np.arange(0, 10), labels=["1","2","3","4","5","6","7","8","9","10"]) 
-#     plt.xlabel(r"Approach rank", fontsize = 15)
-#     plt.ylabel(r"Count", fontsize = 15)
-#     plt.title(r"Appraoch rank of RC", fontsize = 18)
-#     plt.show()
+    plt.figure()
+    plt.hist(scores, bins = np.arange(-0.5, 10.5), rwidth= 0.8, align='mid', color = 'gray', edgecolor='black')#
+    plt.xticks(np.arange(0, 10), labels=["1","2","3","4","5","6","7","8","9","10"]) 
+    plt.xlabel(r"Approach rank", fontsize = 15)
+    plt.ylabel(r"Count", fontsize = 15)
+    plt.title(r"Appraoch rank of RC", fontsize = 18)
+    plt.show()
 
-# def chasingOrder_RC(out = True, both = False):
+def chasingOrder_RC(out = True, both = False):
 
-#    """ Histogram of the chasing order for RC members (i.e., if we rank them by according to how much total approaches they perform.)
-#    """
-#    path_cohort1 = "..\\data\\reduced_data.xlsx"
-#    path_cohort2 = "..\\data\\validation_cohort.xlsx"
-#    chasing_dir = "..\\data\\chasing\\single\\"
+    """ Histogram of the chasing order for RC members (i.e., if we rank them by according to how much total approaches they perform.)
+    """
+    path_cohort1 = "..\\data\\reduced_data.xlsx"
+    path_cohort2 = "..\\data\\validation_cohort.xlsx"
+    chasing_dir = "..\\data\\chasing\\single\\"
 
-#    approach_order_out, approach_order_in = [], []
-#    # first cohort
-#    df1 = pd.read_excel(path_cohort1)
-#    groups1 = df1.loc[:, "group"].to_numpy()
-#    RCs1 = df1.loc[:, "RC"].to_numpy()
-#    RFIDs1 = df1.loc[:, "Mouse_RFID"].to_numpy()
+    approach_order_out, approach_order_in = [], []
+    # first cohort
+    df1 = pd.read_excel(path_cohort1)
+    groups1 = df1.loc[:, "group"].to_numpy()
+    RCs1 = df1.loc[:, "RC"].to_numpy()
+    RFIDs1 = df1.loc[:, "Mouse_RFID"].to_numpy()
 
-#    for group_idx in range(1, np.max(groups1)+1): #iterate over groups
-#        mouse_indices = np.where(groups1 == group_idx) # find out indices of mice from current group
-#        mouse_names = RFIDs1[mouse_indices]
-#        approach_matrix = np.loadtxt(chasing_dir+"G"+str(group_idx)+"_single_chasing.csv",
-#                                     delimiter = ",", dtype=str)[1:, 1:].astype(np.int16)
-#        names_in_approach_matrix =  np.loadtxt(chasing_dir+"G"+str(group_idx)+"_single_chasing.csv",
-#                                             delimiter=",", dtype=str)[0, :][1:]
+    for group_idx in range(1, np.max(groups1)+1): #iterate over groups
+        mouse_indices = np.where(groups1 == group_idx) # find out indices of mice from current group
+        mouse_names = RFIDs1[mouse_indices]
+        approach_matrix = np.loadtxt(chasing_dir+"G"+str(group_idx)+"_single_chasing.csv",
+                                    delimiter = ",", dtype=str)[1:, 1:].astype(np.int16)
+        names_in_approach_matrix =  np.loadtxt(chasing_dir+"G"+str(group_idx)+"_single_chasing.csv",
+                                            delimiter=",", dtype=str)[0, :][1:]
 
-#        approaches_out = np.sum(approach_matrix, axis = 1)
-#        approaches_in = np.sum(approach_matrix, axis = 0)
-#        current_orders_out = np.argsort(-approaches_out)
-#        current_orders_in = np.argsort(-approaches_in)
-#        for idx, rc in enumerate(RCs1[mouse_indices]):
-#            if np.any(mouse_names[idx] == names_in_approach_matrix):
-#                if rc:
-#                    rc_idx = np.where(mouse_names[idx] == names_in_approach_matrix)[0][0]
-#                    approach_order_out.append(list(current_orders_out).index(rc_idx))
-#                    approach_order_in.append(list(current_orders_in).index(rc_idx))
+        approaches_out = np.sum(approach_matrix, axis = 1)
+        approaches_in = np.sum(approach_matrix, axis = 0)
+        current_orders_out = np.argsort(-approaches_out)
+        current_orders_in = np.argsort(-approaches_in)
+        for idx, rc in enumerate(RCs1[mouse_indices]):
+            if np.any(mouse_names[idx] == names_in_approach_matrix):
+                if rc:
+                    rc_idx = np.where(mouse_names[idx] == names_in_approach_matrix)[0][0]
+                    approach_order_out.append(list(current_orders_out).index(rc_idx))
+                    approach_order_in.append(list(current_orders_in).index(rc_idx))
 
-#    df2 = pd.read_excel(path_cohort2)
-#    groups2 = df2.loc[:, "Group_ID"].to_numpy()
-#    RCs2 = df2.loc[:, "RC"].to_numpy()
-#    RFIDs2 = df2.loc[:, "Mouse_RFID"].to_numpy()
+    df2 = pd.read_excel(path_cohort2)
+    groups2 = df2.loc[:, "Group_ID"].to_numpy()
+    RCs2 = df2.loc[:, "RC"].to_numpy()
+    RFIDs2 = df2.loc[:, "Mouse_RFID"].to_numpy()
 
-#    for group_idx in range(11, 18): #iterate over groups
-#        mouse_indices = np.where(groups2 == group_idx) # find out indices of mice from current group
-#        mouse_names = RFIDs2[mouse_indices]
-#        approach_matrix = np.loadtxt(chasing_dir+"G"+str(group_idx)+"_single_chasing.csv",
-#                                     delimiter = ",", dtype=str)[1:, 1:].astype(np.int16)
-#        names_in_approach_matrix =  np.loadtxt(chasing_dir+"G"+str(group_idx)+"_single_chasing.csv",
-#                                             delimiter=",", dtype=str)[0, :][1:]
-#        approaches_out = np.sum(approach_matrix, axis = 1)
-#        approaches_in = np.sum(approach_matrix, axis = 0)
-#        current_orders_out = np.argsort(-approaches_out)
-#        current_orders_in = np.argsort(-approaches_in)
-#        for idx, rc in enumerate(RCs2[mouse_indices]):
-#            if np.any(mouse_names[idx] == names_in_approach_matrix):
-#                if rc:
-#                    rc_idx = np.where(mouse_names[idx] == names_in_approach_matrix)[0][0]
-#                    approach_order_out.append(list(current_orders_out).index(rc_idx))
-#                    approach_order_in.append(list(current_orders_in).index(rc_idx))
+    for group_idx in range(11, 18): #iterate over groups
+        mouse_indices = np.where(groups2 == group_idx) # find out indices of mice from current group
+        mouse_names = RFIDs2[mouse_indices]
+        approach_matrix = np.loadtxt(chasing_dir+"G"+str(group_idx)+"_single_chasing.csv",
+                                    delimiter = ",", dtype=str)[1:, 1:].astype(np.int16)
+        names_in_approach_matrix =  np.loadtxt(chasing_dir+"G"+str(group_idx)+"_single_chasing.csv",
+                                            delimiter=",", dtype=str)[0, :][1:]
+        approaches_out = np.sum(approach_matrix, axis = 1)
+        approaches_in = np.sum(approach_matrix, axis = 0)
+        current_orders_out = np.argsort(-approaches_out)
+        current_orders_in = np.argsort(-approaches_in)
+        for idx, rc in enumerate(RCs2[mouse_indices]):
+            if np.any(mouse_names[idx] == names_in_approach_matrix):
+                if rc:
+                    rc_idx = np.where(mouse_names[idx] == names_in_approach_matrix)[0][0]
+                    approach_order_out.append(list(current_orders_out).index(rc_idx))
+                    approach_order_in.append(list(current_orders_in).index(rc_idx))
        
-#    plt.figure(figsize=(5,4))
-#    if both:
-#        plt.hist(approach_order_in, bins = np.arange(-0.5, 10.5), stacked = True, rwidth= 0.8, align='mid', edgecolor='black', label = "Ingoing", alpha = 0.5)
-#        plt.hist(approach_order_out, bins = np.arange(-0.5, 10.5), stacked = True, rwidth= 0.8, align='mid', edgecolor='black', label = "Outgoing", alpha = 0.5)
-#        plt.legend()
-#    elif out:
-#        plt.hist(approach_order_out, bins = np.arange(-0.5, 10.5), rwidth= 0.8, align='mid', color = 'gray', edgecolor='black')
-#    else:
-#        plt.hist(approach_order_in, bins = np.arange(-0.5, 10.5), rwidth= 0.8, align='mid', color = 'gray', edgecolor='black')
+    plt.figure(figsize=(5,4))
+    if both:
+        plt.hist(approach_order_in, bins = np.arange(-0.5, 10.5), stacked = True, rwidth= 0.8, align='mid', edgecolor='black', label = "Ingoing", alpha = 0.5)
+        plt.hist(approach_order_out, bins = np.arange(-0.5, 10.5), stacked = True, rwidth= 0.8, align='mid', edgecolor='black', label = "Outgoing", alpha = 0.5)
+        plt.legend()
+    elif out:
+        plt.hist(approach_order_out, bins = np.arange(-0.5, 10.5), rwidth= 0.8, align='mid', color = 'gray', edgecolor='black')
+    else:
+        plt.hist(approach_order_in, bins = np.arange(-0.5, 10.5), rwidth= 0.8, align='mid', color = 'gray', edgecolor='black')
 
-#    plt.xticks(np.arange(0, 10), labels=["1","2","3","4","5","6","7","8","9","10"], fontsize = 15) 
-#    plt.yticks(np.arange(0, 12, 2), fontsize = 15)  # Ensure ticks are centered on 0 through 9
+    plt.xticks(np.arange(0, 10), labels=["1","2","3","4","5","6","7","8","9","10"], fontsize = 15) 
+    plt.yticks(np.arange(0, 12, 2), fontsize = 15)  # Ensure ticks are centered on 0 through 9
 
-#    if both:
-#        plt.xlabel(r"Chasing order", fontsize = 19)
-#    elif out:
-#        plt.xlabel(r"Chasing order (outgoing)", fontsize = 20)
-#    else:
-#        plt.xlabel(r"Chasing order (ingoing)", fontsize = 20)
-#    plt.ylabel(r"Count", fontsize = 19)
-#    # plt.title("Approach order of RC members", fontsize = 18)
-#    plt.tight_layout()
-#    plt.show()
+    if both:
+        plt.xlabel(r"Chasing order", fontsize = 19)
+    elif out:
+        plt.xlabel(r"Chasing order (outgoing)", fontsize = 20)
+    else:
+        plt.xlabel(r"Chasing order (ingoing)", fontsize = 20)
+    plt.ylabel(r"Count", fontsize = 19)
+    # plt.title("Approach order of RC members", fontsize = 18)
+    plt.tight_layout()
+    plt.show()
    
-def chasingFraction_RC(out = True, both = False):
-
-    """ Histogram of the chasing order for RC members (i.e., if we rank them by according to how much total approaches they perform.)
+def chasingFraction_RC(out = True, ax = None):
+    """ 
+    Histogram of the fraction of total chasings in a group performed by RC members
     """
     path_cohort1 = "..\\data\\reduced_data.xlsx"
     path_cohort2 = "..\\data\\validation_cohort.xlsx"
@@ -758,34 +759,25 @@ def chasingFraction_RC(out = True, both = False):
                     rc_idx = np.where(mouse_names[idx] == names_in_approach_matrix)[0][0]
                     approach_order_out.append(list(chasings_out)[rc_idx])
                     approach_order_in.append(list(chasings_in)[rc_idx])
-                           
-    plt.figure(figsize=(5,4))
-    if both:
-        plt.hist(approach_order_in, bins = np.linspace(0, 0.5, 10), stacked = True, rwidth= 0.8, align='mid', edgecolor='black', label = "Ingoing", alpha = 0.5)
-        plt.hist(approach_order_out, bins = np.linspace(0, 0.5, 10), stacked = True, rwidth= 0.8, align='mid', edgecolor='black', label = "Outgoing", alpha = 0.5)
-        plt.legend()
-    elif out:
-        plt.hist(approach_order_out, bins = np.linspace(0, 0.5, 10), rwidth= 0.8, align='mid', color = 'gray', edgecolor='black')
-    else:
-        plt.hist(approach_order_in, bins = np.linspace(0, 0.5, 10), rwidth= 0.8, align='mid', color = 'gray', edgecolor='black')
+                      
+    if ax is None:
+        fig, ax = plt.subplots(1, 1, figsize = (5,4))
 
-    # plt.xticks(np.arange(0, 10), labels=["1","2","3","4","5","6","7","8","9","10"], fontsize = 15) 
-    # plt.yticks(np.arange(0, 12, 2), fontsize = 15)  # Ensure ticks are centered on 0 through 9
-
-    if both:
-        plt.xlabel(r"Chasing fraction", fontsize = 19)
-    elif out:
-        plt.xlabel(r"Chasing fraction (outgoing)", fontsize = 20)
+    if out:
+        ax.hist(approach_order_out, bins = np.linspace(0, 0.5, 10), rwidth= 0.6, align='mid', color = 'blue')
     else:
-        plt.xlabel(r"Chasing fraction (ingoing)", fontsize = 20)
-    plt.ylabel(r"Count", fontsize = 19)
-    # plt.title("Approach order of RC members", fontsize = 18)
-    plt.tight_layout()
-    plt.show()
+        ax.hist(approach_order_in, bins = np.linspace(0, 0.5, 10), rwidth= 0.6, align='mid', color = 'blue')
+
+    if out:
+        ax.set_xlabel(r"Chasing fraction (outgoing)", fontsize = 20)
+    else:
+        ax.set_xlabel(r"Chasing fraction (ingoing)", fontsize = 20)
+    ax.set_ylabel(r"Count", fontsize = 19)
+
     
-def chasingFraction_exRC(out = True, both = False):
-
-    """ Histogram of the chasing order for RC members (i.e., if we rank them by according to how much total approaches they perform.)
+def chasingFraction_exRC(out = True, ax = None):
+    """
+    Histogram of the chasing fraction for ex RC members
     """
     path_cohort1 = "..\\data\\reduced_data.xlsx"
     path_cohort2 = "..\\data\\validation_cohort.xlsx"
@@ -794,8 +786,10 @@ def chasingFraction_exRC(out = True, both = False):
     approach_order_out, approach_order_in = [], []
     # first cohort
     df1 = pd.read_excel(path_cohort1)
-    groups1 = df1.loc[:, "group"].to_numpy()
-    RCs1 = df1.loc[:, "RC"].to_numpy()
+    groups1 = df1.loc[:, "group"].to_numpy()    
+    RCs1_ids = np.unique(df1.loc[df1.loc[:, "RC"], "Mouse_RFID"])
+    exRCs1 = np.logical_and([id in RCs1_ids for id in df1["Mouse_RFID"]], ~df1["RC"]).to_numpy()
+    
     RFIDs1 = df1.loc[:, "Mouse_RFID"].to_numpy()
 
     for group_idx in range(1, np.max(groups1)+1): #iterate over groups
@@ -810,7 +804,7 @@ def chasingFraction_exRC(out = True, both = False):
         chasings_out = chasings_out/np.sum(chasings_out)
         chasings_in = np.sum(approach_matrix, axis = 0)
         chasings_in = chasings_in/np.sum(chasings_in)
-        for idx, rc in enumerate(RCs1[mouse_indices]):
+        for idx, rc in enumerate(exRCs1[mouse_indices]):
             if np.any(mouse_names[idx] == names_in_approach_matrix):
                 if rc:
                     rc_idx = np.where(mouse_names[idx] == names_in_approach_matrix)[0][0]
@@ -819,7 +813,8 @@ def chasingFraction_exRC(out = True, both = False):
 
     df2 = pd.read_excel(path_cohort2)
     groups2 = df2.loc[:, "Group_ID"].to_numpy()
-    RCs2 = df2.loc[:, "RC"].to_numpy()
+    RCs2_ids = np.unique(df2.loc[df2.loc[:, "RC"], "Mouse_RFID"])
+    exRCs2 = np.logical_and([id in RCs2_ids for id in df2["Mouse_RFID"]], ~df2["RC"]).to_numpy()
     RFIDs2 = df2.loc[:, "Mouse_RFID"].to_numpy()
 
     for group_idx in range(11, 18): #iterate over groups
@@ -834,36 +829,30 @@ def chasingFraction_exRC(out = True, both = False):
         chasings_out = chasings_out/np.sum(chasings_out)
         chasings_in = np.sum(approach_matrix, axis = 0)
         chasings_in = chasings_in/np.sum(chasings_in)
-        for idx, rc in enumerate(RCs2[mouse_indices]):
+        for idx, rc in enumerate(exRCs2[mouse_indices]):
             if np.any(mouse_names[idx] == names_in_approach_matrix):
                 if rc:
                     rc_idx = np.where(mouse_names[idx] == names_in_approach_matrix)[0][0]
                     approach_order_out.append(list(chasings_out)[rc_idx])
                     approach_order_in.append(list(chasings_in)[rc_idx])
                            
-    plt.figure(figsize=(5,4))
-    if both:
-        plt.hist(approach_order_in, bins = np.linspace(0, 1, 10), stacked = True, rwidth= 0.8, align='mid', edgecolor='black', label = "Ingoing", alpha = 0.5)
-        plt.hist(approach_order_out, bins = np.linspace(0, 1, 10), stacked = True, rwidth= 0.8, align='mid', edgecolor='black', label = "Outgoing", alpha = 0.5)
-        plt.legend()
-    elif out:
-        plt.hist(approach_order_out, bins = np.linspace(0, 1, 10), rwidth= 0.8, align='mid', color = 'gray', edgecolor='black')
-    else:
-        plt.hist(approach_order_in, bins = np.linspace(0, 1, 10), rwidth= 0.8, align='mid', color = 'gray', edgecolor='black')
+    if ax is None:
+        fig, ax = plt.subplots(1, 1, figsize = (5,4))
 
-    # plt.xticks(np.arange(0, 10), labels=["1","2","3","4","5","6","7","8","9","10"], fontsize = 15) 
-    # plt.yticks(np.arange(0, 12, 2), fontsize = 15)  # Ensure ticks are centered on 0 through 9
-
-    if both:
-        plt.xlabel(r"Chasing fraction", fontsize = 19)
-    elif out:
-        plt.xlabel(r"Chasing fraction (outgoing)", fontsize = 20)
+    if out:
+        ax.hist(approach_order_out, bins = np.linspace(0, 0.5, 10), rwidth= 0.8, align='mid', color = 'gray', alpha = 0.7)
     else:
-        plt.xlabel(r"Chasing fraction (ingoing)", fontsize = 20)
-    plt.ylabel(r"Count", fontsize = 19)
-    # plt.title("Approach order of RC members", fontsize = 18)
-    plt.tight_layout()
-    plt.show()
+        ax.hist(approach_order_in, bins = np.linspace(0, 0.5, 10), rwidth= 0.8, align='mid', color = 'gray', alpha = 0.7)
+
+    if out:
+        ax.set_xlabel(r"Chasing fraction (outgoing)", fontsize = 15)
+    else:
+        ax.set_xlabel(r"Chasing fraction (ingoing)", fontsize = 15)
+    ax.set_ylabel(r"Count", fontsize = 15)
+    ax.tick_params(axis='x', labelsize=15)
+    ax.tick_params(axis='y', labelsize=15)
+
+
     
 if __name__ == "__main__":
     # rich_club_piecharts()
@@ -871,17 +860,22 @@ if __name__ == "__main__":
     # mutants_RC_hist()
     # rc_coefficient_histogram(4, 3)
     # fig, ax = plt.subplots(1, 1)
-    # chasingrank_vs_rc(ax)
     # chasingrank_vs_exrc(ax)
+    # chasingrank_vs_rc(ax)
+
     
-    # fig, ax = plt.subplots(1, 1)
-    # tuberank_vs_rc(ax)
-    # tuberank_vs_exrc(ax)
+    fig, ax = plt.subplots(1, 1)
+    tuberank_vs_exrc(ax)
+    tuberank_vs_rc(ax)
     # chasingrank_vs_nonrc()
     # tuberank_vs_nonrc()
     # chasings_vs_rc_validation()
     # total_chasings_cohort()
-    chasingFraction_RC(True, True)
+    
+    # fig, ax = plt.subplots(1, 1, figsize = (3, 4))
+    # chasingFraction_exRC(True, ax)
+    # chasingFraction_RC(True, ax)
+
     # approach_order_RC(False, True)
     # approach_order_WT(True, True)
     # approachRank_RC()

@@ -9,7 +9,7 @@ import os
 import sys
 import pandas as pd
 import seaborn as sns
-from scipy.stats import ttest_ind
+from scipy.stats import ttest_ind, ttest_1samp
 from scipy import stats
 import seaborn as sns
 
@@ -20,7 +20,7 @@ from utils import get_category_indices, format_plot, add_significance
 datapath = "..\\data\\chasing\\single\\"
 datapath = "..\\data\\averaged\\"
 #plt.rc('text', usetex=True)
-plt.rc('font', family='serif')
+plt.rcParams["font.family"] = "Arial"
 
 
 path = "..\\data\\reduced_data.xlsx"
@@ -537,15 +537,15 @@ def tube_rank(sep = False, all_wt = False):
 
     alpha, size = 0.5, 30
     # ax.scatter([1 + np.random.normal()*0.05 for i in range(len(data[0]))], 
-    #             data[0], alpha = alpha, s = size, label = "mutant", zorder=2); 
+                # data[0], alpha = alpha, s = size, label = "mutant", zorder=2); 
     # ax.scatter([2 + np.random.normal()*0.05 for i in range(len(data[1]))], 
-    #             data[1], alpha = alpha, s = size, label = "non-member", zorder=2); 
+                # data[1], alpha = alpha, s = size, label = "non-member", zorder=2); 
     
-    plt.hist(ranks_wt, bins = 10, color = "green", alpha = alpha, density=False, rwidth = 0.95)
-    plt.hist(ranks_mutants, bins = 10, color = "red", alpha = alpha, density=False, rwidth=0.95)
+    plt.hist(ranks_wt, bins = 10, color = "gray", density=False, rwidth = 0.9)
+    plt.hist(ranks_mutants, bins = 10, color = "darkred", density=False, rwidth=0.75)
+    ax.set_xlabel("Tube rank", fontsize = 20)
+    ax.set_ylabel("Count", fontsize = 20)
 
-    
-    ax.set_ylabel("Tube rank", fontsize = 20)
     # format_plot(ax, bp, xticklabels = ["Mutants", "WT"]) # set x_axis, and colors of each bar
     plt.tight_layout()
     plt.show()
