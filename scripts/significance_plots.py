@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
+import pandas as pd
 
 def mutants_in_rc_mnn2_k2():
     number_of_hits = []
@@ -319,7 +320,7 @@ def littermates_in_rc_mnn2_k2():
     Computes the chance of finding pairs of littermates in the RC by random chance for mnn = 2 and k = 2.
     """
     number_of_hits = []
-    for i in tqdm(range(500)):
+    for i in tqdm(range(1000)):
         hits = 0
         # expID 1
         np.random.shuffle(shuffled_arr1)
@@ -457,7 +458,7 @@ def littermates_in_rc_mnn4_k4():
     Computes the chance of finding pairs of littermates in the RC by random chance for mnn = 4 and k = 4.
     """
     number_of_hits = []
-    for i in tqdm(range(500)):
+    for i in tqdm(range(1000)):
         hits = 0
         # expID 1
         np.random.shuffle(shuffled_arr1)
@@ -533,87 +534,30 @@ def reshuffled_rc_mnn2_k2(cumulative = False):
     """
     number_of_hits = []
     arr = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    path_to_metadata= "..\\data\\meta_data_k2.csv"
+    df = pd.read_csv(path_to_metadata)
+    RCs = df.loc[df["RC"], "Mouse_RFID"].unique()
     
     for i in tqdm(range(1000)):
         hits = 0
-        for j in range(1):
-            shuffled_arr = np.random.permutation(arr)
-            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
-            
-        for j in range(1):
-            shuffled_arr = np.random.permutation(arr)
-            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
-            
-        for j in range(1):
-            shuffled_arr = np.random.permutation(arr)
-            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
-            
-        for j in range(4):
-            shuffled_arr = np.random.permutation(arr)
-            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
-            
-        for j in range(2):
-            shuffled_arr = np.random.permutation(arr)
-            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
-            
-        for j in range(1):
-            shuffled_arr = np.random.permutation(arr)
-            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
-            
-        for j in range(2):
-            shuffled_arr = np.random.permutation(arr)
-            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
-            
-        for j in range(2):
-            shuffled_arr = np.random.permutation(arr)
-            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
-            
-        for j in range(2):
-            shuffled_arr = np.random.permutation(arr)
-            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
-            
-        for j in range(1):
-            shuffled_arr = np.random.permutation(arr)
-            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
-            
-        for j in range(1):
-            shuffled_arr = np.random.permutation(arr)
-            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
-            
-        for j in range(3):
-            shuffled_arr = np.random.permutation(arr)
-            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
-            
-        for j in range(4):
-            np.random.permutation(shuffled_arr)
-            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
-            
-        for j in range(1):
-            np.random.permutation(shuffled_arr)
-            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
-            
-        for j in range(1):
-            np.random.permutation(shuffled_arr)
-            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
-            
-        for j in range(1):
-            np.random.permutation(shuffled_arr)
-            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
-            
-        for j in range(1):
-            np.random.permutation(shuffled_arr)
-            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
-    
-        for j in range(1):
-            np.random.permutation(shuffled_arr)
-            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
-
-        number_of_hits.append(hits)
         
+        for RFID in RCs:
+            reshuffled_times = np.sum(df["Mouse_RFID"] == RFID)
+            if reshuffled_times == 1: # if the mouse was not reshuffled, ignore and move to next one
+                continue
+            else:
+                corresp_group_ID = df.loc[df["Mouse_RFID"] == RFID, "Group_ID"].values # getting the group IDs where this RC mouse was reshuffled
+                # getting corresponding size of the club. Since we cannot order where the true 'first' time of the RC member was, the shuffling of RC_sizes ensures no bias.
+                RC_sizes = np.random.permutation([np.sum(df.loc[df["Group_ID"] == ID, "RC"]) for ID in corresp_group_ID]) 
+                for j in range(reshuffled_times - 1):
+                    shuffled_arr = np.random.permutation(arr)
+                    hits += 1 in shuffled_arr[:RC_sizes[j]]
+        number_of_hits.append(hits)
+              
     if cumulative:
-        h = plt.hist(number_of_hits, bins = np.arange(11), density = True, cumulative = - 1, align = 'left', label = "Expected by random chance", rwidth = 0.97)
+        h = plt.hist(number_of_hits, bins = np.arange(14), density = True, cumulative = - 1, align = 'left', label = "Expected by random chance", rwidth = 0.97)
     else:
-        h = plt.hist(number_of_hits, bins = np.arange(11), density = True, align = 'left', label = "Expected by random chance", rwidth = 0.97)
+        h = plt.hist(number_of_hits, bins = np.arange(14), density = True, align = 'left', label = "Expected by random chance", rwidth = 0.97)
     reversed_cumsum = np.cumsum(h[0][::-1])[::-1]
     plt.title("Random chance of being shuffled back in rich-club\n both cohorts")
     plt.xlabel("Number of 'conserved' RC members", fontsize=15)
@@ -622,9 +566,8 @@ def reshuffled_rc_mnn2_k2(cumulative = False):
     plt.axvline(np.percentile(number_of_hits, 95), ls = "--", color = 'k', label = "95% CI")
     plt.axvline(7, color = 'red', label = "Experimentally observed")
     plt.annotate("p-value = "+str(np.round(reversed_cumsum[7], 3)), (8, 0.1), bbox=dict(facecolor='white', edgecolor='none', pad=1.0), ha='center')
-    plt.xlim([0, 11])
+    plt.xlim([0, 14])
     plt.legend(loc='upper left')
-    # plt.savefig("C:\\Users\\wolfgang.kelsch\\Downloads\\reshuffled_RC.svg")
   #  plt.tight_layout()
     plt.show()        
     
@@ -633,88 +576,44 @@ def reshuffled_rc_mnn3_k3(cumulative = False):
     Computes the chance of finding an RC members again in the RC after reshuffling.
     To do this, the function iterates through each individual RC member, and how often they got reshulffed (j for loop), and 
     looks at the chance it would be again in the RC via random chance.
-    """
+    """ 
     number_of_hits = []
     arr = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    path_to_metadata= "..\\data\\meta_data_k3.csv"
+    df = pd.read_csv(path_to_metadata)
+    RCs = df.loc[df["RC"], "Mouse_RFID"].unique()
     
-    for i in tqdm(range(5000)):
+    for i in tqdm(range(1000)):
         hits = 0
-        for j in range(1):
-            shuffled_arr = np.random.permutation(arr)
-            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
-            
-        for j in range(1):
-            shuffled_arr = np.random.permutation(arr)
-            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
-            
-        for j in range(1):
-            shuffled_arr = np.random.permutation(arr)
-            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
-            
-        for j in range(4):
-            shuffled_arr = np.random.permutation(arr)
-            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
-            
-        for j in range(3):
-            shuffled_arr = np.random.permutation(arr)
-            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
-            
-        for j in range(3):
-            shuffled_arr = np.random.permutation(arr)
-            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
-            
-        for j in range(2):
-            shuffled_arr = np.random.permutation(arr)
-            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
-            
-        for j in range(1):
-            shuffled_arr = np.random.permutation(arr)
-            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
-            
-        for j in range(1):
-            shuffled_arr = np.random.permutation(arr)
-            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
-            
-        for j in range(2):
-            shuffled_arr = np.random.permutation(arr)
-            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
-            
-        for j in range(1):
-            shuffled_arr = np.random.permutation(arr)
-            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
-            
-        for j in range(2):
-            shuffled_arr = np.random.permutation(arr)
-            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
-            
-        for j in range(1):
-            np.random.permutation(shuffled_arr)
-            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
-            
-        for j in range(1):
-            np.random.permutation(shuffled_arr)
-            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
-
-        number_of_hits.append(hits)
         
+        for RFID in RCs:
+            reshuffled_times = np.sum(df["Mouse_RFID"] == RFID)
+            if reshuffled_times == 1: # if the mouse was not reshuffled, ignore and move to next one
+                continue
+            else:
+                corresp_group_ID = df.loc[df["Mouse_RFID"] == RFID, "Group_ID"].values # getting the group IDs where this RC mouse was reshuffled
+                # getting corresponding size of the club. Since we cannot order where the true 'first' time of the RC member was, the shuffling of RC_sizes ensures no bias.
+                RC_sizes = np.random.permutation([np.sum(df.loc[df["Group_ID"] == ID, "RC"]) for ID in corresp_group_ID]) 
+                for j in range(reshuffled_times - 1):
+                    shuffled_arr = np.random.permutation(arr)
+                    hits += 1 in shuffled_arr[:RC_sizes[j]]
+        number_of_hits.append(hits)
+            
     if cumulative:
-        h = plt.hist(number_of_hits, bins = np.arange(12), density = True, cumulative = - 1, align = 'left', label = "Expected by random chance", rwidth = 0.97)
+        h = plt.hist(number_of_hits, bins = np.arange(15), density = True, cumulative = - 1, align = 'left', label = "Expected by random chance", rwidth = 0.97)
     else:
-        h = plt.hist(number_of_hits, bins = np.arange(12), density = True, align = 'left', label = "Expected by random chance", rwidth = 0.97)
+        h = plt.hist(number_of_hits, bins = np.arange(15), density = True, align = 'left', label = "Expected by random chance", rwidth = 0.97)
     reversed_cumsum = np.cumsum(h[0][::-1])[::-1]
     plt.title("Random chance of being shuffled back in rich-club\n both cohorts")
     plt.xlabel("Number of 'conserved' RC members", fontsize=15)
     plt.ylabel("Probability", fontsize=15)
-    # plt.axvline(np.percentile(number_of_hits, 5), ls = "--", color = 'k')
     plt.axvline(np.percentile(number_of_hits, 95), ls = "--", color = 'k', label = "95% CI")
     plt.annotate("p-value = "+str(np.round(reversed_cumsum[7], 3)), (8, 0.1), bbox=dict(facecolor='white', edgecolor='none', pad=1.0), ha='center')
     plt.axvline(7, color = 'red', label = "Experimentally observed")
-    plt.xlim([0, 11])
+    plt.xlim([0, 15])
     plt.legend(loc='upper left')
-    # plt.savefig("C:\\Users\\wolfgang.kelsch\\Downloads\\reshuffled_RC.svg")
   #  plt.tight_layout()
     plt.show()    
-    
     
 def reshuffled_rc_mnn4_k4(cumulative = False):
     """ 
@@ -724,131 +623,30 @@ def reshuffled_rc_mnn4_k4(cumulative = False):
     """
     number_of_hits = []
     arr = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    path_to_metadata= "..\\data\\meta_data_k4.csv"
+    df = pd.read_csv(path_to_metadata)
+    RCs = df.loc[df["RC"], "Mouse_RFID"].unique()
     
-    for i in tqdm(range(5000)):
+    for i in tqdm(range(1000)):
         hits = 0
-        for j in range(1):
-            shuffled_arr = np.random.permutation(arr)
-            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
-            
-        for j in range(1):
-            shuffled_arr = np.random.permutation(arr)
-            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
-            
-        for j in range(1):
-            shuffled_arr = np.random.permutation(arr)
-            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
-            
-        for j in range(3):
-            shuffled_arr = np.random.permutation(arr)
-            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
-            
-        for j in range(1):
-            shuffled_arr = np.random.permutation(arr)
-            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
-            
-        for j in range(4):
-            shuffled_arr = np.random.permutation(arr)
-            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
-            
-        for j in range(2):
-            shuffled_arr = np.random.permutation(arr)
-            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
-            
-        for j in range(1):
-            shuffled_arr = np.random.permutation(arr)
-            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
-            
-        for j in range(1):
-            shuffled_arr = np.random.permutation(arr)
-            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
-            
-        for j in range(3):
-            shuffled_arr = np.random.permutation(arr)
-            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
-            
-        for j in range(1):
-            shuffled_arr = np.random.permutation(arr)
-            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
-            
-        for j in range(2):
-            shuffled_arr = np.random.permutation(arr)
-            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
-            
-        for j in range(2):
-            np.random.permutation(shuffled_arr)
-            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
-            
-        for j in range(1):
-            np.random.permutation(shuffled_arr)
-            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
-            
-        for j in range(1):
-            np.random.permutation(shuffled_arr)
-            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
-            
-        for j in range(1):
-            np.random.permutation(shuffled_arr)
-            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
-            
-        for j in range(3):
-            np.random.permutation(shuffled_arr)
-            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
-            
-        for j in range(2):
-            np.random.permutation(shuffled_arr)
-            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
-            
-        for j in range(1):
-            np.random.permutation(shuffled_arr)
-            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
-            
-        for j in range(4):
-            np.random.permutation(shuffled_arr)
-            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
-            
-        for j in range(3):
-            np.random.permutation(shuffled_arr)
-            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
-            
-        for j in range(2):
-            np.random.permutation(shuffled_arr)
-            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
-            
-        for j in range(1):
-            np.random.permutation(shuffled_arr)
-            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
         
-        for j in range(1):
-            np.random.permutation(shuffled_arr)
-            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
-
-        for j in range(1):
-            np.random.permutation(shuffled_arr)
-            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
-        
-        for j in range(1):
-            np.random.permutation(shuffled_arr)
-            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
-            
-        for j in range(1):
-            np.random.permutation(shuffled_arr)
-            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
-
-        for j in range(1):
-            np.random.permutation(shuffled_arr)
-            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
-        
-        for j in range(1):
-            np.random.permutation(shuffled_arr)
-            hits += shuffled_arr[0] == 1 or shuffled_arr[0] == 2
-
+        for RFID in RCs:
+            reshuffled_times = np.sum(df["Mouse_RFID"] == RFID)
+            if reshuffled_times == 1: # if the mouse was not reshuffled, ignore and move to next one
+                continue
+            else:
+                corresp_group_ID = df.loc[df["Mouse_RFID"] == RFID, "Group_ID"].values # getting the group IDs where this RC mouse was reshuffled
+                # getting corresponding size of the club. Since we cannot order where the true 'first' time of the RC member was, the shuffling of RC_sizes ensures no bias.
+                RC_sizes = np.random.permutation([np.sum(df.loc[df["Group_ID"] == ID, "RC"]) for ID in corresp_group_ID]) 
+                for j in range(reshuffled_times - 1):
+                    shuffled_arr = np.random.permutation(arr)
+                    hits += 1 in shuffled_arr[:RC_sizes[j]]
         number_of_hits.append(hits)
     
     if cumulative:
-        h = plt.hist(number_of_hits, bins = np.arange(14), density = True, cumulative = - 1, align = 'left', label = "Expected by random chance", rwidth = 0.97)
+        h = plt.hist(number_of_hits, bins = np.arange(16), density = True, cumulative = - 1, align = 'left', label = "Expected by random chance", rwidth = 0.97)
     else:
-        h = plt.hist(number_of_hits, bins = np.arange(14), density = True, align = 'left', label = "Expected by random chance", rwidth = 0.97)
+        h = plt.hist(number_of_hits, bins = np.arange(16), density = True, align = 'left', label = "Expected by random chance", rwidth = 0.97)
     reversed_cumsum = np.cumsum(h[0][::-1])[::-1]
     plt.title("Random chance of being shuffled back in rich-club\n both cohorts")
     plt.xlabel("Number of 'conserved' RC members", fontsize=15)
@@ -856,13 +654,12 @@ def reshuffled_rc_mnn4_k4(cumulative = False):
     plt.axvline(np.percentile(number_of_hits, 95), ls = "--", color = 'k', label = "95% CI")
     plt.annotate("p-value = "+str(np.round(reversed_cumsum[8], 3)), (8, 0.1), bbox=dict(facecolor='white', edgecolor='none', pad=1.0), ha='center')
     plt.axvline(8, color = 'red', label = "Experimentally observed")
-    plt.xlim([0, 11])
+    plt.xlim([0, 16])
     plt.legend(loc='upper left')
-  #  plt.tight_layout()
+    plt.tight_layout()
     plt.show()    
 
     
-
 # mutants_in_rc_mnn2_k2()
 # mutants_in_rc_mnn3_k3(True)
 # mutants_in_rc_mnn4_k4(True)
@@ -872,8 +669,8 @@ def reshuffled_rc_mnn4_k4(cumulative = False):
 # littermates_in_rc_mnn3_k3()
 # littermates_in_rc_mnn4_k4()
 
-# reshuffled_rc_mnn2_k2()
-reshuffled_rc_mnn3_k3()
+reshuffled_rc_mnn2_k2()
+# reshuffled_rc_mnn3_k3()
 # reshuffled_rc_mnn4_k4()
 
 

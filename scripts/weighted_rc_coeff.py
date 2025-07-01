@@ -30,34 +30,14 @@ def mnn_cut(arr, nn = 2):
                 mnn_arr[j, i] += arr[j, i]
     return mnn_arr
 
-# def richness_from_data(arr, k):
-#     """
-#     This is a custom function to compute the weighted richness of the graph.
-#     We cannot use the k_core in this case as it requires interconnectedness. Instead,
-#     we use the definition of richness (see paper on rich clubs)
-#     """
-#     richness = []
-#     for i in range(arr.shape[0]):
-#         if np.sum(arr[i, :] > 0) >= k: #is this node rich?
-#             richness.append(np.sum(arr[i, :]))
-#     return np.sum(np.array(richness))
-
 def richness_from_data(g, k):
     """Returns sum of edge weights where both endpoints have degree > k"""
-    # deg_source = np.array([g.degree(e.source) for e in g.es])
-    # deg_target = np.array([g.degree(e.target) for e in g.es])
-    # weights = np.array(g.es["weight"])
-    # mask = (deg_source >= k) & (deg_target >= k)
-    # return np.sum(weights[mask])
-    return 2*sum(e['weight'] for e in g.es 
+    return sum(e['weight'] for e in g.es 
                       if g.degree(e.source) >= k and g.degree(e.target) >= k)
-    # return 2*sum(1 for e in g.es 
-    #                   if g.degree(e.source) >= k and g.degree(e.target) >= k)
 
 def random_richness(data, k, iterations = 100):
     random_richness = []
     for i in range(iterations):
-        # cut_arr = (mnn_cut(data, k) > 0)*1
         cut_arr = mnn_cut(data, k)
         g_rand = ig.Graph.Weighted_Adjacency(cut_arr, mode='undirected')
         original_weights = g_rand.es['weight']
@@ -66,31 +46,18 @@ def random_richness(data, k, iterations = 100):
         np.random.shuffle(shuffled_weights)
         g_rand.es['weight'] = shuffled_weights
         cut_shuffled_arr = np.array(g_rand.get_adjacency(attribute="weight"))
-        # n = data.shape[0]
-        # triu_indices = np.triu_indices(n, k=1)  # k=1 excludes diagonal
-        # upper_values = data[triu_indices]
-        # np.random.shuffle(upper_values)
-        # shuffled_data = np.zeros_like(data)
-        # shuffled_data[triu_indices] = upper_values          
-        # shuffled_data.T[triu_indices] = upper_values  
-        # cut_shuffled_arr = (mnn_cut(shuffled_data, k) > 0)*1
         where_rand_rc = np.where(np.sum(cut_shuffled_arr > 0, 0) >= k)
         rand_normalization = np.sum(cut_shuffled_arr[where_rand_rc, :])
-        # g_rand = ig.Graph.Weighted_Adjacency(cut_shuffled_arr, mode='undirected')
-        # rand_richness = richness_from_data(g_rand, k)
         random_richness.append(richness_from_data(g_rand, k)/rand_normalization)
     rand_richnesses = np.array(random_richness)
     return np.sum(rand_richnesses[np.where(rand_richnesses != np.inf)])/iterations
 
-def weighted_rich_club(data, k = 3, iterations = 50):
-    # observed_richness = richness_from_data(data, k)
-    # cut_arr = (mnn_cut(data, k) > 0)*1
+def weighted_rich_club(data, k = 3, iterations = 100):
     cut_arr = mnn_cut(data, k)
     where_rc = np.where(np.sum(cut_arr > 0, 0) >= k)
     normalization = np.sum(cut_arr[where_rc, :])
     g = ig.Graph.Weighted_Adjacency(cut_arr, mode='undirected')
     observed_richness = richness_from_data(g, k)/normalization
-
     rand_richness = random_richness(data, k, iterations)
     return observed_richness/rand_richness
 
@@ -109,7 +76,6 @@ def rc_coefficients_all(variable, k, window = 3):
                 path_to_file = f"..\\data\\both_cohorts_{window}days\\"+labels[graph_idx]+"\\"+variable+f"_resD{window}_"+str(day)+".csv"
                 arr = np.loadtxt(path_to_file, delimiter=",", dtype=str)
                 data = arr[1:, 1:].astype(float)
-                # data = mnn_cut(data, k)
                 rc = weighted_rich_club(data, k, 50)
                 coefficients.append(rc)
             except Exception as e:
@@ -129,7 +95,6 @@ def rc_coefficients_all(variable, k, window = 3):
         elif p_value < 0.05:
             plt.text(day, 2.2, "*", fontsize="20",horizontalalignment='center')
 
-
     ax.spines[['right', 'top']].set_visible(False)   
     t = np.arange(1, 15//window+1)
     avg_rc_coeffs, std_rc_coeffs = np.array(avg_rc_coeffs), np.array(std_rc_coeffs)
@@ -137,8 +102,6 @@ def rc_coefficients_all(variable, k, window = 3):
     # for line in range(len(all_coeffs[0])):
     #     plt.plot(t, [all_coeffs[idx][line] for idx in range(len(all_coeffs))])
     plt.plot(t, avg_rc_coeffs, '-o', lw = 2, c = "gray", label = "Average across groups")
-    # # plt.scatter(t, avg_rc_coeffs, lw = 2, c = "k", label = "Rich club coefficient")
-    # plt.fill_between(t, avg_rc_coeffs - std_rc_coeffs, avg_rc_coeffs + std_rc_coeffs, color="k", alpha=0.2)
     plt.hlines(1, t[0], t[-1], ls = "--", color = "k", label = "Randomized graph")
     plt.xlabel("Day", fontsize = 18)
     plt.ylabel("Richness", fontsize = 18)
@@ -150,8 +113,11 @@ def rc_coefficients_all(variable, k, window = 3):
     
     return avg_rc_coeffs, std_rc_coeffs
 
-
 def rc_coefficient_selected(group, variable, k, window = 3):
+    """
+    Plots the rich club coefficient as a function of time for a selected group, and also shows the SEM associated to the value, owing to the fact that
+    the rc coefficient involves a comparison to a random graph.
+    """
     plt.figure()
     all_coeffs = []
     avg_rc_coeffs, sem_rc_coeffs = [], []
@@ -174,23 +140,15 @@ def rc_coefficient_selected(group, variable, k, window = 3):
         SEM = sem(coefficients[~np.isnan(coefficients)])
         SEM = SEM if (~np.isinf(SEM) and ~np.isnan(SEM)) else 0
         sem_rc_coeffs.append(SEM)
-        # plt.scatter([day]*len(coefficients), coefficients, alpha = 0.5, s = 100, color = "k")
-      #  plt.boxplot(coefficients, positions = [day], showfliers= False)
         
     t = np.arange(1, 15//window+1)
     avg_rc_coeffs, sem_rc_coeffs = np.array(avg_rc_coeffs), np.array(sem_rc_coeffs)
-    # plt.figure(figsize=(4, 3.5))
-    # for line in range(len(all_coeffs[0])):
-    #     plt.plot(t, [all_coeffs[idx][line] for idx in range(len(all_coeffs))])
     plt.plot(t, avg_rc_coeffs, '-o', lw = 2, c = "gray", label = "Median value")
-    # # plt.scatter(t, avg_rc_coeffs, lw = 2, c = "k", label = "Rich club coefficient")
     plt.fill_between(t, avg_rc_coeffs - sem_rc_coeffs, avg_rc_coeffs + sem_rc_coeffs, color="k", alpha=0.2)
     plt.hlines(1, t[0], t[-1], ls = "--", color = "k", label = "Randomized graph")
     plt.xlabel("Day", fontsize = 18)
     plt.ylabel("Richness", fontsize = 18)
     plt.xticks(range(1, 16//window + 1), fontsize = 14) 
-    # plt.yticks(np.linspace(1, 3, 3), fontsize = 14)
-    # plt.ylim(0.5, 2)
     plt.legend()
     plt.tight_layout()
     
@@ -198,6 +156,5 @@ def rc_coefficient_selected(group, variable, k, window = 3):
 
 if __name__ == "__main__":
     a, s = rc_coefficients_all('interactions', 3, 3)
-
     # a, s = rc_coefficient_selected(5, 'interactions', 3, 3)
     
