@@ -206,7 +206,7 @@ def mutants_in_rc_mnn4_k4(weak = False): #actually 4 mnn and rc 4
             
         number_of_hits.append(hits)
         
-    h = plt.hist(number_of_hits, bins = np.arange(15), density = True, align = 'left', label = "Expected by random chance")
+    h = plt.hist(number_of_hits, bins = np.arange(17), density = True, align = 'left', label = "Expected by random chance")
     if weak:
         observed = 5
     else:
@@ -218,6 +218,7 @@ def mutants_in_rc_mnn4_k4(weak = False): #actually 4 mnn and rc 4
     plt.title("Random chance of mutant in rich-club\n both cohorts")
     plt.xlabel("Number of mutants in sRC", fontsize=15)
     plt.ylabel("Probability", fontsize=15)
+    print(np.round(np.cumsum(h[0]), 4)[observed])
     plt.legend()
     plt.show()
     
@@ -662,14 +663,14 @@ def reshuffled_rc_mnn4_k4(cumulative = False):
     
 # mutants_in_rc_mnn2_k2()
 # mutants_in_rc_mnn3_k3(True)
-# mutants_in_rc_mnn4_k4(True)
+mutants_in_rc_mnn4_k4(False)
 # mutants_in_both_mnn5_k5(True)
 
 # littermates_in_rc_mnn2_k2()    
 # littermates_in_rc_mnn3_k3()
 # littermates_in_rc_mnn4_k4()
 
-reshuffled_rc_mnn2_k2()
+# reshuffled_rc_mnn2_k2()
 # reshuffled_rc_mnn3_k3()
 # reshuffled_rc_mnn4_k4()
 
