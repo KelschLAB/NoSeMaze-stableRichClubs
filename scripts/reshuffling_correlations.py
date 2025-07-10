@@ -5,7 +5,7 @@ import networkx as nx
 import os
 import sys
 import seaborn as sns
-from weighted_rc import weighted_rich_club
+
 from scipy import stats
 import pandas as pd
 from HierarchiaPy import Hierarchia
@@ -17,19 +17,112 @@ os.chdir('..\\src\\')
 #sys.path.append(os.getcwd())
 from read_graph import read_graph
 from collections import Counter
+# from weighted_rc import weighted_rich_club
 
 
-plt.rc('text', usetex=True)
-plt.rc('font', family='serif')
+
+def plot_reshuffled_tuberank_corr():
+    path_to_first_cohort = "..\\data\\reduced_data.xlsx"
+    path_to_second_cohort = "..\\data\\validation_cohort_full.xlsx"
+    
+    tube_first_others, tube_second_others = [], []
+    tube_first_rc, tube_second_rc = [], []
+
+    
+    # first cohort
+    df = pd.read_excel(path_to_first_cohort)
+    group_counts = df.groupby('Mouse_RFID')['group'].nunique()
+    reshuffled_mice = group_counts[group_counts > 1].index.tolist() # creates a list of the RFIDs that were reshuffled at leasta once
+    reshuffled_rc = df["Mouse_RFID"].isin(reshuffled_mice) & df["RC"]
+    reshuffled_others = df["Mouse_RFID"].isin(reshuffled_mice) & ~df["RC"]
+    RFID_reshuffled_rc = df["Mouse_RFID"][reshuffled_rc]
+    RFID_reshuffled_others = df["Mouse_RFID"][reshuffled_others]
+    ranks = np.array(df.rank_by_tube.values)
+    
+    for tag in np.unique(RFID_reshuffled_rc):
+        tube_first_rc.append(ranks[np.where(df["Mouse_RFID"] == tag)[0][0]])
+        tube_second_rc.append(ranks[np.where(df["Mouse_RFID"] == tag)[0][1]])
+        if len(np.where(df["Mouse_RFID"] == tag)[0]) >= 3:
+            tube_first_rc.append(ranks[np.where(df["Mouse_RFID"] == tag)[0][1]])
+            tube_second_rc.append(ranks[np.where(df["Mouse_RFID"] == tag)[0][2]])
+
+    for tag in np.unique(RFID_reshuffled_others):
+        tube_first_others.append(ranks[np.where(df["Mouse_RFID"] == tag)[0][0]])
+        tube_second_others.append(ranks[np.where(df["Mouse_RFID"] == tag)[0][1]])
+        if len(np.where(df["Mouse_RFID"] == tag)[0]) >= 3:
+            tube_first_others.append(ranks[np.where(df["Mouse_RFID"] == tag)[0][1]])
+            tube_second_others.append(ranks[np.where(df["Mouse_RFID"] == tag)[0][2]])
+
+    #second cohort
+    df = pd.read_excel(path_to_first_cohort)
+    group_counts = df.groupby('Mouse_RFID')['group'].nunique()
+    reshuffled_mice = group_counts[group_counts > 1].index.tolist() # creates a list of the RFIDs that were reshuffled at leasta once
+    reshuffled_rc = df["Mouse_RFID"].isin(reshuffled_mice) & df["RC"]
+    reshuffled_others = df["Mouse_RFID"].isin(reshuffled_mice) & ~df["RC"]
+    RFID_reshuffled_rc = df["Mouse_RFID"][reshuffled_rc]
+    RFID_reshuffled_others = df["Mouse_RFID"][reshuffled_others]
+    ranks = np.array(df.rank_by_tube.values)
+    
+    for tag in np.unique(RFID_reshuffled_rc):
+        tube_first_rc.append(ranks[np.where(df["Mouse_RFID"] == tag)[0][0]])
+        tube_second_rc.append(ranks[np.where(df["Mouse_RFID"] == tag)[0][1]])
+        if len(np.where(df["Mouse_RFID"] == tag)[0]) >= 3:
+            tube_first_rc.append(ranks[np.where(df["Mouse_RFID"] == tag)[0][1]])
+            tube_second_rc.append(ranks[np.where(df["Mouse_RFID"] == tag)[0][2]])
+
+    for tag in np.unique(RFID_reshuffled_others):
+        tube_first_others.append(ranks[np.where(df["Mouse_RFID"] == tag)[0][0]])
+        tube_second_others.append(ranks[np.where(df["Mouse_RFID"] == tag)[0][1]])
+        if len(np.where(df["Mouse_RFID"] == tag)[0]) >= 3:
+            tube_first_others.append(ranks[np.where(df["Mouse_RFID"] == tag)[0][1]])
+            tube_second_others.append(ranks[np.where(df["Mouse_RFID"] == tag)[0][2]])
+
+    plt.figure(figsize = (4.5, 4.5))
+    # plt.grid(alpha = 0.1)
+
+    
+    points = list(zip(tube_first_others, tube_second_others))
+    counts = Counter(points)
+    sizes = [counts[(xi, yi)] * 80 for xi, yi in points]  # Scale size
+    plt.scatter(tube_first_others, tube_second_others, s = sizes, c = 'gray', alpha = 0.5, label = "Non-members")
+    
+    points = list(zip(tube_first_rc, tube_second_rc))
+    counts = Counter(points)
+    sizes = [counts[(xi, yi)] * 80 for xi, yi in points]  # Scale size
+    plt.scatter(tube_first_rc, tube_second_rc, s = sizes, c = 'blue', alpha = 0.4, label = "RC")
+    
+    plt.xlabel("Tube rank, round 1", fontsize = 17)
+    plt.ylabel("Tube rank, round 2", fontsize = 17)
+    slope, intercept = np.polyfit(tube_first_rc + tube_first_others, tube_second_rc + tube_second_others, 1)
+    x = np.arange(np.min(tube_first_others), np.max(tube_first_others)+1)
+    correlation_matrix = np.corrcoef(tube_first_rc + tube_first_others, tube_second_rc + tube_second_others)
+    pearson_corr = correlation_matrix[0, 1] 
+    print(pearson_corr)
+    plt.plot(x, slope * x + intercept, color='gray', linestyle='--', label = "Pearson = "+str(np.round(pearson_corr, 2)))
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+    
     
 def plot_reshuffled_outchasing_corr(fraction = False):
+    path_to_first_cohort = "..\\data\\reduced_data.xlsx"
+    path_to_second_cohort = "..\\data\\validation_cohort_full.xlsx"
     
+    # first cohort
+    df1 = pd.read_excel(path_to_first_cohort)
+    rc1 = df1["Mouse_RFID"][df1["RC"]].tolist()
+    df2 = pd.read_excel(path_to_second_cohort)
+    rc2 = df2["Mouse_RFID"][df2["RC"]].tolist()
+    RFID_rc = rc1 + rc2
+
     datapath = "..\\data\\chasing\\single\\"
     chasings_first, chasings_second = [], []
-    labels = ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G10", "G11", "G12", "G13", "G14", "G15", "G16"]
+    labels = ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G10", "G11", "G12", "G13", "G14", "G15", "G16", "G17"]
     
     already_seen_first, already_seen_second = [], []
-    chasings_first, chasing_second = [], []
+    chasings_first, chasings_second = [], []    
+    chasings_first_rc, chasings_second_rc = [], []
+    
     for idx, g in enumerate(labels):
         names = np.loadtxt("..\\data\\chasing\\single\\"+g+"_single_chasing.csv", delimiter=",", dtype=str)[0, :][1:]
         data = read_graph(["..\\data\\chasing\\single\\"+g+"_single_chasing.csv"], percentage_threshold = 0)[0]
@@ -38,22 +131,37 @@ def plot_reshuffled_outchasing_corr(fraction = False):
             chasings = chasings/np.sum(np.sum(data))
         for c in range(len(chasings)):
             if names[c] not in already_seen_first:
-                chasings_first.append(chasings[c])
+                if names[c] in RFID_rc:
+                    chasings_first_rc.append(chasings[c])
+                else:
+                    chasings_first.append(chasings[c])
                 already_seen_first.append(names[c])
             elif names[c] not in already_seen_second:
-                chasings_second.append(chasings[c])
+                if names[c] in RFID_rc:
+                    chasings_second_rc.append(chasings[c])
+                else:
+                    chasings_second.append(chasings[c])
                 already_seen_second.append(names[c])
     
-    filter_names = []
+    filter_names, filter_names_rc = [], []
     for name in already_seen_first:
-        if name not in already_seen_second:
-            filter_names.append(False)
+        if name not in already_seen_second: # if mouse wasn't reshuffled, exclude it from plot
+            if name in RFID_rc:
+                filter_names_rc.append(False)
+            else:
+                filter_names.append(False)
         else:
-            filter_names.append(True)
-            
+            if name in RFID_rc:
+                filter_names_rc.append(True)
+            else:
+                filter_names.append(True)
+
     chasings_first, chasings_second = np.array(chasings_first), np.array(chasings_second)
-    plt.figure()
-    plt.scatter(chasings_first[filter_names], chasings_second, c = 'k')
+    plt.figure(figsize = (4.5, 4.5))
+
+    plt.scatter(chasings_first[filter_names], chasings_second, alpha = 0.7, c = 'k', label = "Never-members")
+    plt.scatter(np.array(chasings_first_rc)[filter_names_rc], chasings_second_rc, alpha = 0.7, c = 'blue', label="RC")
+
     plt.xlabel("Total outgoing chasings, round 1", fontsize = 17)
     plt.ylabel("Total outgoing chasings, round 2", fontsize = 17)
     if fraction:
@@ -61,10 +169,10 @@ def plot_reshuffled_outchasing_corr(fraction = False):
         plt.ylabel("Normalized outgoing chasings, round 2", fontsize = 17)
     slope, intercept = np.polyfit(chasings_first[filter_names], chasings_second, 1)
     x = np.arange(np.min(chasings_first), np.max(chasings_first))
-    correlation_matrix = np.corrcoef(chasings_first[filter_names], chasings_second)
-    pearson_corr = correlation_matrix[0, 1] 
+    # correlation_matrix = np.corrcoef(chasings_first[filter_names], chasings_second)
+    # pearson_corr = correlation_matrix[0, 1] 
     # plt.plot(x, slope * x + intercept, color='k', linestyle='--', label = "Pearson = "+str(pearson_corr))
-    # plt.legend()
+    plt.legend()
     plt.tight_layout()
     plt.show()
     
@@ -341,10 +449,11 @@ def plot_reshuffled_chasingRank_corr():
     plt.tight_layout()
     plt.show()
 
+# plot_reshuffled_tuberank_corr()
 # plot_reshuffled_inchasing_corr(True)
-# plot_reshuffled_outchasing_corr(True)
+plot_reshuffled_outchasing_corr(True)
 # plot_reshuffled_chasingRank_corr(True)
-plot_reshuffled_outapproach_corr(True)
+# plot_reshuffled_outapproach_corr(True)
 # plot_reshuffled_chasingRank_corr()
 # plot_reshuffled_approachRank_corr(True)
 # plot_reshuffled_approachOrder_corr(True)
