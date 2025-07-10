@@ -27,7 +27,6 @@ def chasing_towards(rc_size = 3, total_chasings = 100):
     plt.xlabel("Percentage of chasing towards other sRC members", fontsize=15)
     plt.ylabel("Probability", fontsize=15)
     plt.legend()
-    print(np.sum(h[0][22:]))
     plt.show()
 
 def mutants_in_rc_mnn2_k2():
