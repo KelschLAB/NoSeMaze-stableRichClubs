@@ -23,7 +23,7 @@ def chasing_towards(rc_size = 3, total_chasings = 100):
     plt.axvline(np.percentile(percentage_list, 2.5), ls = "--", color = 'k')
     plt.axvline(np.percentile(percentage_list, 97.5), ls = "--", color = 'k', label = "95% CI")
     plt.axvline(44, color = 'red', label = "Experimentally observed")
-    plt.annotate("p-value = "+str(np.round(np.sum(h[0][22:]), 5)), (10, 0.05), bbox=dict(facecolor='white', edgecolor='none', pad=1.0), ha='center')
+    plt.annotate("p-value = "+str(np.round(np.sum(h[0][22:]), 5)), (9, 0.05), bbox=dict(facecolor='white', edgecolor='none', pad=1.0), ha='center')
     plt.xlabel("Percentage of chasing towards other sRC members", fontsize=15)
     plt.ylabel("Probability", fontsize=15)
     plt.legend()
