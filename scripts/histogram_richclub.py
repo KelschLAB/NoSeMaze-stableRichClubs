@@ -764,9 +764,9 @@ def chasingFraction_RC(out = True, ax = None):
         fig, ax = plt.subplots(1, 1, figsize = (5,4))
 
     if out:
-        ax.hist(approach_order_out, bins = np.linspace(0, 0.5, 10), rwidth= 0.6, align='mid', color = 'blue')
+        ax.hist(approach_order_out, bins = np.linspace(0, 0.5, 11), rwidth= 0.6, align='mid', color = 'blue')
     else:
-        ax.hist(approach_order_in, bins = np.linspace(0, 0.5, 10), rwidth= 0.6, align='mid', color = 'blue')
+        ax.hist(approach_order_in, bins = np.linspace(0, 0.5, 11), rwidth= 0.6, align='mid', color = 'blue')
 
     if out:
         ax.set_xlabel(r"Chasing fraction (outgoing)", fontsize = 20)
@@ -840,9 +840,9 @@ def chasingFraction_exRC(out = True, ax = None):
         fig, ax = plt.subplots(1, 1, figsize = (5,4))
 
     if out:
-        ax.hist(approach_order_out, bins = np.linspace(0, 0.5, 10), rwidth= 0.8, align='mid', color = 'gray', alpha = 0.7)
+        ax.hist(approach_order_out, bins = np.linspace(0, 0.5, 11), rwidth= 0.8, align='mid', color = 'gray', alpha = 0.7)
     else:
-        ax.hist(approach_order_in, bins = np.linspace(0, 0.5, 10), rwidth= 0.8, align='mid', color = 'gray', alpha = 0.7)
+        ax.hist(approach_order_in, bins = np.linspace(0, 0.5, 11), rwidth= 0.8, align='mid', color = 'gray', alpha = 0.7)
 
     if out:
         ax.set_xlabel(r"Chasing fraction (outgoing)", fontsize = 15)
@@ -865,16 +865,17 @@ if __name__ == "__main__":
 
     
     fig, ax = plt.subplots(1, 1)
-    tuberank_vs_exrc(ax)
-    tuberank_vs_rc(ax)
+    # tuberank_vs_exrc(ax)
+    # tuberank_vs_rc(ax)
+    
     # chasingrank_vs_nonrc()
     # tuberank_vs_nonrc()
     # chasings_vs_rc_validation()
     # total_chasings_cohort()
     
     # fig, ax = plt.subplots(1, 1, figsize = (3, 4))
-    # chasingFraction_exRC(True, ax)
-    # chasingFraction_RC(True, ax)
+    chasingFraction_exRC(True, ax)
+    chasingFraction_RC(True, ax)
 
     # approach_order_RC(False, True)
     # approach_order_WT(True, True)

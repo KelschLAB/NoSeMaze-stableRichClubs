@@ -168,10 +168,10 @@ def plot_reshuffled_outchasing_corr(fraction = False):
         plt.xlabel("Normalized outgoing chasings, round 1", fontsize = 17)
         plt.ylabel("Normalized outgoing chasings, round 2", fontsize = 17)
     slope, intercept = np.polyfit(chasings_first[filter_names], chasings_second, 1)
-    x = np.arange(np.min(chasings_first), np.max(chasings_first))
-    # correlation_matrix = np.corrcoef(chasings_first[filter_names], chasings_second)
-    # pearson_corr = correlation_matrix[0, 1] 
-    # plt.plot(x, slope * x + intercept, color='k', linestyle='--', label = "Pearson = "+str(pearson_corr))
+    x = np.arange(0, 0.5, 0.05)
+    correlation_matrix = np.corrcoef(chasings_first[filter_names], chasings_second)
+    pearson_corr = correlation_matrix[0, 1] 
+    plt.plot(x, slope * x + intercept, color='k', linestyle='--', label = "Pearson = "+str(pearson_corr))
     plt.legend()
     plt.tight_layout()
     plt.show()
