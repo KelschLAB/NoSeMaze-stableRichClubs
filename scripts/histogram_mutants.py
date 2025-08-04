@@ -439,12 +439,12 @@ def chasingFraction_MutVsWT(out = True, ax = None):
         fig, ax = plt.subplots(1, 1, figsize = (5,4))
 
     if out:
-        ax.hist(approach_order_out_WT, bins = np.linspace(0, 0.5, 10), rwidth= 0.9, align='mid', color = 'gray')
-        ax.hist(approach_order_out_Mut, bins = np.linspace(0, 0.5, 10), rwidth= 0.75, align='mid', color = 'darkred')
+        ax.hist(approach_order_out_WT, bins = np.linspace(0, 0.5, 11), rwidth= 0.9, align='mid', color = 'gray')
+        ax.hist(approach_order_out_Mut, bins = np.linspace(0, 0.5, 11), rwidth= 0.75, align='mid', color = 'darkred')
 
     else:
-        ax.hist(approach_order_in_WT, bins = np.linspace(0, 0.5, 10), rwidth= 0.9, align='mid', color = 'gray')
-        ax.hist(approach_order_in_Mut, bins = np.linspace(0, 0.5, 10), rwidth= 0.75, align='mid', color = 'darkred')
+        ax.hist(approach_order_in_WT, bins = np.linspace(0, 0.5, 11), rwidth= 0.9, align='mid', color = 'gray')
+        ax.hist(approach_order_in_Mut, bins = np.linspace(0, 0.5, 11), rwidth= 0.75, align='mid', color = 'darkred')
 
     if out:
         ax.set_xlabel(r"Chasing fraction (outgoing)", fontsize = 17)
