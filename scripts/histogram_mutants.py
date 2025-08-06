@@ -477,5 +477,5 @@ if __name__ == "__main__":
     # approach_order_mutants(both = True)
     # approachRank_mutants()
     # mutants_in_club_piechart()
-    chasingFraction_MutVsWT(True)
+    chasingFraction_MutVsWT(False)
 

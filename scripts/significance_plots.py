@@ -3,6 +3,32 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 import pandas as pd
 
+def chasing_towards(rc_size = 3, total_chasings = 100):
+    """
+    Computes the distribution of observed chasings towards sRC members, if chasings were
+    distributed by random chance.
+    """
+    percentage_list = []
+    for i in tqdm(range(10000)):
+        shuffled_arr = np.array([1,2,3,4,5,6,7,8,9,10])
+        hits = 0
+        for chasing in range(total_chasings): # assuming 500 chasing events per cohort
+            np.random.shuffle(shuffled_arr)
+            if shuffled_arr[0] in [1,2,3]:
+                hits += 1
+        percentage_list.append(100*(hits/total_chasings))
+        
+    fig = plt.figure()
+    h = plt.hist(percentage_list, bins = np.arange(0, 100, 2), density = True, align = 'left', label = "Expected by random chance")
+    plt.axvline(np.percentile(percentage_list, 2.5), ls = "--", color = 'k')
+    plt.axvline(np.percentile(percentage_list, 97.5), ls = "--", color = 'k', label = "95% CI")
+    plt.axvline(44, color = 'red', label = "Experimentally observed")
+    plt.annotate("p-value = "+str(np.round(np.sum(h[0][22:]), 5)), (9, 0.05), bbox=dict(facecolor='white', edgecolor='none', pad=1.0), ha='center')
+    plt.xlabel("Percentage of chasing towards other sRC members", fontsize=15)
+    plt.ylabel("Probability", fontsize=15)
+    plt.legend()
+    plt.show()
+
 def mutants_in_rc_mnn2_k2():
     number_of_hits = []
     mutants = np.array([1, 2])
@@ -206,7 +232,7 @@ def mutants_in_rc_mnn4_k4(weak = False): #actually 4 mnn and rc 4
             
         number_of_hits.append(hits)
         
-    h = plt.hist(number_of_hits, bins = np.arange(15), density = True, align = 'left', label = "Expected by random chance")
+    h = plt.hist(number_of_hits, bins = np.arange(17), density = True, align = 'left', label = "Expected by random chance")
     if weak:
         observed = 5
     else:
@@ -218,6 +244,7 @@ def mutants_in_rc_mnn4_k4(weak = False): #actually 4 mnn and rc 4
     plt.title("Random chance of mutant in rich-club\n both cohorts")
     plt.xlabel("Number of mutants in sRC", fontsize=15)
     plt.ylabel("Probability", fontsize=15)
+    print(np.round(np.cumsum(h[0]), 4)[observed])
     plt.legend()
     plt.show()
     
@@ -659,17 +686,17 @@ def reshuffled_rc_mnn4_k4(cumulative = False):
     plt.tight_layout()
     plt.show()    
 
-    
+chasing_towards()
 # mutants_in_rc_mnn2_k2()
 # mutants_in_rc_mnn3_k3(True)
-# mutants_in_rc_mnn4_k4(True)
+# mutants_in_rc_mnn4_k4(False)
 # mutants_in_both_mnn5_k5(True)
 
 # littermates_in_rc_mnn2_k2()    
 # littermates_in_rc_mnn3_k3()
 # littermates_in_rc_mnn4_k4()
 
-reshuffled_rc_mnn2_k2()
+# reshuffled_rc_mnn2_k2()
 # reshuffled_rc_mnn3_k3()
 # reshuffled_rc_mnn4_k4()
 

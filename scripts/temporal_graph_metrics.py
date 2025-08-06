@@ -271,7 +271,7 @@ temporal_metrics = ["summed outNEF", "summed inNEF", "summed outICI", "summed in
 
 
 if __name__ == "__main__":
-    bp_metric_mutants("summed outburstiness", mnn = None, mutual = True, weighted = False, threshold=5)    
-    # bp_metric_mutants("summed outNEF", mnn = None, mutual = False, weighted = False, threshold = 5)
+    # bp_metric_mutants("summed outburstiness", mnn = None, mutual = False, weighted = True, threshold=5)    
+    bp_metric_mutants("summed outNEF", mnn = None, mutual = False, weighted = False, threshold = 10)
 
     

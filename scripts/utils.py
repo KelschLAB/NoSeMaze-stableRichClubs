@@ -33,7 +33,8 @@ def median(x, y, axis):
 def format_plot(ax, bp, xticklabels = ["RC", "Mutants", "Others"]):
     """ Sets the x-axis the RC/mutants/Others, changes the color of the bars in the boxplot."""
     ax.set_xticklabels(xticklabels, fontsize = 20)
-    colors = sns.color_palette('pastel')
+    # colors = sns.color_palette('pastel')
+    colors = ["cornflowerblue", "darkgray", "firebrick"]
     for patch, color in zip(bp['boxes'], colors): # set colors
         patch.set_facecolor(color)
     plt.setp(bp['medians'], color='k')

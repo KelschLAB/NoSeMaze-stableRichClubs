@@ -143,7 +143,7 @@ def boxplot_approaches(out = True, sep = False, all_wt = False):
             except:
                 pass
     if sep:
-        data = [approaches_rc, approaches_mutants, approaches_others]
+        data = [approaches_rc, approaches_others, approaches_mutants]
     else:
         if not all_wt:
             data = [approaches_mutants, approaches_others]
@@ -151,7 +151,7 @@ def boxplot_approaches(out = True, sep = False, all_wt = False):
             data = [approaches_mutants, approaches_others + approaches_rc]
 
     fig, ax = plt.subplots(1, 1)
-    bp = ax.boxplot(data, widths=0.6, patch_artist=True, showfliers = False, zorder=1)
+    bp = ax.boxplot(data, widths=0.4, patch_artist=True, showfliers = False, zorder=1)
     add_significance(data, ax, bp)
 
     alpha, size  = 1, 40
@@ -162,24 +162,27 @@ def boxplot_approaches(out = True, sep = False, all_wt = False):
                     data[1], alpha = alpha, s = size, label = "non-member", zorder=2); 
     
     elif sep:
+         colors = ["royalblue", "gray", "darkred"]
          ax.scatter([1 + np.random.normal()*0.05 for i in range(len(data[0]))], 
-                     data[0], alpha = alpha, s = size, label = "RC"); 
+                     data[0], alpha = alpha, c = colors[0], s = size, label = "RC"); 
          ax.scatter([2 + np.random.normal()*0.05 for i in range(len(data[1]))], 
-                     data[1], alpha = alpha, s = size, label = "mutant"); 
+                     data[1], alpha = alpha, c = colors[1], s = size, label = "non-member"); 
          ax.scatter([3 + np.random.normal()*0.05 for i in range(len(data[2]))], 
-                     data[2], alpha = alpha, s = size, label = "non-member"); 
+                     data[2], alpha = alpha, c = colors[2], s = size, label = "mutant"); 
 
     if out:
         ax.set_ylabel("Outgoing approaches", fontsize = 20)
     else:
         ax.set_ylabel("Ingoing approaches", fontsize = 20)
     if sep:
-        format_plot(ax, bp, xticklabels = ["RC", "Mutants", "Non-members"]) # set x_axis, and colors of each bar
+        format_plot(ax, bp, xticklabels = ["RC", "Non-members", "Mutants"]) # set x_axis, and colors of each bar
     else:
         if not all_wt:
             format_plot(ax, bp, xticklabels = ["Mutants", "Non-members"]) # set x_axis, and colors of each bar
         else:
             format_plot(ax, bp, xticklabels = ["Mutants", "WT"]) # set x_axis, and colors of each bar
+    ax.spines[['right', 'top']].set_visible(False)
+    plt.tight_layout()
     plt.show()
     
     
@@ -211,7 +214,7 @@ def boxplot_interactions(sep = False, all_wt = False):
             except:
                 pass
     if sep:
-        data = [approaches_rc, approaches_mutants, approaches_others]
+        data = [approaches_rc, approaches_others, approaches_mutants]
     else:
         if not all_wt:
             data = [approaches_mutants, approaches_others]
@@ -220,7 +223,7 @@ def boxplot_interactions(sep = False, all_wt = False):
 
     fig, ax = plt.subplots(1, 1)
 
-    bp = ax.boxplot(data, widths=0.6, patch_artist=True, showfliers = False, zorder=1)
+    bp = ax.boxplot(data, widths=0.4, patch_artist=True, showfliers = False, zorder=1)
     add_significance(data, ax, bp)
 
     alpha, size  = 1, 40
@@ -231,16 +234,17 @@ def boxplot_interactions(sep = False, all_wt = False):
                     data[1], alpha = alpha, s = size, label = "non-member", zorder=2); 
     
     elif sep:
+         colors = ["royalblue", "gray", "darkred"]
          ax.scatter([1 + np.random.normal()*0.05 for i in range(len(data[0]))], 
-                     data[0], alpha = alpha, s = size, label = "RC"); 
+                     data[0], alpha = alpha, c = colors[0], s = size, label = "RC"); 
          ax.scatter([2 + np.random.normal()*0.05 for i in range(len(data[1]))], 
-                     data[1], alpha = alpha, s = size, label = "mutant"); 
+                     data[1], alpha = alpha, c = colors[1], s = size, label = "non-member"); 
          ax.scatter([3 + np.random.normal()*0.05 for i in range(len(data[2]))], 
-                     data[2], alpha = alpha, s = size, label = "non-member"); 
+                     data[2], alpha = alpha, c = colors[2], s = size, label = "mutant"); 
 
     ax.set_ylabel("Total interactions", fontsize = 20)
     if sep:
-        format_plot(ax, bp, xticklabels = ["RC", "Mutants", "Non-members"]) # set x_axis, and colors of each bar
+        format_plot(ax, bp, xticklabels = ["RC", "Non-members", "Mutants"]) # set x_axis, and colors of each bar
     else:
         if not all_wt:
             format_plot(ax, bp, xticklabels = ["Mutants", "Non-members"]) # set x_axis, and colors of each bar
@@ -278,7 +282,7 @@ def boxplot_interaction_durations(sep = False, all_wt = False):
             except:
                 pass
     if sep:
-        data = [approaches_rc, approaches_mutants, approaches_others]
+        data = [approaches_rc, approaches_others, approaches_mutants]
     else:
         if not all_wt:
             data = [approaches_mutants, approaches_others]
@@ -287,7 +291,7 @@ def boxplot_interaction_durations(sep = False, all_wt = False):
 
     fig, ax = plt.subplots(1, 1)
    
-    bp = ax.boxplot(data, widths=0.6, patch_artist=True, showfliers = False, zorder=1)
+    bp = ax.boxplot(data, widths=0.4, patch_artist=True, showfliers = False, zorder=1)
     add_significance(data, ax, bp)
 
     alpha, size  = 1, 40
@@ -298,17 +302,18 @@ def boxplot_interaction_durations(sep = False, all_wt = False):
                     data[1], alpha = alpha, s = size, label = "non-member", zorder=2); 
     
     elif sep:
+         colors = ["royalblue", "gray", "darkred"]
          ax.scatter([1 + np.random.normal()*0.05 for i in range(len(data[0]))], 
-                     data[0], alpha = alpha, s = size, label = "RC"); 
+                     data[0], alpha = alpha, c = colors[0], s = size, label = "RC"); 
          ax.scatter([2 + np.random.normal()*0.05 for i in range(len(data[1]))], 
-                     data[1], alpha = alpha, s = size, label = "mutant"); 
+                     data[1], alpha = alpha, c = colors[1], s = size, label = "non-member"); 
          ax.scatter([3 + np.random.normal()*0.05 for i in range(len(data[2]))], 
-                     data[2], alpha = alpha, s = size, label = "non-member"); 
+                     data[2], alpha = alpha, c = colors[2], s = size, label = "mutant"); 
 
 
     ax.set_ylabel("Mean interaction duration", fontsize = 20)
     if sep:
-        format_plot(ax, bp, xticklabels = ["RC", "Mutants", "Non-members"]) # set x_axis, and colors of each bar
+        format_plot(ax, bp, xticklabels = ["RC", "Non-members", "Mutants"]) # set x_axis, and colors of each bar
     else:
         if not all_wt:
             format_plot(ax, bp, xticklabels = ["Mutants", "Non-members"]) # set x_axis, and colors of each bar
@@ -559,13 +564,13 @@ def rc_size():
     plt.show()
     
 if __name__ == "__main__":
-    tube_rank()
+    # tube_rank()
 # rc_size()
     # time_in_arena(False, True)
     # social_time(False, True)
 # chasings()
     # boxplot_approaches(True, True, all_wt = True)
     # boxplot_approaches(False, True, all_wt = True)
-    # boxplot_interactions(True, all_wt = True)
+    boxplot_interactions(True, all_wt = True)
     # boxplot_interaction_durations(True, all_wt = True)
 # approaches_scatter_plot(True)

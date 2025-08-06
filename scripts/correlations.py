@@ -20,11 +20,6 @@ import statsmodels.formula.api as smf
 import pandas as pd
 
 
-plt.rcParams.update({
-"text.usetex": True,
-"font.family": "Helvetica"
-})
-
 def tube_rank_vs_chasing_rank():
     path_cohort1 = "C:\\Users\\Agarwal Lab\\Corentin\\Python\\NoSeMaze\\data\\reduced_data.xlsx"
     # first cohort
@@ -399,7 +394,7 @@ def statistic(x, y, axis):
 
 def time_in_arena_correlation(sep = False):
     path_to_first_cohort = "..\\data\\reduced_data.xlsx"
-    path_to_second_cohort = "..\\data\\meta-data_full.xlsx"
+    path_to_second_cohort = "..\\data\\validation_cohort_full.xlsx"
     
     df1 = pd.read_excel(path_to_first_cohort)
     rc1 = df1.loc[:, "RC"]
