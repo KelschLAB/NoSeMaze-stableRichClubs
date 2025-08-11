@@ -12,6 +12,7 @@ sys.path.append(os.getcwd())
 from read_graph import read_graph
 import pandas as pd
 from HierarchiaPy import Hierarchia
+from collections import Counter
 
 plt.rcParams["font.family"] = "Arial"
 
@@ -679,10 +680,19 @@ def chasingOrder_RC(out = True, both = False):
                     approach_order_in.append(list(current_orders_in).index(rc_idx))
        
     plt.figure(figsize=(5,4))
+
     if both:
-        plt.hist(approach_order_in, bins = np.arange(-0.5, 10.5), stacked = True, rwidth= 0.8, align='mid', edgecolor='black', label = "Ingoing", alpha = 0.5)
-        plt.hist(approach_order_out, bins = np.arange(-0.5, 10.5), stacked = True, rwidth= 0.8, align='mid', edgecolor='black', label = "Outgoing", alpha = 0.5)
-        plt.legend()
+        # plt.hist(approach_order_in, bins = np.arange(-0.5, 10.5), stacked = True, rwidth= 0.8, align='mid', edgecolor='black', label = "Ingoing", alpha = 0.5)
+        # plt.hist(approach_order_out, bins = np.arange(-0.5, 10.5), stacked = True, rwidth= 0.8, align='mid', edgecolor='black', label = "Outgoing", alpha = 0.5)
+        # plt.legend()
+        points = list(zip(approach_order_in, approach_order_out))
+        counts = Counter(points)
+        sizes = [counts[(xi, yi)] * 80 for xi, yi in points]  # Scale size
+        plt.scatter(approach_order_in, approach_order_out, alpha = 0.3, c = "k", s = sizes)
+        plt.xlabel(r"Chasing order (in)", fontsize = 15)
+        plt.ylabel(r"Chasing order (out)", fontsize = 15)
+        plt.title("Chasing order for RC", fontsize = 20)
+        return
     elif out:
         plt.hist(approach_order_out, bins = np.arange(-0.5, 10.5), rwidth= 0.8, align='mid', color = 'gray', edgecolor='black')
     else:
@@ -691,15 +701,13 @@ def chasingOrder_RC(out = True, both = False):
     plt.xticks(np.arange(0, 10), labels=["1","2","3","4","5","6","7","8","9","10"], fontsize = 15) 
     plt.yticks(np.arange(0, 12, 2), fontsize = 15)  # Ensure ticks are centered on 0 through 9
 
-    if both:
-        plt.xlabel(r"Chasing order", fontsize = 19)
-    elif out:
+    if out:
         plt.xlabel(r"Chasing order (outgoing)", fontsize = 20)
+        plt.ylabel(r"Count", fontsize = 19)
     else:
         plt.xlabel(r"Chasing order (ingoing)", fontsize = 20)
-    plt.ylabel(r"Count", fontsize = 19)
+        plt.ylabel(r"Count", fontsize = 19)
     # plt.title("Approach order of RC members", fontsize = 18)
-    plt.tight_layout()
     plt.show()
    
 def chasingFraction_RC(out = True, ax = None):
@@ -855,18 +863,21 @@ def chasingFraction_exRC(out = True, ax = None):
 
     
 if __name__ == "__main__":
+    # Main figure 5
+    fig, ax = plt.subplots(1, 1)
+    tuberank_vs_exrc(ax)
+    tuberank_vs_rc(ax)
+    fig, ax = plt.subplots(1, 1)
+    chasingrank_vs_exrc(ax)
+    chasingrank_vs_rc(ax)
+    
+    
     # rich_club_piecharts()
     # rich_club_piechart_both()
     # mutants_RC_hist()
     # rc_coefficient_histogram(4, 3)
-    # fig, ax = plt.subplots(1, 1)
-    # chasingrank_vs_exrc(ax)
-    # chasingrank_vs_rc(ax)
 
-    
-    fig, ax = plt.subplots(1, 1)
-    # tuberank_vs_exrc(ax)
-    # tuberank_vs_rc(ax)
+    # chasingOrder_RC(True, True)
     
     # chasingrank_vs_nonrc()
     # tuberank_vs_nonrc()
@@ -874,8 +885,8 @@ if __name__ == "__main__":
     # total_chasings_cohort()
     
     # fig, ax = plt.subplots(1, 1, figsize = (3, 4))
-    chasingFraction_exRC(True, ax)
-    chasingFraction_RC(True, ax)
+    # chasingFraction_exRC(True, ax)
+    # chasingFraction_RC(True, ax)
 
     # approach_order_RC(False, True)
     # approach_order_WT(True, True)

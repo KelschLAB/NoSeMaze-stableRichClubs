@@ -21,13 +21,13 @@ labels = ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G10", "G11", "G12", "
 def approach_order(out = True):
     """ Histogram of approach order discriminating between RC, mutants and others.
     """
-    path_cohort1 = "C:\\Users\\Corentin offline\\Documents\\GitHub\\clusterGUI\\data\\reduced_data.csv"
-    path_cohort2 = "C:\\Users\\Corentin offline\\Documents\\GitHub\\clusterGUI\\data\\validation_cohort.csv"
-    approach_dir = "C:\\Users\\Corentin offline\\Documents\\GitHub\\clusterGUI\\data\\averaged\\"
+    path_cohort1 = "..\\data\\reduced_data.xlsx"
+    path_cohort2 = "..\\data\\validation_cohort.xlsx"
+    approach_dir = "..\\data\\both_cohorts_7days\\"
 
     approach_order_rc, approach_order_mut, approach_order_others = [], [], []
     # first cohort
-    df1 = pd.read_csv(path_cohort1)
+    df1 = pd.read_excel(path_cohort1)
     groups1 = df1.loc[:, "group"].to_numpy()
     RCs1 = df1.loc[:, "RC"].to_numpy()
     genotype1 = df1.loc[:, "mutant"]
@@ -60,7 +60,7 @@ def approach_order(out = True):
                     other_idx = np.where(mouse_names[idx] == names_in_approach_matrix)[0][0]
                     approach_order_others.append(list(current_orders).index(other_idx))
 
-    df2 = pd.read_csv(path_cohort2)
+    df2 = pd.read_excel(path_cohort2)
     groups2 = df2.loc[:, "Group_ID"].to_numpy()
     RCs2 = df2.loc[:, "RC"].to_numpy()
     genotype2 = df2.loc[:, "genotype"]
@@ -203,7 +203,7 @@ def chasing_order(out = True):
     
 
     
-approach_order() # outgoing
-# approach_order(False) # ingoing
+# approach_order() # outgoing
+approach_order(False) # ingoing
 # chasing_order() # outgoing
 # chasing_order(False) # ingoing

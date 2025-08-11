@@ -19,7 +19,6 @@ from scipy import stats
 import statsmodels.formula.api as smf
 import pandas as pd
 
-
 def tube_rank_vs_chasing_rank():
     path_cohort1 = "C:\\Users\\Agarwal Lab\\Corentin\\Python\\NoSeMaze\\data\\reduced_data.xlsx"
     # first cohort

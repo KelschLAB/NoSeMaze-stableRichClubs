@@ -28,13 +28,17 @@ def mean(x, y, axis):
     return np.mean(x, axis=axis) - np.mean(y, axis=axis)
 
 def median(x, y, axis):
-    return np.mean(x, axis=axis) - np.mean(y, axis=axis)
+    return np.median(x, axis=axis) - np.median(y, axis=axis)
 
 def format_plot(ax, bp, xticklabels = ["RC", "Mutants", "Others"]):
     """ Sets the x-axis the RC/mutants/Others, changes the color of the bars in the boxplot."""
     ax.set_xticklabels(xticklabels, fontsize = 20)
-    # colors = sns.color_palette('pastel')
-    colors = ["cornflowerblue", "darkgray", "firebrick"]
+    if len(xticklabels) == 2:
+        colors = ["darkgray", "firebrick"]
+    elif len(xticklabels) == 3:
+        colors = ["cornflowerblue", "darkgray", "firebrick"]
+    else:
+        raise("Tick labels should have length 2 or 3.")
     for patch, color in zip(bp['boxes'], colors): # set colors
         patch.set_facecolor(color)
     plt.setp(bp['medians'], color='k')
@@ -93,6 +97,67 @@ def add_significance(data, ax, bp, stat = mean):
             sig_symbol = f"p = {np.round(p, 3)}"
             text_height = bar_height + (y_range * 0.01)
             plt.text((x1 + x2) * 0.5, text_height, sig_symbol, ha='center', va='bottom', c='k')
+            
+def statistic(x, y):
+    x = np.concatenate(x)
+    y = np.concatenate(y)
+    return np.mean(x) - np.mean(y)            
+
+def add_group_significance(data, rfids, ax, bp):
+    """Computes and adds p-value significance to input ax and boxplot"""
+    # Check from the outside pairs of boxes inwards
+    ls = list(range(1, len(data) + 1))
+    rfids1 = rfids[0]
+    rfids2 = rfids[1]
+    data1, data2 = data[0], data[1]
+
+    # Group data by RFID
+    grouped_data1 = [[data1[i] for i, r in enumerate(rfids1) if r == rfid] for rfid in np.unique(rfids1)]
+    grouped_data1 = [list(d) for d in grouped_data1]
+    grouped_data2 = [[data2[i] for i, r in enumerate(rfids2) if r == rfid] for rfid in np.unique(rfids2)]
+    grouped_data2 = [list(d) for d in grouped_data2]
+
+    combined_data = grouped_data1 + grouped_data2
+    labels = [0] * len(grouped_data1) + [1] * len(grouped_data2)
+
+    ## custom permutation test
+    observed_stat = statistic(grouped_data1, grouped_data2)
+
+    # Generate permutations
+    permuted_stats = []
+    t = 0
+    for _ in tqdm(range(10000)):
+        np.random.shuffle(labels)
+        permuted_group1 = [combined_data[i] for i in range(len(labels)) if labels[i] == 0]
+        permuted_group2 = [combined_data[i] for i in range(len(labels)) if labels[i] == 1]
+        permuted_stats.append(statistic(permuted_group1, permuted_group2))
+
+    # Compute p-value
+    permuted_stats = np.array(permuted_stats)
+    p = np.mean(np.abs(permuted_stats) >= np.abs(observed_stat))
+    print(p)
+
+    x1 = 1
+    x2 = 2
+    bottom, top = ax.get_ylim()
+    y_range = top - bottom
+    bar_height = (y_range * 0.05 * 1) + top #- 20
+    bar_tips = bar_height - (y_range * 0.02)
+    ax.plot(
+        [x1, x1, x2, x2],
+        [bar_tips, bar_height, bar_height, bar_tips], lw=1, c='k'
+    )
+
+    if p < 0.001:
+        sig_symbol = '***'
+    elif p < 0.01:
+        sig_symbol = '**'
+    elif p < 0.05:
+        sig_symbol = '*'
+    else:
+        sig_symbol = f"p = {np.round(p, 3)}"
+    text_height = bar_height + (y_range * 0.01)
+    ax.text((x1 + x2) * 0.5, text_height, sig_symbol, ha='center', va='bottom', c='k')
 
 
 labels = ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G10", "G11", "G12", "G13", "G14", "G15", "G16", "G17"]
@@ -133,7 +198,8 @@ def get_category_indices(graph_idx, variable, window, rm_weak_histo = True):
     curr_metadata_df = metadata_df.loc[metadata_df["Group_ID"] == int(labels[graph_idx][1:]), :]
     # figuring out index of true mutants in current group
     if not rm_weak_histo:
-        is_mutant = [True if curr_metadata_df.loc[metadata_df["Mouse_RFID"] == rfid, "mutant"].values else False for rfid in RFIDs]
+        mutant_map = curr_metadata_df.set_index('Mouse_RFID')['mutant'].to_dict()
+        is_mutant = [mutant_map.get(rfid, False) for rfid in RFIDs] # if RFID is missing, animal is assumed to be neurotypical
     else:
         is_mutant = []
         for rfid in RFIDs:
@@ -151,7 +217,12 @@ def get_category_indices(graph_idx, variable, window, rm_weak_histo = True):
                 is_mutant.append(False)
             
     graph_length = len(RFIDs)
-    is_RC = [True if curr_metadata_df.loc[curr_metadata_df["Mouse_RFID"] == rfid, "RC"].values else False for rfid in RFIDs] # list of boolean stating which mice are RC
+    # is_RC = [True if curr_metadata_df.loc[curr_metadata_df["Mouse_RFID"] == rfid, "RC"].values else False for rfid in RFIDs] # list of boolean stating which mice are RC
+    is_RC = [
+        True if (curr_metadata_df.loc[curr_metadata_df["Mouse_RFID"] == rfid, "RC"].values.size > 0 and
+             curr_metadata_df.loc[curr_metadata_df["Mouse_RFID"] == rfid, "RC"].values[0]) else False
+        for rfid in RFIDs
+    ]
     mutants = np.where(is_mutant)[0] if len(np.where(is_mutant)) != 0 else [] # indices of mutants in this group
     rc = np.where(is_RC)[0] if len(np.where(is_mutant)) != 0 else [] # indices of RC in this group
     others = np.arange(graph_length)[np.logical_and(~np.isin(np.arange(graph_length), rc), ~np.isin(np.arange(graph_length), mutants))]

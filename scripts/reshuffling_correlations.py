@@ -449,9 +449,12 @@ def plot_reshuffled_chasingRank_corr():
     plt.tight_layout()
     plt.show()
 
-# plot_reshuffled_tuberank_corr()
-# plot_reshuffled_inchasing_corr(True)
+
+# Supplement figure 11
+plot_reshuffled_tuberank_corr()
 plot_reshuffled_outchasing_corr(True)
+
+# plot_reshuffled_inchasing_corr(True)
 # plot_reshuffled_chasingRank_corr(True)
 # plot_reshuffled_outapproach_corr(True)
 # plot_reshuffled_chasingRank_corr()

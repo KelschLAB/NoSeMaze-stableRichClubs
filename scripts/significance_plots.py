@@ -29,531 +29,269 @@ def chasing_towards(rc_size = 3, total_chasings = 100):
     plt.legend()
     plt.show()
 
-def mutants_in_rc_mnn2_k2():
-    number_of_hits = []
-    mutants = np.array([1, 2])
-    mutants_G11 = np.array([1,2,3,4])
-    shuffled_arr = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+# mutants exclusion analysis
+def mutants_in_rc_mnn2_k2(iterations = 10000):
+    # extracting meta data for mnn = 2 and k = 2
+    metadata_path = "..\\data\\meta_data_exclusion_in_second\\meta_data_k2.csv"
+    metadata_df = pd.read_csv(metadata_path)
     
-    for i in tqdm(range(1000)):
+    # getting number of mutants, size of sRC for each group and actual observation
+    group_list = [g for g in np.arange(18) if np.sum((metadata_df["Group_ID"] == g) & metadata_df["RC"]) > 0] # list of groups for which a sRC was identified
+    rc_sizes = [np.sum((metadata_df["Group_ID"] == g) & metadata_df["RC"]) for g in group_list] # size of the sRC in each group
+    mutants_number = [np.sum((metadata_df["Group_ID"] == g) & metadata_df["mutant"]) for g in group_list] # & (metadata_df["histology"] != "weak")
+    observed = np.sum(metadata_df["mutant"] & metadata_df["RC"]) # number of mutants observed in the sRC
+ 
+    # permutation test
+    number_of_hits = []   
+    shuffled_arr = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) # pre-alocating memory for shuffling
+    for _ in tqdm(range(iterations)):
         hits = 0
-        for j in range(1):
-            # expID 1
+        for m, r in zip(mutants_number, rc_sizes): # iterating through all groups
             np.random.shuffle(shuffled_arr)
-            hits += np.sum(np.isin(mutants, shuffled_arr[:2]))
-            # expID 2
-            np.random.shuffle(shuffled_arr)
-            hits += np.sum(np.isin(mutants, shuffled_arr[:2]))
-            # expID 3
-            np.random.shuffle(shuffled_arr)
-            hits += np.sum(np.isin(mutants, shuffled_arr[:2]))
-            # expID 4
-            np.random.shuffle(shuffled_arr)
-            hits += np.sum(np.isin(mutants, shuffled_arr[:2]))
-            # expID 5
-            np.random.shuffle(shuffled_arr)
-            hits += np.sum(np.isin(mutants, shuffled_arr[:2]))
-            # expID 6
-            np.random.shuffle(shuffled_arr)
-            hits += np.sum(np.isin(mutants, shuffled_arr[:2]))
-            # expID 7
-            np.random.shuffle(shuffled_arr)
-            hits += np.sum(np.isin(mutants, shuffled_arr[:3]))
-            # expID 8
-            np.random.shuffle(shuffled_arr)
-            hits += np.sum(np.isin(mutants, shuffled_arr[:1]))
-            # expID 10
-            np.random.shuffle(shuffled_arr)
-            hits += np.sum(np.isin(mutants, shuffled_arr[:3]))
-            # expID 11
-            np.random.shuffle(shuffled_arr)
-            hits += np.sum(np.isin(mutants_G11, shuffled_arr[:1]))
-            # expID 12
-            np.random.shuffle(shuffled_arr)
-            hits += np.sum(np.isin(mutants, shuffled_arr[:2]))
-            # expID 15
-            np.random.shuffle(shuffled_arr)
-            hits += np.sum(np.isin(mutants, shuffled_arr[:3]))
-            # # expID 18
-            np.random.shuffle(shuffled_arr)
-            hits += np.sum(np.isin(mutants, shuffled_arr[:2]))
-            
+            selected = shuffled_arr[:r]
+            hits += np.sum([idx in selected for idx in range(1, m + 1)])
         number_of_hits.append(hits)
     
     fig = plt.figure()
     h = plt.hist(number_of_hits, bins = np.arange(15), density = True, align = 'left', label = "Expected by random chance")
     plt.axvline(np.percentile(number_of_hits, 5), ls = "--", color = 'k', label = "95% CI")
-    # plt.axvline(np.percentile(number_of_hits, 95), ls = "--", color = 'k', label = "95% CI")
-    plt.axvline(2, color = 'red', label = "Experimentally observed")
-    plt.annotate("p-value = "+str(np.round(np.cumsum(h[0]), 4)[2]), (1.5, 0.2), bbox=dict(facecolor='white', edgecolor='none', pad=1.0), ha='center')
-    plt.title("Random chance of mutant in rich-club\n both cohorts")
-    plt.xlabel("Number of mutants in sRC", fontsize=15)
-    plt.ylabel("Probability", fontsize=15)
-    plt.legend()
-    plt.show()
-
-def mutants_in_rc_mnn3_k3(weak = False): #mnn = 3, rc = 3
-    number_of_hits = []
-    single_mutants = np.array([1])
-    double_mutants = np.array([1, 2])
-    triple_mutants = np.array([1,2,3])
-    quadruple_mutants = np.array([1,2,3,4])
-    quintuple_mutants = np.array([1,2,3,4,5])
-    shuffled_arr = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
-    if weak:
-        full_histo_mutants = [double_mutants, double_mutants,double_mutants,double_mutants,double_mutants,double_mutants,double_mutants, double_mutants, double_mutants, 
-                              quadruple_mutants, quintuple_mutants, triple_mutants, triple_mutants, triple_mutants]
-    else:
-        full_histo_mutants = [single_mutants, single_mutants, double_mutants, single_mutants, double_mutants, single_mutants, double_mutants, single_mutants, single_mutants,
-                              quadruple_mutants, double_mutants, quadruple_mutants, double_mutants]
-
-    for i in tqdm(range(1000)):
-        hits = 0
-        for j in range(1):
-            # expID 1
-            np.random.shuffle(shuffled_arr)
-            hits += np.sum(np.isin(full_histo_mutants[0], shuffled_arr[:2]))
-            # expID 2
-            np.random.shuffle(shuffled_arr)
-            hits += np.sum(np.isin(full_histo_mutants[1], shuffled_arr[:3]))
-            # expID 3
-            np.random.shuffle(shuffled_arr)
-            hits += np.sum(np.isin(full_histo_mutants[2], shuffled_arr[:3]))
-            # expID 4
-            np.random.shuffle(shuffled_arr)
-            hits += np.sum(np.isin(full_histo_mutants[3], shuffled_arr[:2]))
-            # expID 5
-            np.random.shuffle(shuffled_arr)
-            hits += np.sum(np.isin(full_histo_mutants[4], shuffled_arr[:2]))
-            # expID 6
-            np.random.shuffle(shuffled_arr)
-            hits += np.sum(np.isin(full_histo_mutants[5], shuffled_arr[:2]))
-            # expID 7
-            np.random.shuffle(shuffled_arr)
-            hits += np.sum(np.isin(full_histo_mutants[6], shuffled_arr[:3]))
-            # expID 8
-            np.random.shuffle(shuffled_arr)
-            hits += np.sum(np.isin(full_histo_mutants[7], shuffled_arr[:2]))
-            # expID 10
-            np.random.shuffle(shuffled_arr)
-            hits += np.sum(np.isin(full_histo_mutants[8], shuffled_arr[:3]))
-            # expID 11
-            np.random.shuffle(shuffled_arr)
-            hits += np.sum(np.isin(full_histo_mutants[9], shuffled_arr[:2]))
-            # expID 12
-            np.random.shuffle(shuffled_arr)
-            hits += np.sum(np.isin(full_histo_mutants[10], shuffled_arr[:2]))
-            # expID 15
-            np.random.shuffle(shuffled_arr)
-            hits += np.sum(np.isin(full_histo_mutants[11], shuffled_arr[:3]))
-            # # expID 17
-            np.random.shuffle(shuffled_arr)
-            hits += np.sum(np.isin(full_histo_mutants[12], shuffled_arr[:2]))
-            
-        number_of_hits.append(hits)
-    
-    fig = plt.figure()
-    h = plt.hist(number_of_hits, bins = np.arange(15), density = True, align = 'left', label = "Expected by random chance")
-    if weak:
-        observed = 2
-    else:
-        observed = 2
-    plt.axvline(np.percentile(number_of_hits, 5), ls = "--", color = 'k', label = "95% CI")
-    # plt.axvline(np.percentile(number_of_hits, 95), ls = "--", color = 'k', label = "95% CI")
     plt.axvline(observed, color = 'red', label = "Experimentally observed")
-    plt.annotate("p-value = "+str(np.round(np.cumsum(h[0]), 4)[observed]), (1.5, 0.2), bbox=dict(facecolor='white', edgecolor='none', pad=1.0), ha='center')
-    plt.title("Random chance of mutant in rich-club\n both cohorts")
+    p_value = np.mean(np.array(number_of_hits) <= observed)
+    print(p_value)
+    plt.annotate("p-value = "+str(np.round(p_value, 4)), (1.5, 0.75*max(h[0])), bbox=dict(facecolor='white', edgecolor='none', pad=1.0), ha='center')
+    plt.title("Random chance of mutant in stable rich-club\n mnn = 2, k = 2")
     plt.xlabel("Number of mutants in sRC", fontsize=15)
     plt.ylabel("Probability", fontsize=15)
     plt.legend()
-    plt.savefig("C:\\Users\\wolfgang.kelsch\\Downloads\\mutants_in_RC_mnn3_rc3.svg")
-    plt.show()
     
-def mutants_in_rc_mnn4_k4(weak = False): #actually 4 mnn and rc 4
-    number_of_hits = []
-    single_mutants = np.array([1])
-    double_mutants = np.array([1, 2])
-    triple_mutants = np.array([1,2,3])
-    quadruple_mutants = np.array([1,2,3,4])
-    quintuple_mutants = np.array([1,2,3,4,5])
-    shuffled_arr = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
-    if weak:
-        full_histo_mutants = [double_mutants, double_mutants,double_mutants,double_mutants,double_mutants,double_mutants,double_mutants, double_mutants, double_mutants, 
-                              quadruple_mutants, quintuple_mutants, triple_mutants, quadruple_mutants, triple_mutants]
-    else:
-        full_histo_mutants = [single_mutants, single_mutants, double_mutants, single_mutants, double_mutants, single_mutants, double_mutants, single_mutants, single_mutants,
-                              quadruple_mutants, double_mutants, quadruple_mutants, triple_mutants, double_mutants]
+def mutants_in_rc_mnn3_k3(iterations = 10000): #mnn = 3, rc = 3
+    metadata_path = "..\\data\\meta_data_exclusion_in_second\\meta_data.csv"
+    metadata_df = pd.read_csv(metadata_path)
 
-    for i in tqdm(range(1000)):
+    # getting number of mutants, size of sRC for each group and actual observation
+    group_list = [g for g in np.arange(18) if np.sum((metadata_df["Group_ID"] == g) & metadata_df["RC"]) > 0] # list of groups for which a sRC was identified
+    rc_sizes = [np.sum((metadata_df["Group_ID"] == g) & metadata_df["RC"]) for g in group_list] # size of the sRC in each group
+    mutants_number = [np.sum((metadata_df["Group_ID"] == g) & metadata_df["mutant"]) for g in group_list] # & (metadata_df["histology"] != "weak")
+    observed = np.sum(metadata_df["mutant"] & metadata_df["RC"]) # number of mutants observed in the sRC
+
+    # permutation test
+    number_of_hits = []
+    shuffled_arr = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    for _ in tqdm(range(iterations)):
         hits = 0
-        for j in range(1):
-            # expID 1
+        for m, r in zip(mutants_number, rc_sizes): # iterating through all groups
             np.random.shuffle(shuffled_arr)
-            hits += np.sum(np.isin(full_histo_mutants[0], shuffled_arr[:2]))
-            # expID 2
+            selected = shuffled_arr[:r]
+            hits += np.sum([idx in selected for idx in range(1, m + 1)])
+        number_of_hits.append(hits)
+    
+    fig = plt.figure()
+    h = plt.hist(number_of_hits, bins = np.arange(15), density = True, align = 'left', label = "Expected by random chance")
+    plt.axvline(np.percentile(number_of_hits, 5), ls = "--", color = 'k', label = "95% CI")
+    plt.axvline(observed, color = 'red', label = "Experimentally observed")
+    p_value = np.mean(np.array(number_of_hits) <= observed)
+    print(p_value)
+    plt.annotate("p-value = "+str(np.round(p_value, 4)), (1.5, 0.75*max(h[0])), bbox=dict(facecolor='white', edgecolor='none', pad=1.0), ha='center')
+    plt.title("Random chance of mutant in stable rich-club\n mnn = 3, k = 3")
+    plt.xlabel("Number of mutants in sRC", fontsize=15)
+    plt.ylabel("Probability", fontsize=15)
+    plt.legend()
+    
+def mutants_in_rc_mnn4_k4(weak = True, iterations = 10000): # mnn4 and rc 4
+    metadata_path = "..\\data\\meta_data_exclusion_in_second\\meta_data_k4.csv"
+    metadata_df = pd.read_csv(metadata_path)
+
+    # getting number of mutants, size of sRC for each group and actual observation
+    group_list = [g for g in np.arange(18) if np.sum((metadata_df["Group_ID"] == g) & metadata_df["RC"]) > 0] # list of groups for which a sRC was identified
+    rc_sizes = [np.sum((metadata_df["Group_ID"] == g) & metadata_df["RC"]) for g in group_list] # size of the sRC in each group
+    mutants_number = [np.sum((metadata_df["Group_ID"] == g) & metadata_df["mutant"]) for g in group_list] # & (metadata_df["histology"] != "weak")
+    observed = np.sum(metadata_df["mutant"] & metadata_df["RC"]) # number of mutants observed in the sRC
+    
+    # permutation test
+    number_of_hits = []
+    shuffled_arr = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    for _ in tqdm(range(iterations)):
+        hits = 0
+        for m, r in zip(mutants_number, rc_sizes): # iterating through all groups
             np.random.shuffle(shuffled_arr)
-            hits += np.sum(np.isin(full_histo_mutants[1], shuffled_arr[:3]))
-            # expID 3
-            np.random.shuffle(shuffled_arr)
-            hits += np.sum(np.isin(full_histo_mutants[2], shuffled_arr[:4]))
-            # expID 4
-            np.random.shuffle(shuffled_arr)
-            hits += np.sum(np.isin(full_histo_mutants[3], shuffled_arr[:2]))
-            # expID 5
-            np.random.shuffle(shuffled_arr)
-            hits += np.sum(np.isin(full_histo_mutants[4], shuffled_arr[:3]))
-            # expID 6
-            np.random.shuffle(shuffled_arr)
-            hits += np.sum(np.isin(full_histo_mutants[5], shuffled_arr[:4]))
-            # expID 7
-            np.random.shuffle(shuffled_arr)
-            hits += np.sum(np.isin(full_histo_mutants[6], shuffled_arr[:3]))
-            # expID 8
-            np.random.shuffle(shuffled_arr)
-            hits += np.sum(np.isin(full_histo_mutants[7], shuffled_arr[:3]))
-            # expID 10
-            np.random.shuffle(shuffled_arr)
-            hits += np.sum(np.isin(full_histo_mutants[8], shuffled_arr[:3]))
-            # expID 11
-            np.random.shuffle(shuffled_arr)
-            hits += np.sum(np.isin(full_histo_mutants[9], shuffled_arr[:3]))
-            # expID 12
-            np.random.shuffle(shuffled_arr)
-            hits += np.sum(np.isin(full_histo_mutants[10], shuffled_arr[:3]))
-            # expID 14
-            np.random.shuffle(shuffled_arr)
-            hits += np.sum(np.isin(full_histo_mutants[11], shuffled_arr[:1]))
-            # expID 15
-            np.random.shuffle(shuffled_arr)
-            hits += np.sum(np.isin(full_histo_mutants[12], shuffled_arr[:2]))
-            # # expID 17
-            np.random.shuffle(shuffled_arr)
-            hits += np.sum(np.isin(full_histo_mutants[13], shuffled_arr[:2]))
-            
+            selected = shuffled_arr[:r]
+            hits += np.sum([idx in selected for idx in range(1, m + 1)])
         number_of_hits.append(hits)
         
+    plt.figure()
     h = plt.hist(number_of_hits, bins = np.arange(17), density = True, align = 'left', label = "Expected by random chance")
-    if weak:
-        observed = 5
-    else:
-        observed = 3 
     plt.axvline(np.percentile(number_of_hits, 5), ls = "--", color = 'k', label = "95% CI")
-    # plt.axvline(np.percentile(number_of_hits, 95), ls = "--", color = 'k', label = "95% CI")
     plt.axvline(observed, color = 'red', label = "Experimentally observed")
-    plt.annotate("p-value = "+str(np.round(np.cumsum(h[0]), 4)[observed]), (1.5, 0.2), bbox=dict(facecolor='white', edgecolor='none', pad=1.0), ha='center')
-    plt.title("Random chance of mutant in rich-club\n both cohorts")
+    p_value = np.mean(np.array(number_of_hits) <= observed)
+    plt.annotate("p-value = "+str(np.round(p_value, 4)), (1.5, 0.75*max(h[0])), bbox=dict(facecolor='white', edgecolor='none', pad=1.0), ha='center')
+    plt.title("Random chance of mutant in stable rich-club\n mnn = 4, k = 4")
     plt.xlabel("Number of mutants in sRC", fontsize=15)
     plt.ylabel("Probability", fontsize=15)
-    print(np.round(np.cumsum(h[0]), 4)[observed])
+    print(str(np.round(p_value, 4)))
     plt.legend()
-    plt.show()
     
-def mutants_in_both_mnn5_k5(weak = False):
-    number_of_hits = []
-    single_mutants = np.array([1])
-    double_mutants = np.array([1, 2])
-    triple_mutants = np.array([1,2,3])
-    quadruple_mutants = np.array([1,2,3,4])
-    quintuple_mutants = np.array([1,2,3,4,5])
-    shuffled_arr = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
-    if weak:
-        full_histo_mutants = [double_mutants, double_mutants,double_mutants,double_mutants,double_mutants,double_mutants,double_mutants, double_mutants, double_mutants, 
-                          quadruple_mutants, quintuple_mutants, triple_mutants, quadruple_mutants, triple_mutants]
-    else:
-        full_histo_mutants = [single_mutants, double_mutants, single_mutants, single_mutants, double_mutants, single_mutants, double_mutants, single_mutants, single_mutants,
-                              quadruple_mutants, double_mutants, double_mutants, triple_mutants, triple_mutants]
-    for i in tqdm(range(1000)):
-        hits = 0
-        for j in range(1):
-            # expID 1
-            np.random.shuffle(shuffled_arr)
-            hits += np.sum(np.isin(full_histo_mutants[0], shuffled_arr[:3]))
-            # expID 2
-            np.random.shuffle(shuffled_arr)
-            hits += np.sum(np.isin(full_histo_mutants[1], shuffled_arr[:5]))
-            # expID 3
-            np.random.shuffle(shuffled_arr)
-            hits += np.sum(np.isin(full_histo_mutants[2], shuffled_arr[:5]))
-            # expID 4
-            np.random.shuffle(shuffled_arr)
-            hits += np.sum(np.isin(full_histo_mutants[3], shuffled_arr[:4]))
-            # expID 5
-            np.random.shuffle(shuffled_arr)
-            hits += np.sum(np.isin(full_histo_mutants[4], shuffled_arr[:4]))
-            # expID 6
-            np.random.shuffle(shuffled_arr)
-            hits += np.sum(np.isin(full_histo_mutants[5], shuffled_arr[:4]))
-            # expID 7
-            np.random.shuffle(shuffled_arr)
-            hits += np.sum(np.isin(full_histo_mutants[6], shuffled_arr[:2]))
-            # expID 8
-            np.random.shuffle(shuffled_arr)
-            hits += np.sum(np.isin(full_histo_mutants[7], shuffled_arr[:4]))
-            # expID 10
-            np.random.shuffle(shuffled_arr)
-            hits += np.sum(np.isin(full_histo_mutants[8], shuffled_arr[:4]))
-            # expID 11
-            np.random.shuffle(shuffled_arr)
-            hits += np.sum(np.isin(full_histo_mutants[9], shuffled_arr[:3]))
-            # expID 12
-            np.random.shuffle(shuffled_arr)
-            hits += np.sum(np.isin(full_histo_mutants[10], shuffled_arr[:4]))
-            # expID 14
-            np.random.shuffle(shuffled_arr)
-            hits += np.sum(np.isin(full_histo_mutants[11], shuffled_arr[:2]))
-            # expID 15
-            np.random.shuffle(shuffled_arr)
-            hits += np.sum(np.isin(full_histo_mutants[12], shuffled_arr[:2]))
-            # # expID 17
-            np.random.shuffle(shuffled_arr)
-            hits += np.sum(np.isin(full_histo_mutants[13], shuffled_arr[:2]))
-            
-        number_of_hits.append(hits)
-    
-    if weak:
-        observed = 7
-    else:
-        observed = 6
-    h = plt.hist(number_of_hits, bins = np.arange(15), density = True, align = 'left', label = "Expected by random chance")
-    plt.axvline(np.percentile(number_of_hits, 5), ls = "--", color = 'k', label = "95% CI")
-    # plt.axvline(np.percentile(number_of_hits, 95), ls = "--", color = 'k', label = "95% CI")
-    plt.axvline(observed, color = 'red', label = "Experimentally observed")
-    plt.annotate("p-value = "+str(np.round(np.cumsum(h[0]), 4)[observed]), (1.5, 0.2), bbox=dict(facecolor='white', edgecolor='none', pad=1.0), ha='center')
-    plt.title("Random chance of mutant in rich-club\n both cohorts")
-    plt.xlabel("Number of mutants in sRC", fontsize=15)
-    plt.ylabel("Probability", fontsize=15)
-    plt.legend()
-    plt.show()
-    
-"""
-Littermates indices, that will be shuffled to compute statistical significance under the various combination of parameters chosen for analysis
-"""
-shuffled_arr1 = np.array([41, 31, 2, 3, 3, 5, 6, 7, 7, 8])
-shuffled_arr2 = np.array([25, 28, 40, 41, 42, 2, 5, 6, 8])
-shuffled_arr3 = np.array([25, 29, 29, 29, 32, 32, 2, 3, 4])
-shuffled_arr4 = np.array([25, 31, 2, 3, 5, 5, 6, 7, 7, 8])
-shuffled_arr5 = np.array([25, 28, 29, 29, 30, 42, 2, 3, 6])
-shuffled_arr6 = np.array([25, 29, 41, 4, 5, 5, 6, 7, 8, 8])
-shuffled_arr7 = np.array([25, 25, 29, 29, 32, 32, 2, 3, 5])
-shuffled_arr8 = np.array([25, 28, 29, 40, 41, 2, 5, 6, 8]) 
-shuffled_arr10 = np.array([28, 29, 40, 41, 42, 2, 5, 5, 6])
-shuffled_arr11 = np.array([13, 14, 14, 15, 15, 15, 17, 17, 18, 22])
-shuffled_arr12 = np.array([11, 12, 13, 14, 15, 20, 21, 23, 23, 23])
-shuffled_arr15 = np.array([13, 14, 14, 15, 15, 15, 16, 17, 17, 22])
-shuffled_arr17 = np.array([10, 13, 19, 20, 21, 21, 22, 23, 23, 23])
+# limiting the analysis for groups that have AT MOST 2 mutants
+def mutants_in_rc_subcohort(iterations = 9999):
+    metadata_path = "..\\data\\meta_data.csv"
+    metadata_df = pd.read_csv(metadata_path)
 
-def littermates_in_rc_mnn2_k2():
+    # extracting relevant information for permutation test
+    group_list = [g for g in np.arange(1, 18)  # list of groups for which a sRC was identified and there were at most 2 mutants in them
+                  if np.sum(metadata_df.loc[metadata_df["Group_ID"] == g, "mutant"]) < 3 
+                  and np.sum(metadata_df.loc[metadata_df["Group_ID"] == g, "RC"]) > 0] 
+    rc_sizes = [np.sum((metadata_df["Group_ID"] == g) & metadata_df["RC"]) for g in group_list] # size of the sRC in each group
+    mutants_number = [np.sum(metadata_df.loc[metadata_df["Group_ID"] == g, "mutant"]) for g in group_list] # & (metadata_df["histology"] != "weak")
+    observed = np.sum(metadata_df["mutant"] & metadata_df["RC"] & metadata_df["Group_ID"].isin(group_list)) # number of mutants observed in the sRC
+    
+    # permutation test
+    number_of_hits = []
+    shuffled_arr = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    for _ in tqdm(range(iterations)):
+        hits = 0
+        for m, r in zip(mutants_number, rc_sizes): # iterating through all groups
+            np.random.shuffle(shuffled_arr)
+            selected = shuffled_arr[:r]
+            hits += np.sum([idx in selected for idx in range(1, m + 1)])
+        number_of_hits.append(hits)
+        
+    fig = plt.figure()
+    h = plt.hist(number_of_hits, bins = np.arange(15),  density = True, align = 'left', label = "Expected by random chance")
+    p_value = np.mean(np.array(number_of_hits) <= observed)
+    plt.axvline(np.percentile(number_of_hits, 5), ls = "--", color = 'k', label = "95% CI")
+    plt.axvline(observed, color = 'red', label = "Experimentally observed")
+    plt.annotate("p-value = "+str(np.round(p_value, 4)), (1.5, 0.75*max(h[0])), bbox=dict(facecolor='white', edgecolor='none', pad=1.0), ha='center')
+    plt.title("Random chance of mutant in rich-club\n groups with n <= 2 mutants \n k = 3")
+    plt.xlabel("Number of mutants in sRC", fontsize=15)
+    plt.ylabel("Probability", fontsize=15)
+    plt.legend()
+    print(np.round(np.cumsum(h[0]), 4)[observed])
+    plt.show()
+    
+    
+# littermates analysis   
+"""
+Extracting littermates indices, that will be shuffled to compute the permutation test
+"""
+littermates_path = "..\\data\\littermates_info.xlsx"
+litter_cohort1 = pd.read_excel(littermates_path, sheet_name='cohort 1') # groups 1 to 10
+shuffled_arr1 = litter_cohort1.loc[litter_cohort1["group 1"].notna(), "litter"].values
+shuffled_arr2 = litter_cohort1.loc[litter_cohort1["group 2"].notna(), "litter"].values
+shuffled_arr3 = litter_cohort1.loc[litter_cohort1["group 3"].notna(), "litter"].values
+shuffled_arr4 = litter_cohort1.loc[litter_cohort1["group 4"].notna(), "litter"].values
+shuffled_arr5 = litter_cohort1.loc[litter_cohort1["group 5"].notna(), "litter"].values
+shuffled_arr6 = litter_cohort1.loc[litter_cohort1["group 6"].notna(), "litter"].values
+shuffled_arr7 = litter_cohort1.loc[litter_cohort1["group 7"].notna(), "litter"].values
+shuffled_arr8 = litter_cohort1.loc[litter_cohort1["group 8"].notna(), "litter"].values
+shuffled_arr10 = litter_cohort1.loc[litter_cohort1["group 10"].notna(), "litter"].values
+littermates_path = "..\\data\\littermates_info.xlsx"
+litter_cohort2 = pd.read_excel(littermates_path, sheet_name='cohort 2') # groups 11 to 17
+shuffled_arr11 = litter_cohort2.loc[litter_cohort2["group 11"].notna(), "litter"].values
+shuffled_arr12 = litter_cohort2.loc[litter_cohort2["group 12"].notna(), "litter"].values
+shuffled_arr15 = litter_cohort2.loc[litter_cohort2["group 15"].notna(), "litter"].values
+shuffled_arr17 = litter_cohort2.loc[litter_cohort2["group 17"].notna(), "litter"].values
+
+def littermates_in_rc_mnn2_k2(iterations = 10000):
     """
     Computes the chance of finding pairs of littermates in the RC by random chance for mnn = 2 and k = 2.
     """
+    # Extracting sRC sizes
+    metadata_path = "..\\data\\meta_data_k2.csv"
+    metadata_df = pd.read_csv(metadata_path)
+    group_list = [g for g in np.arange(18) if np.sum((metadata_df["Group_ID"] == g) & metadata_df["RC"]) > 0] # list of groups for which a sRC was identified
+    rc_sizes = [np.sum((metadata_df["Group_ID"] == g) & metadata_df["RC"]) for g in group_list] # size of the sRC in each group
+    
     number_of_hits = []
-    for i in tqdm(range(1000)):
+    for i in tqdm(range(iterations)):
         hits = 0
-        # expID 1
-        np.random.shuffle(shuffled_arr1)
-        if shuffled_arr1[0] == shuffled_arr1[1]:
-            hits += 1
-        #expID 2
-        np.random.shuffle(shuffled_arr2)
-        if shuffled_arr2[0] == shuffled_arr2[1]:
-            hits += 1
-        #expID 3
-        np.random.shuffle(shuffled_arr3)
-        if shuffled_arr3[0] == shuffled_arr3[1]:
-            hits += 1
-        # expID 4
-        np.random.shuffle(shuffled_arr4)
-        if shuffled_arr4[0] == shuffled_arr4[1]:
-            hits += 1
-        # expID 5
-        np.random.shuffle(shuffled_arr5)
-        if shuffled_arr5[0] == shuffled_arr5[1]:
-            hits += 1
-        # expID 6
-        np.random.shuffle(shuffled_arr6)
-        if shuffled_arr6[0] == shuffled_arr6[1]:
-            hits += 1
-        # expID 7
-        np.random.shuffle(shuffled_arr7)
-        if shuffled_arr7[0] == shuffled_arr7[1] or shuffled_arr7[1] == shuffled_arr7[2] or shuffled_arr7[0] == shuffled_arr7[2]:
-            hits += 1
-        # expID 10
-        np.random.shuffle(shuffled_arr10)
-        if shuffled_arr10[0] == shuffled_arr10[1] or shuffled_arr10[1] == shuffled_arr10[2] or shuffled_arr10[0] == shuffled_arr10[2]:
-            hits += 1
-        # expID 12   
-        np.random.shuffle(shuffled_arr12)
-        if shuffled_arr12[0] == shuffled_arr12[1]:
-            hits += 1
-        # expID 15    
-        np.random.shuffle(shuffled_arr15)
-        if shuffled_arr15[0] == shuffled_arr15[1] or shuffled_arr15[1] == shuffled_arr15[2] or shuffled_arr15[0] == shuffled_arr15[2]:
-            hits += 1
-        # expID 17
-        if shuffled_arr17[0] == shuffled_arr17[1]:
+        for i, r in zip(group_list, rc_sizes):
+            current_arr = globals().get(f"shuffled_arr{i}")
+            np.random.shuffle(current_arr)
+            if len(np.unique(current_arr[:r])) < r: # if unique numbers are less than rc size, it means littermates are in sRC
                 hits += 1
-
         number_of_hits.append(hits)
-        
+   
+    plt.figure()
     h = plt.hist(number_of_hits, bins = np.arange(10), density = True, align = 'left', label = "Expected by random chance", rwidth = 0.95, color = 'gray')
     reversed_cumsum = np.cumsum(h[0][::-1])[::-1]
     plt.title("Random chance of litter mates in rich club\n both cohorts")
     plt.xlabel("Groups with litter mates in rich club", fontsize=15)
     plt.ylabel("Probability", fontsize=15)
-    # plt.axvline(np.percentile(number_of_hits, 2.5), ls = "--", color = 'k')
     plt.axvline(np.percentile(number_of_hits, 95), ls = "--", color = 'k', label = "95% CI")
     plt.axvline(2, color = 'red', label = "Experimentally observed")
-    plt.annotate("p-value = "+str(np.round(reversed_cumsum[2], 4)), (3, 0.2), bbox=dict(facecolor='white', edgecolor='none', pad=1.0), ha='center')
+    p_value = np.mean(np.array(number_of_hits) >= 2)
+    plt.annotate("p-value = "+str(np.round(p_value, 4)), (1.5, 0.2), bbox=dict(facecolor='white', edgecolor='none', pad=1.0), ha='center')
     plt.legend()
     plt.show()
 
-def littermates_in_rc_mnn3_k3():
+def littermates_in_rc_mnn3_k3(iterations = 10000):
     """
     Computes the chance of finding pairs of littermates in the RC by random chance for mnn = 3 and k = 3.
     """
+    # Extracting sRC sizes
+    metadata_path = "..\\data\\meta_data.csv"
+    metadata_df = pd.read_csv(metadata_path)
+    group_list = [g for g in np.arange(18) if np.sum((metadata_df["Group_ID"] == g) & metadata_df["RC"]) > 0] # list of groups for which a sRC was identified
+    rc_sizes = [np.sum((metadata_df["Group_ID"] == g) & metadata_df["RC"]) for g in group_list] # size of the sRC in each group
+    
     number_of_hits = []
-    for i in tqdm(range(500)):
+    for i in tqdm(range(iterations)):
         hits = 0
-        # expID 1
-        np.random.shuffle(shuffled_arr1)
-        if shuffled_arr1[0] == shuffled_arr1[1]:
-            hits += 1
-        #expID 2
-        np.random.shuffle(shuffled_arr2)
-        if shuffled_arr2[0] == shuffled_arr2[1] or shuffled_arr2[1] == shuffled_arr2[2] or shuffled_arr2[0] == shuffled_arr2[2]:
-            hits += 1
-        #expID 3
-        np.random.shuffle(shuffled_arr3)
-        if shuffled_arr3[0] == shuffled_arr3[1] or shuffled_arr3[1] == shuffled_arr3[2] or shuffled_arr3[0] == shuffled_arr3[2]:
-            hits += 1
-        # expID 4
-        np.random.shuffle(shuffled_arr4)
-        if shuffled_arr4[0] == shuffled_arr4[1]:
-            hits += 1
-        # expID 5
-        np.random.shuffle(shuffled_arr5)
-        if shuffled_arr5[0] == shuffled_arr5[1]:
-            hits += 1
-        # expID 6
-        np.random.shuffle(shuffled_arr6)
-        if shuffled_arr6[0] == shuffled_arr6[1]:
-            hits += 1
-        # expID 7
-        np.random.shuffle(shuffled_arr7)
-        if shuffled_arr7[0] == shuffled_arr7[1] or shuffled_arr7[1] == shuffled_arr7[2] or shuffled_arr7[0] == shuffled_arr7[2]:
-            hits += 1
-        # expID 8
-        np.random.shuffle(shuffled_arr8)
-        if shuffled_arr8[0] == shuffled_arr8[1]:
-            hits += 1
-        # expID 10
-        np.random.shuffle(shuffled_arr10)
-        if shuffled_arr10[0] == shuffled_arr10[1] or shuffled_arr10[1] == shuffled_arr10[2] or shuffled_arr10[0] == shuffled_arr10[2]:
-            hits += 1
-        # expID 11
-        np.random.shuffle(shuffled_arr11)
-        if shuffled_arr11[0] == shuffled_arr11[1]:
-            hits += 1
-        # expID 12   
-        np.random.shuffle(shuffled_arr12)
-        if shuffled_arr12[0] == shuffled_arr12[1]:
-            hits += 1
-        # expID 15
-        np.random.shuffle(shuffled_arr15)
-        if shuffled_arr15[0] == shuffled_arr15[1] or shuffled_arr15[1] == shuffled_arr15[2] or shuffled_arr15[0] == shuffled_arr15[2]:
-            hits += 1
-        # expID 17
-        if shuffled_arr17[0] == shuffled_arr17[1]:
+        for i, r in zip(group_list, rc_sizes):
+            current_arr = globals().get(f"shuffled_arr{i}")
+            np.random.shuffle(current_arr)
+            if len(np.unique(current_arr[:r])) < r: # if unique numbers are less than rc size, it means littermates are in sRC
                 hits += 1
-
         number_of_hits.append(hits)
         
+    plt.figure()
     h = plt.hist(number_of_hits, bins = np.arange(10), density = True, align = 'left', label = "Expected by random chance", rwidth = 0.95, color = 'gray')
     reversed_cumsum = np.cumsum(h[0][::-1])[::-1]
     plt.title("Random chance of litter mates in rich club\n both cohorts")
     plt.xlabel("Groups with litter mates in rich club", fontsize=15)
     plt.ylabel("Probability", fontsize=15)
-    # plt.axvline(np.percentile(number_of_hits, 2.5), ls = "--", color = 'k')
     plt.axvline(np.percentile(number_of_hits, 95), ls = "--", color = 'k', label = "95% CI")
     plt.axvline(3, color = 'red', label = "Experimentally observed")
-    plt.annotate("p-value = "+str(np.round(reversed_cumsum[3], 4)), (3, 0.2), bbox=dict(facecolor='white', edgecolor='none', pad=1.0), ha='center')
+    p_value = np.mean(np.array(number_of_hits) >= 3)
+    plt.annotate("p-value = "+str(np.round(p_value, 4)), (1.5, 0.2), bbox=dict(facecolor='white', edgecolor='none', pad=1.0), ha='center')
     plt.legend()
     plt.show()
     
-def littermates_in_rc_mnn4_k4():
+def littermates_in_rc_mnn4_k4(iterations = 10000):
     """
     Computes the chance of finding pairs of littermates in the RC by random chance for mnn = 4 and k = 4.
     """
+    
+    # Extracting sRC sizes
+    metadata_path = "..\\data\\meta_data_k4.csv"
+    metadata_df = pd.read_csv(metadata_path)
+    group_list = [g for g in np.arange(18) if np.sum((metadata_df["Group_ID"] == g) & metadata_df["RC"]) > 0] # list of groups for which a sRC was identified
+    rc_sizes = [np.sum((metadata_df["Group_ID"] == g) & metadata_df["RC"]) for g in group_list] # size of the sRC in each group
+    
     number_of_hits = []
-    for i in tqdm(range(1000)):
+    for i in tqdm(range(iterations)):
         hits = 0
-        # expID 1
-        np.random.shuffle(shuffled_arr1)
-        if shuffled_arr1[0] == shuffled_arr1[1]:
-            hits += 1
-        #expID 2
-        np.random.shuffle(shuffled_arr2)
-        if shuffled_arr2[0] == shuffled_arr2[1] or shuffled_arr2[1] == shuffled_arr2[2] or shuffled_arr2[0] == shuffled_arr2[2]:
-            hits += 1
-        #expID 3
-        np.random.shuffle(shuffled_arr3)
-        if shuffled_arr3[0] == shuffled_arr3[1] or shuffled_arr3[0] == shuffled_arr3[2] or shuffled_arr3[0] == shuffled_arr3[3] or shuffled_arr3[1] == shuffled_arr3[2] or shuffled_arr3[1] == shuffled_arr3[3] or shuffled_arr3[2] == shuffled_arr3[3]:
-            hits += 1
-        # expID 4
-        np.random.shuffle(shuffled_arr4)
-        if shuffled_arr4[0] == shuffled_arr4[1]:
-            hits += 1
-        # expID 5
-        np.random.shuffle(shuffled_arr5)
-        if shuffled_arr5[0] == shuffled_arr5[1]:
-            hits += 1
-        # expID 6
-        np.random.shuffle(shuffled_arr6)
-        if shuffled_arr6[0] == shuffled_arr6[1] or shuffled_arr6[0] == shuffled_arr6[2] or shuffled_arr6[0] == shuffled_arr6[3] or shuffled_arr6[1] == shuffled_arr6[2] or shuffled_arr6[1] == shuffled_arr6[3] or shuffled_arr6[2] == shuffled_arr6[3]:
-            hits += 1
-        # expID 7
-        np.random.shuffle(shuffled_arr7)
-        if shuffled_arr7[0] == shuffled_arr7[1]:
-            hits += 1
-        # expID 8
-        np.random.shuffle(shuffled_arr8)
-        if shuffled_arr8[0] == shuffled_arr8[1] or shuffled_arr8[0] == shuffled_arr8[2] or shuffled_arr8[1] == shuffled_arr8[2]:
-            hits += 1
-        # expID 10
-        np.random.shuffle(shuffled_arr10)
-        if shuffled_arr10[0] == shuffled_arr10[1] or shuffled_arr10[1] == shuffled_arr10[2] or shuffled_arr10[0] == shuffled_arr10[2]:
-            hits += 1
-        # expID 11
-        np.random.shuffle(shuffled_arr11)
-        if shuffled_arr11[0] == shuffled_arr11[1] or shuffled_arr11[0] == shuffled_arr11[2] or shuffled_arr11[1] == shuffled_arr11[2]:
-            hits += 1
-        # expID 12   
-        np.random.shuffle(shuffled_arr12)
-        if shuffled_arr12[0] == shuffled_arr12[1] or shuffled_arr12[0] == shuffled_arr12[2] or shuffled_arr12[1] == shuffled_arr12[2]:
-            hits += 1
-        # expID 15
-        np.random.shuffle(shuffled_arr15)
-        if shuffled_arr15[0] == shuffled_arr15[1]:
-            hits += 1
-        # expID 17
-        if shuffled_arr17[0] == shuffled_arr17[1]:
+        for i, r in zip(group_list, rc_sizes):
+            current_arr = globals().get(f"shuffled_arr{i}")
+            np.random.shuffle(current_arr)
+            if len(np.unique(current_arr[:r])) < r: # if unique numbers are less than rc size, it means littermates are in sRC
                 hits += 1
-
         number_of_hits.append(hits)
         
+    plt.figure()
     h = plt.hist(number_of_hits, bins = np.arange(10), density = True, align = 'left', label = "Expected by random chance", rwidth = 0.95, color = 'gray')
     reversed_cumsum = np.cumsum(h[0][::-1])[::-1]
     plt.title("Random chance of litter mates in rich club\n both cohorts")
     plt.xlabel("Groups with litter mates in rich club", fontsize=15)
     plt.ylabel("Probability", fontsize=15)
-    # plt.axvline(np.percentile(number_of_hits, 2.5), ls = "--", color = 'k')
     plt.axvline(np.percentile(number_of_hits, 95), ls = "--", color = 'k', label = "95% CI")
     plt.axvline(4, color = 'red', label = "Experimentally observed")
-    plt.annotate("p-value = "+str(np.round(reversed_cumsum[4], 4)), (3, 0.2), bbox=dict(facecolor='white', edgecolor='none', pad=1.0), ha='center')
+    p_value = np.mean(np.array(number_of_hits) >= 4)
+    plt.annotate("p-value = "+str(np.round(p_value, 4)), (1.5, 0.2), bbox=dict(facecolor='white', edgecolor='none', pad=1.0), ha='center')
     plt.legend()
     plt.show()
-    
-def reshuffled_rc_mnn2_k2(cumulative = False):
+
+# precedence effect analyis, i.e. what are the chance to be in sRC if animal was previously in
+def reshuffled_rc_mnn2_k2(iterations = 10000, cumulative = False):
     """
     Computes the chance of finding an RC members again in the RC after reshuffling.
     To do this, the function iterates through each individual RC member, and how often they got reshulffed (j for loop), and 
@@ -565,7 +303,7 @@ def reshuffled_rc_mnn2_k2(cumulative = False):
     df = pd.read_csv(path_to_metadata)
     RCs = df.loc[df["RC"], "Mouse_RFID"].unique()
     
-    for i in tqdm(range(1000)):
+    for i in tqdm(range(iterations)):
         hits = 0
         
         for RFID in RCs:
@@ -580,7 +318,8 @@ def reshuffled_rc_mnn2_k2(cumulative = False):
                     shuffled_arr = np.random.permutation(arr)
                     hits += 1 in shuffled_arr[:RC_sizes[j]]
         number_of_hits.append(hits)
-              
+             
+    plt.figure()
     if cumulative:
         h = plt.hist(number_of_hits, bins = np.arange(14), density = True, cumulative = - 1, align = 'left', label = "Expected by random chance", rwidth = 0.97)
     else:
@@ -589,16 +328,14 @@ def reshuffled_rc_mnn2_k2(cumulative = False):
     plt.title("Random chance of being shuffled back in rich-club\n both cohorts")
     plt.xlabel("Number of 'conserved' RC members", fontsize=15)
     plt.ylabel("Probability", fontsize=15)
-    # plt.axvline(np.percentile(number_of_hits, 5), ls = "--", color = 'k')
     plt.axvline(np.percentile(number_of_hits, 95), ls = "--", color = 'k', label = "95% CI")
     plt.axvline(7, color = 'red', label = "Experimentally observed")
     plt.annotate("p-value = "+str(np.round(reversed_cumsum[7], 3)), (8, 0.1), bbox=dict(facecolor='white', edgecolor='none', pad=1.0), ha='center')
     plt.xlim([0, 14])
     plt.legend(loc='upper left')
-  #  plt.tight_layout()
     plt.show()        
     
-def reshuffled_rc_mnn3_k3(cumulative = False):
+def reshuffled_rc_mnn3_k3(iterations = 10000, cumulative = False):
     """
     Computes the chance of finding an RC members again in the RC after reshuffling.
     To do this, the function iterates through each individual RC member, and how often they got reshulffed (j for loop), and 
@@ -606,11 +343,11 @@ def reshuffled_rc_mnn3_k3(cumulative = False):
     """ 
     number_of_hits = []
     arr = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
-    path_to_metadata= "..\\data\\meta_data_k3.csv"
+    path_to_metadata= "..\\data\\meta_data.csv"
     df = pd.read_csv(path_to_metadata)
     RCs = df.loc[df["RC"], "Mouse_RFID"].unique()
     
-    for i in tqdm(range(1000)):
+    for i in tqdm(range(iterations)):
         hits = 0
         
         for RFID in RCs:
@@ -625,7 +362,8 @@ def reshuffled_rc_mnn3_k3(cumulative = False):
                     shuffled_arr = np.random.permutation(arr)
                     hits += 1 in shuffled_arr[:RC_sizes[j]]
         number_of_hits.append(hits)
-            
+        
+    plt.figure()
     if cumulative:
         h = plt.hist(number_of_hits, bins = np.arange(15), density = True, cumulative = - 1, align = 'left', label = "Expected by random chance", rwidth = 0.97)
     else:
@@ -639,10 +377,9 @@ def reshuffled_rc_mnn3_k3(cumulative = False):
     plt.axvline(7, color = 'red', label = "Experimentally observed")
     plt.xlim([0, 15])
     plt.legend(loc='upper left')
-  #  plt.tight_layout()
     plt.show()    
     
-def reshuffled_rc_mnn4_k4(cumulative = False):
+def reshuffled_rc_mnn4_k4(iterations = 10000, cumulative = False):
     """ 
     Computes the chance of finding an RC members again in the RC after reshuffling.
     To do this, the function iterates through each individual RC member, and how often they got reshulffed (j for loop), and 
@@ -654,7 +391,7 @@ def reshuffled_rc_mnn4_k4(cumulative = False):
     df = pd.read_csv(path_to_metadata)
     RCs = df.loc[df["RC"], "Mouse_RFID"].unique()
     
-    for i in tqdm(range(1000)):
+    for i in tqdm(range(iterations)):
         hits = 0
         
         for RFID in RCs:
@@ -670,10 +407,11 @@ def reshuffled_rc_mnn4_k4(cumulative = False):
                     hits += 1 in shuffled_arr[:RC_sizes[j]]
         number_of_hits.append(hits)
     
+    plt.figure()
     if cumulative:
-        h = plt.hist(number_of_hits, bins = np.arange(16), density = True, cumulative = - 1, align = 'left', label = "Expected by random chance", rwidth = 0.97)
+        h = plt.hist(number_of_hits, bins = np.arange(17), density = True, cumulative = - 1, align = 'left', label = "Expected by random chance", rwidth = 0.97)
     else:
-        h = plt.hist(number_of_hits, bins = np.arange(16), density = True, align = 'left', label = "Expected by random chance", rwidth = 0.97)
+        h = plt.hist(number_of_hits, bins = np.arange(17), density = True, align = 'left', label = "Expected by random chance", rwidth = 0.97)
     reversed_cumsum = np.cumsum(h[0][::-1])[::-1]
     plt.title("Random chance of being shuffled back in rich-club\n both cohorts")
     plt.xlabel("Number of 'conserved' RC members", fontsize=15)
@@ -686,18 +424,21 @@ def reshuffled_rc_mnn4_k4(cumulative = False):
     plt.tight_layout()
     plt.show()    
 
-chasing_towards()
-# mutants_in_rc_mnn2_k2()
-# mutants_in_rc_mnn3_k3(True)
-# mutants_in_rc_mnn4_k4(False)
-# mutants_in_both_mnn5_k5(True)
 
+# Mutants excluded from sRC
+mutants_in_rc_mnn2_k2()
+mutants_in_rc_mnn3_k3()
+mutants_in_rc_mnn4_k4()
+# mutants_in_rc_subcohort() # significance of mutants excluded from sRC, for groups with at most 2 mutants
+
+# Absence of littermate effect
 # littermates_in_rc_mnn2_k2()    
 # littermates_in_rc_mnn3_k3()
 # littermates_in_rc_mnn4_k4()
 
+# Dynamic emergence of sRC
 # reshuffled_rc_mnn2_k2()
 # reshuffled_rc_mnn3_k3()
 # reshuffled_rc_mnn4_k4()
 
-
+# chasing_towards()

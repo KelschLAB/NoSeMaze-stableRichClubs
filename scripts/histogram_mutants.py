@@ -12,7 +12,7 @@ sys.path.append('..\\scripts\\')
 sys.path.append(os.getcwd())
 from read_graph import read_graph
 # from weighted_rc import weighted_rich_club
-from utils import get_category_indices, format_plot, add_significance
+from utils import get_category_indices, format_plot, add_significance, add_group_significance
 
 from HierarchiaPy import Hierarchia
 
@@ -384,7 +384,7 @@ def chasingFraction_MutVsWT(out = True, ax = None):
     Mut1 = df1.loc[:, "mutant"].to_numpy()
     RFIDs1 = df1.loc[:, "Mouse_RFID"].to_numpy()
 
-    for group_idx in range(1, np.max(groups1)+1): #iterate over groups
+    for group_idx in np.arange(1, 11): #iterate over groups
         mouse_indices = np.where(groups1 == group_idx) # find out indices of mice from current group
         mouse_names = RFIDs1[mouse_indices]
         approach_matrix = np.loadtxt(chasing_dir+"G"+str(group_idx)+"_single_chasing.csv",
@@ -408,11 +408,11 @@ def chasingFraction_MutVsWT(out = True, ax = None):
                     approach_order_in_WT.append(list(chasings_in)[wt_idx])
 
     df2 = pd.read_excel(path_cohort2)
-    groups2 = df2.loc[:, "Group_ID"].to_numpy()
-    Mut2 = np.array(df2["genotype"] == "Oxt")
-    RFIDs2 = df2.loc[:, "Mouse_RFID"].to_numpy()
+    groups2 = df2.loc[~df2["Group_ID"].isin([16, 20, 21]), "Group_ID"].to_numpy()
+    Mut2 = np.array(df2.loc[~df2["Group_ID"].isin([16, 20, 21]), "genotype"] == "Oxt")
+    RFIDs2 = df2.loc[~df2["Group_ID"].isin([16, 20, 21]), "Mouse_RFID"].to_numpy()
 
-    for group_idx in range(11, 18): #iterate over groups
+    for group_idx in [11,12,13,14,15,17,18,19]: #iterate over groups
         mouse_indices = np.where(groups2 == group_idx) # find out indices of mice from current group
         mouse_names = RFIDs2[mouse_indices]
         approach_matrix = np.loadtxt(chasing_dir+"G"+str(group_idx)+"_single_chasing.csv",
@@ -434,6 +434,8 @@ def chasingFraction_MutVsWT(out = True, ax = None):
                     wt_idx = np.where(mouse_names[idx] == names_in_approach_matrix)[0][0]
                     approach_order_out_WT.append(list(chasings_out)[wt_idx])
                     approach_order_in_WT.append(list(chasings_in)[wt_idx])
+                    
+
                       
     if ax is None:
         fig, ax = plt.subplots(1, 1, figsize = (5,4))
@@ -456,15 +458,17 @@ def chasingFraction_MutVsWT(out = True, ax = None):
     ax.tick_params(axis='y', labelsize=15)
     fig.tight_layout()
     
-    ###### ATTENTION!!! THIS BOXPLOT STATISTIC DOES NOT RESPECT THE GROUP STRUCTURE!!
-    # fig2, ax2 = plt.subplots(1, 1)
-    # data = [approach_order_out_Mut, approach_order_out_WT]
-    # bp = ax2.boxplot(data, widths=0.6, patch_artist=True, showfliers = False, zorder=1)
-    # ax2.scatter([1 + np.random.normal()*0.05 for i in range(len(data[0]))], 
-    #             data[0], label = "mutant", zorder=2); 
-    # ax2.scatter([2 + np.random.normal()*0.05 for i in range(len(data[1]))], 
-    #             data[1], label = "non-member", zorder=2); 
-    # add_significance(data, ax2, bp)
+    fig2, ax2 = plt.subplots(1, 1)
+    mutants = np.concatenate((Mut1, Mut2))
+    RFIDs = np.concatenate((RFIDs1, RFIDs2))
+    rfids_wt, rfids_mut = RFIDs[~mutants], RFIDs[mutants]
+    data = [approach_order_out_WT, approach_order_out_Mut]
+    bp = ax2.boxplot(data, widths=0.6, patch_artist=True, showfliers = False, zorder=1)
+    ax2.scatter([1 + np.random.normal()*0.05 for i in range(len(data[0]))], 
+                data[0], label = "mutant", zorder=2); 
+    ax2.scatter([2 + np.random.normal()*0.05 for i in range(len(data[1]))], 
+                data[1], label = "non-member", zorder=2); 
+    add_group_significance(data, [rfids_wt, rfids_mut], ax2, bp)
 
 
             
@@ -477,5 +481,5 @@ if __name__ == "__main__":
     # approach_order_mutants(both = True)
     # approachRank_mutants()
     # mutants_in_club_piechart()
-    chasingFraction_MutVsWT(False)
+    # chasingFraction_MutVsWT(True)
 

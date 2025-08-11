@@ -48,7 +48,7 @@ def graph_in_time_3d(graph_idx, var = "interactions", mnn = 3, show_mut = True):
     plt.tight_layout()
     plt.show()
 
-def graph_in_time_2d(graph_idx, var = "interactions", mnn = 3, deg = 3, mutual = True, show_mut = True):
+def graph_in_time_2d(graph_idx, var = "interactions", mnn = 3, deg = 3, mutual = True, show_mut = True, rm_weak = False):
     """
     Plots and saves the graph of the rich club for the interaction graph given in 'datapath'
     after mnn cuting and k-core computation. Saves on svg format.
@@ -59,7 +59,7 @@ def graph_in_time_2d(graph_idx, var = "interactions", mnn = 3, deg = 3, mutual =
         try:
             file = f"{var}_resD3_"+str(i+1)+".csv"
             if show_mut:
-                mutants_idx, _, _, _, RFIDs = get_category_indices(graph_idx, "interactions", 3)
+                mutants_idx, _, _, _, RFIDs = get_category_indices(graph_idx, "interactions", 3, rm_weak_histo=rm_weak)
                 mutants = np.ones(len(RFIDs))
                 mutants[mutants_idx] = 0
                 display_graph([datapath+file], axs[i], mnn = mnn, node_metric = "rich-club", deg = deg, mutual = mutual, layout = "circle",
@@ -104,8 +104,8 @@ def day_to_day_approachprop(dirname, mnn = 4, deg = 2):
 
 # for graph in ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G10"]:
 #     day_to_day_approach(graph, 4, 6, False)
-k = 5
-graph_in_time_2d(1, "interactions", mnn = k, deg = k, mutual = True, show_mut = False)
+k = 3
+graph_in_time_2d(8, "interactions", mnn = k, deg = k, mutual = True, show_mut = True)
     # graph_in_time_3d(i, "approaches", mnn = 3, show_mut = False)
 # graph_in_time_2d(3, "interactions", mnn = 3, deg = 3, mutual = True, show_mut = True)
 
