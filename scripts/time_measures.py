@@ -15,7 +15,7 @@ from sklearn.manifold import TSNE
 from sklearn import manifold
 sys.path.append('..\\src\\')
 from read_graph import read_graph, read_labels
-from utils import get_category_indices
+from utils import get_category_indices, spread_points_around_center
 import mpl_toolkits.mplot3d  # noqa: F401
 from scipy.stats import ttest_ind
 from scipy import stats
@@ -71,7 +71,7 @@ def time_measures(measure, graph_idx, window = 1, variable = "approaches",
     ## figuring out position of mutants, wt and rc within the indexing of the csv file
     datapath = f"..\\data\\both_cohorts_{window}days\\"+labels[graph_idx]+"\\"+variable+f"_resD{window}_1.csv"
     try:
-        data_ref = read_graph([datapath], percentage_threshold = 0, mnn = mnn, mutual = mutual)[0]
+        data_ref = read_graph([datapath], percentage_threshold = threshold, mnn = mnn, mutual = mutual)[0]
         arr = np.loadtxt(datapath, delimiter=",", dtype=str)
         RFIDs = arr[0, 1:].astype(str)
     except Exception as e:
@@ -130,7 +130,7 @@ def time_measures(measure, graph_idx, window = 1, variable = "approaches",
     for day in np.arange(1, 16, window):
         datapath = f"..\\data\\both_cohorts_{window}days\\"+labels[graph_idx]+"\\"+variable+f"_resD{window}_"+str(day)+".csv"
         try:
-            data = read_graph([datapath], percentage_threshold = 0, mnn = mnn, mutual = mutual)[0]
+            data = read_graph([datapath], percentage_threshold = threshold, mnn = mnn, mutual = mutual)[0]
             arr = np.loadtxt(datapath, delimiter=",", dtype=str)
             RFIDs = arr[0, 1:].astype(str)
         except Exception as e:
@@ -168,7 +168,9 @@ def time_measures(measure, graph_idx, window = 1, variable = "approaches",
                     time_mean[i, j] = np.nan    
         all_scores = time_mean
 
-    elif measure == "summed outburstiness" or measure == "summed inburstiness" or measure == "summed outburstiness rank" or measure == "summed inburstiness rank":
+    elif measure == "summed outburstiness" or measure == "summed inburstiness" or \
+        measure == "summed outburstiness rank" or measure == "summed inburstiness rank" or \
+        measure == "summed outburstiness inGroupNorm" or measure == "summed inburstiness inGroupNorm":
         all_data = np.array(graphs)
         num_mice = all_data.shape[1]
         time_std, time_mean = np.zeros((num_mice, num_mice)), np.zeros((num_mice, num_mice))
@@ -183,17 +185,21 @@ def time_measures(measure, graph_idx, window = 1, variable = "approaches",
                 except:
                     time_mean[i, j] = np.nan    
 
-        all_scores = (time_std - time_mean)/(time_std + time_mean)
+        # all_scores = (time_std - time_mean)/(time_std + time_mean)
+        all_scores = time_std/time_mean
+        # all_scores = time_mean
 
 
-    elif measure == "summed outNEF" or measure == "summed inNEF" or measure == "summed outNEF rank" or measure == "summed inNEF rank": # NEF = normalized edge fluctuations
+    elif measure == "summed outNEF" or measure == "summed inNEF" or \
+        measure == "summed outNEF rank" or measure == "summed inNEF rank" or\
+         measure == "summed outNEF inGroupNorm" or measure == "summed inNEF inGroupNorm": # NEF = normalized edge fluctuations
         all_data = np.array(graphs)
         time_std, time_mean, time_median = np.nanstd(all_data, axis = 0), np.nanmean(all_data, axis = 0), np.nanmedian(all_data, axis = 0)
-        if normalization == "CV":
+        if normalization == "Poisson" or normalization == "poisson": # variant of the CV aimed at studying poissonicity
             all_scores = (time_std - time_mean)/(time_std + time_mean)
-        elif normalization == "SNR":
+        elif normalization == "CV":
             all_scores = time_std/time_mean
-        elif normalization == "median SNR":
+        elif normalization == "median CV":
             all_scores = time_std/time_median
         else:
             all_scores = time_std
@@ -212,6 +218,8 @@ def time_measures(measure, graph_idx, window = 1, variable = "approaches",
             all_scores = np.log(all_scores)
         if "rank" in measure:
             all_scores = all_scores.argsort().argsort()
+        if "inGroupNorm" in measure:
+            all_scores = all_scores/np.max(all_scores)
         metric_mutants = [all_scores[i] for i in mutants]
         metric_rc = [all_scores[i] for i in rc]
         metric_wt = [all_scores[i] for i in wt]
@@ -228,6 +236,8 @@ def time_measures(measure, graph_idx, window = 1, variable = "approaches",
             
         if "rank" in measure:
             all_scores = all_scores.argsort().argsort()
+        if "inGroupNorm" in measure:
+            all_scores = all_scores/np.max(all_scores)
         metric_mutants = [all_scores[i] if all_scores[i] != np.inf else np.nan for i in mutants]
         metric_rc = [all_scores[i] if all_scores[i] != np.inf else np.nan for i in rc]
         metric_wt = [all_scores[i] if all_scores[i] != np.inf else np.nan for i in wt]
@@ -259,7 +269,7 @@ def get_time_metric_df(measure, window = 1, variable = "approaches", mnn = None,
 
 def bp_metric_mutants(measure, window = 1, variable = "approaches",
                       mnn = None, mutual = True, weighted = False, threshold = 0.0, rm_weak = False,
-                      summation = "mean", normalization = None, logscale = False, stat = "mean", ax = None):
+                      summation = "mean", normalization = None, logscale = False, stat = "mean", swarmplot = True, ax = None):
     scores_mutants, scores_rc, scores_wt, scores_others, scores_all = [], [], [], [], []
     RFIDs, mutants, RCs = [], [], []
     for graph_idx in range(len(labels)):
@@ -291,41 +301,51 @@ def bp_metric_mutants(measure, window = 1, variable = "approaches",
     if ax is None:
         fig, ax = plt.subplots(1, 1)
     size, alpha = 60, 0.4
-    bp = ax.boxplot([data[0][measure].dropna(), data[1][measure].dropna()], labels=["Mutants", "Non-members WT"], showfliers = False)
-    ax.scatter([1 + np.random.normal()*0.05 for i in range(len(scores_mutants))], 
-                scores_mutants, alpha = alpha, s = size, color = "red"); 
-    ax.scatter([2 + np.random.normal()*0.05 for i in range(len(scores_others))], 
-                scores_others, alpha = alpha, s = size, color = "gray", label = "Non-member")
-    add_significance(data, measure, ax, bp)
+    positions = [0.75, 1.25]
+    bp = ax.boxplot([data[0][measure].dropna(), data[1][measure].dropna()], positions = positions, labels=["Mutants", "Non-members WT"],
+                    showfliers = False, meanline=False, showmeans = False, medianprops={'visible': False})
+    if swarmplot:
+        x_mutants = spread_points_around_center(scores_mutants, center=positions[0], bin_width = 0.05, interpoint=0.02)
+        ax.scatter(x_mutants, scores_mutants, alpha=alpha, s=size, color="red")
+        x_others = spread_points_around_center(scores_others, center=positions[1], bin_width = 0.05, interpoint=0.02)
+        ax.scatter(x_others, scores_others, alpha=alpha, s=size, color="gray", label="Non-member")
+    else:
+        ax.scatter([positions[0] + np.random.normal()*0.05 for i in range(len(scores_mutants))], 
+                    scores_mutants, alpha = alpha, s = size, color = "red"); 
+        ax.scatter([positions[1] + np.random.normal()*0.05 for i in range(len(scores_others))], 
+                    scores_others, alpha = alpha, s = size, color = "gray", label = "Non-member")
+        
+    vp = plt.violinplot([data[0][measure], data[1][measure]], positions, widths = [0.25, 0.35], showextrema = False, showmedians=True)
+    vp['bodies'][0].set_facecolor('lightcoral')
+    vp['bodies'][1].set_facecolor('gray')
+    if 'cmedians' in vp:  # Safety check
+        vp['cmedians'].set_linewidth(5)  # Directly set width on LineCollection
+        vp['cmedians'].set_color('k')  # Set color
+        vp['cmedians'].set_linestyle('-')  # Ensure solid line
+
+
+    add_significance(data, measure, ax, bp, stat)
     title = f"{measure}\n mnn = {mnn} thresh = {threshold}, summation = {summation}\n norm. = {normalization} logscale = {logscale}\n permutation test on the {stat}."
     ax.set_title(title)
     plt.tight_layout()
     plt.show()
+    return bp
     
 temporal_metrics = ["summed outNEF", "summed inNEF", "summed outICI", "summed inICI", "summed outburstiness", "summed inburstiness"]
 
 
 if __name__ == "__main__":    
-## significant for both mean and median test
-    # bp_metric_mutants("summed outNEF rank", mnn = None, mutual = False, weighted = True,
-                      # threshold = 0, rm_weak = False, summation = "mean", normalization="CV", logscale = False, stat = "median")
-    # bp_metric_mutants("summed outNEF", mnn = None, mutual = False, weighted = True,
-                      # threshold = 0, rm_weak = False, summation = "mean", normalization=None, logscale = False, stat = "mean") # not significant when switched to ranks or on logscale
-    # bp_metric_mutants("summed outNEF", mnn = None, mutual = False, weighted = True,
-                      # threshold = 0, rm_weak = False, summation = "median", normalization="SNR", logscale = False, stat = "median") # mean test is also significant on log scale
-    # bp_metric_mutants("summed outNEF rank", mnn = None, mutual = False, weighted = True,
-                      # threshold = 0, rm_weak = False, summation = "median", normalization="SNR", logscale = False, stat = "mean")
-    # bp_metric_mutants("summed outNEF rank", mnn = None, mutual = False, weighted = True,
-                      # threshold = 0, rm_weak = False, summation = "median", normalization="SNR", logscale = False, stat = "median")
+## Main
+    bp_metric_mutants("summed outNEF", mnn = None, mutual = True, weighted = True, threshold = 0, rm_weak = False, 
+                      summation = "mean", normalization="CV", logscale = False, stat = "median", swarmplot  = True)
+
+    bp_metric_mutants("summed inNEF", mnn = None, mutual = True, weighted = True, threshold = 0, rm_weak = False, 
+                      summation = "mean", normalization="CV", logscale = False, stat = "median")
+
+    bp_metric_mutants("summed inburstiness", mnn = 7, mutual = True, weighted = True, threshold = 0, rm_weak = False, 
+                      summation = "mean", normalization="CV", logscale = False, stat = "median", swarmplot = True)
+    
 
     
-    # bp_metric_mutants("summed inNEF", mnn = None, mutual = False, weighted = True,
-                      # threshold = 0, rm_weak = False, summation = "mean", normalization=None, logscale = False, stat = "mean") # n
-
-    # bp_metric_mutants("summed inburstiness", mnn = 7, mutual = True, weighted = True, threshold = 0, ax = None, rm_weak = False, stat = "mean")
-    # bp_metric_mutants("summed outburstiness", mnn = 7, mutual = True, weighted = True, threshold = 0, ax = None, rm_weak = False, stat = "mean")
-    bp_metric_mutants("summed inburstiness rank", mnn = 7, mutual = True, weighted = True, threshold = 0, ax = None, rm_weak = False, stat = "mean")
-    bp_metric_mutants("summed outburstiness rank", mnn = 7, mutual = True, weighted = True, threshold = 0, ax = None, rm_weak = False, stat = "mean")
-    # 
-
+    
 

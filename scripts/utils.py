@@ -158,6 +158,45 @@ def add_group_significance(data, rfids, ax, bp):
         sig_symbol = f"p = {np.round(p, 3)}"
     text_height = bar_height + (y_range * 0.01)
     ax.text((x1 + x2) * 0.5, text_height, sig_symbol, ha='center', va='bottom', c='k')
+    
+def spread_points_around_center(values, center=1, bin_width = 0.1, interpoint=0.01):
+    if len(values) == 0:
+          return np.array([])
+      
+    # Convert to numpy array and handle NaNs
+    values = np.asarray(values)
+    values = values[~np.isnan(values)]
+    
+    if len(values) == 0:
+        return np.array([])
+    
+    # Bin the y-values
+    y_min, y_max = np.min(values), np.max(values)
+    bins = np.arange(y_min, y_max + bin_width, bin_width)
+    binned_values = np.digitize(values, bins) - 1
+    
+    # Initialize x-positions
+    x_positions = np.zeros_like(values, dtype=float)
+    
+    for bin_idx in np.unique(binned_values):
+        mask = (binned_values == bin_idx)
+        count = np.sum(mask)
+        
+        if count == 1:
+            spread = np.array([0.0])
+        elif count == 2:
+            spread = np.array([-interpoint/2, interpoint/2])
+        else:
+            # Symmetrical distribution around center
+            spread = np.linspace(-interpoint*(count-1)/2, 
+                                interpoint*(count-1)/2, 
+                                count)
+        
+        # Add small random jitter
+        spread += np.random.normal(0, interpoint/3, size=count)
+        x_positions[mask] = center + spread
+    
+    return x_positions
 
 
 labels = ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G10", "G11", "G12", "G13", "G14", "G15", "G16", "G17"]
