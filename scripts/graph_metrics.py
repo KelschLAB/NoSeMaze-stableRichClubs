@@ -19,7 +19,7 @@ from utils import get_category_indices, spread_points_around_center
 import mpl_toolkits.mplot3d  # noqa: F401
 from scipy.stats import ttest_ind
 from scipy import stats
-from scipy.stats import pearsonr
+from scipy.stats import pearsonr, spearmanr
 import warnings
 
 datapath = "..\\data\\chasing\\single\\"
@@ -44,21 +44,7 @@ def default_on_error(graph_idx, variable, window, rm_weak_histo):
         [np.nan]*len(wt), [np.nan]*len(RFIDs), \
         {"Mouse_RFID": [np.nan]*len(RFIDs), "mutant": [np.nan]*len(RFIDs), "RC": [np.nan]*len(RFIDs), "Group_ID": int(labels[graph_idx][1:])}
         
-def outcosine(g):
-    """Cosine similarity based on incoming edge weights"""
-    adj = np.array(g.get_adjacency(attribute='weight', type=1).data)  # type=1 for IN
-    norms = np.linalg.norm(adj, axis=1, keepdims=True)
-    norms[norms == 0] = 1  # Avoid division by zero for nodes with no incoming edges
-    return adj @ adj.T / (norms @ norms.T)
-
-def incosine(g):
-    """Cosine similarity based on outgoing edge weights"""
-    adj = np.array(g.get_adjacency(attribute='weight', type=2).data)  # type=2 for OUT
-    adj = adj.T 
-    norms = np.linalg.norm(adj, axis=1, keepdims=True)
-    norms[norms == 0] = 1  # Avoid division by zero for nodes with no outgoing edges
-    return adj @ adj.T / (norms @ norms.T)
-
+# measure of edge similarity based on the correlation coefficient. Is similar to jaccard similarity, without the need of binarizing graph.
 def inpearson(g):
     adj = np.array(g.get_adjacency(attribute='weight', type=1).data).T
     n = adj.shape[0]
@@ -69,8 +55,9 @@ def inpearson(g):
                 continue
             r, _ = pearsonr(adj[i], adj[j])
             corr[i,j] = corr[j,i] = r
-    return corr  # Range: [-1,1]
+    return corr  
 
+# measure of edge similarity based on the correlation coefficient. Is similar to jaccard similarity, without the need of binarizing graph.
 def outpearson(g):
     adj = np.array(g.get_adjacency(attribute='weight', type=1).data)
     n = adj.shape[0]
@@ -78,12 +65,10 @@ def outpearson(g):
     for i in range(n):
         for j in range(i+1, n):
             if i == j:
-                continue
+                corr[i,j] = np.nan
             r, _ = pearsonr(adj[i], adj[j])
             corr[i,j] = corr[j,i] = r
-    return corr  # Range: [-1,1]
-
-
+    return corr 
 
 def measures(graph_idx, day, window = 3, measure = "hub", variable = "approaches", mnn = None, mutual = True, rm_weak_histo = False, threshold = 0.0, in_group_norm = False):
     """
@@ -201,39 +186,29 @@ def measures(graph_idx, day, window = 3, measure = "hub", variable = "approaches
         scores_wt = [g.degree(mode="all")[i] for i in wt]    
         scores_all = [g.degree(mode="all")[i] for i in range(len(RFIDs))]
 
-    elif measure == "summed incosine" or measure == "mean incosine" or measure == "median incosine":
-        op = np.nanmedian if "median" in measure else np.nanmean
-        sim_matrix = incosine(g)
-        scores_all = [op(sim_matrix[i, 1:]) for i in range(len(RFIDs))]
-        norm = np.max(scores_all) if in_group_norm else 1
-        scores_mutants = [op(sim_matrix[i, 1:])/norm for i in mutants]
-        scores_rc = [op(sim_matrix[i, 1:])/norm for i in rc]
-        scores_rest = [op(sim_matrix[i, 1:])/norm for i in others]
-        scores_wt = [op(sim_matrix[i, 1:])/norm for i in wt]  
-        scores_all = [op(sim_matrix[i, 1:])/norm for i in range(len(RFIDs))]
-
     elif measure == "summed inpearson" or measure == "mean inpearson" or measure == "median inpearson":
         op = np.nanmedian if "median" in measure else np.nanmean
         sim_matrix = inpearson(g)
-        scores_all = [op(sim_matrix[i, 1:]) for i in range(len(RFIDs))]
+        scores_all = [op(sim_matrix[i, :]) for i in range(len(RFIDs))]
         norm = np.max(scores_all) if in_group_norm else 1
-        scores_mutants = [op(sim_matrix[i, 1:])/norm for i in mutants]
-        scores_rc = [op(sim_matrix[i, 1:])/norm for i in rc]
-        scores_rest = [op(sim_matrix[i, 1:])/norm for i in others]
-        scores_wt = [op(sim_matrix[i, 1:])/norm for i in wt]  
-        scores_all = [op(sim_matrix[i, 1:])/norm for i in range(len(RFIDs))]
+        scores_mutants = [op(sim_matrix[i, :])/norm for i in mutants]
+        scores_rc = [op(sim_matrix[i, :])/norm for i in rc]
+        scores_rest = [op(sim_matrix[i, :])/norm for i in others]
+        scores_wt = [op(sim_matrix[i, :])/norm for i in wt]  
+        scores_all = [op(sim_matrix[i, :])/norm for i in range(len(RFIDs))]
         
-    elif measure == "summed outpearson":
+    elif measure == "summed outpearson" or measure == "mean outpearson" or measure == "median outpearson":
+        op = np.nanmedian if "median" in measure else np.nanmean
         sim_matrix = outpearson(g)
-        scores_all = [np.nanmean(sim_matrix[i, 1:]) for i in range(len(RFIDs))]
+        scores_all = [np.nanmean(sim_matrix[i, :]) for i in range(len(RFIDs))]
         norm = np.max(scores_all) if in_group_norm else 1
-        scores_mutants = [np.nanmean(sim_matrix[i, 1:])/norm for i in mutants]
-        scores_rc = [np.nanmean(sim_matrix[i, 1:])/norm for i in rc]
-        scores_rest = [np.nanmean(sim_matrix[i, 1:])/norm for i in others]
-        scores_wt = [np.nanmean(sim_matrix[i, 1:])/norm for i in wt]  
-        scores_all = [np.nanmean(sim_matrix[i, 1:])/norm for i in range(len(RFIDs))]
+        scores_mutants = [np.nanmean(sim_matrix[i, :])/norm for i in mutants]
+        scores_rc = [np.nanmean(sim_matrix[i, :])/norm for i in rc]
+        scores_rest = [np.nanmean(sim_matrix[i, :])/norm for i in others]
+        scores_wt = [np.nanmean(sim_matrix[i, :])/norm for i in wt]  
+        scores_all = [np.nanmean(sim_matrix[i, :])/norm for i in range(len(RFIDs))]
         
-    elif measure == "summed injaccard" or measure == "median injaccard" or "mean injaccard":
+    elif measure == "summed injaccard" or measure == "median injaccard" or measure == "mean injaccard":
         op = np.nanmedian if "median" in measure else np.nanmean
         scores_all = [op(g.similarity_jaccard(mode="in")[i]) for i in range(len(RFIDs))]
         norm = np.max(scores_all) if in_group_norm else 1
@@ -260,11 +235,11 @@ def measures(graph_idx, day, window = 3, measure = "hub", variable = "approaches
         scores_all = [np.sum([g.es[edge]["weight"] for edge in g.incident(i, mode="in")]) for i in range(len(RFIDs))]
         
     elif measure == "outstrength":
-        scores_mutants = [np.nanmean([g.es[edge]["weight"] for edge in g.incident(i, mode="out")]) for i in mutants]
-        scores_rc = [np.nanmean([g.es[edge]["weight"] for edge in g.incident(i, mode="out")]) for i in rc]
-        scores_rest = [np.nanmean([g.es[edge]["weight"] for edge in g.incident(i, mode="out")]) for i in others]
-        scores_wt = [np.nanmean([g.es[edge]["weight"] for edge in g.incident(i, mode="out")]) for i in wt]    
-        scores_all = [np.nanmean([g.es[edge]["weight"] for edge in g.incident(i, mode="out")]) for i in range(len(RFIDs))]
+        scores_mutants = [np.nansum([g.es[edge]["weight"] for edge in g.incident(i, mode="out")]) for i in mutants]
+        scores_rc = [np.nansum([g.es[edge]["weight"] for edge in g.incident(i, mode="out")]) for i in rc]
+        scores_rest = [np.nansum([g.es[edge]["weight"] for edge in g.incident(i, mode="out")]) for i in others]
+        scores_wt = [np.nansum([g.es[edge]["weight"] for edge in g.incident(i, mode="out")]) for i in wt]    
+        scores_all = [np.nansum([g.es[edge]["weight"] for edge in g.incident(i, mode="out")]) for i in range(len(RFIDs))]
         
     elif measure == "normed instrength":
         scores_mutants = rescale([np.sum([g.es[edge]["weight"] for edge in g.incident(i, mode="in")]) for i in mutants])
@@ -764,18 +739,95 @@ def add_significance(data, var, ax, bp, stat = "mean"):
     text_height = bar_height + (y_range * 0.01)
     ax.text((x1 + x2) * 0.5, text_height, sig_symbol, ha='center', va='bottom', c='k')
     
+def plot_timeseries_example(measure, derivative = True, window = 3, variable = "approaches", idx = [0, 0, 0],
+                            mnn = None, mutual = True, threshold = 0.0, ax = None):
+    "plots the derivative of the timeseries of the specified measurment for all animals, without any aggregation"
+    value_mutants, value_rest, value_rc = [], [], []
+    std_mutants, std_rc, std_rest, std_wt = [], [], [], []
+    t_window = range(15//window) if measure != "outstrength" else range(1, 15//window)
+    for d in t_window:
+        scores_mutants, scores_rc, scores_rest, _ = [], [], [], []
+        group_mutant, group_rest = [], []
+        for j in range(len(labels)):
+            scores_t1 = measures(j, d, window, measure, variable, mnn, mutual, False, threshold, False) 
+            if derivative:
+                scores_t2 = measures(j, d+1, window, measure, variable, mnn, mutual, False, threshold, False) 
+                scores_mutants.extend(np.array(scores_t2[0]) - np.array(scores_t1[0]))
+                scores_rest.extend(np.array(scores_t2[2]) - np.array(scores_t1[2]))
+                scores_rc.extend(np.array(scores_t2[1]) - np.array(scores_t1[1]))
+            else:
+                scores_mutants.extend(np.array(scores_t1[0]))
+                scores_rest.extend(np.array(scores_t1[2]))
+                scores_rc.extend(np.array(scores_t1[1]))
+            group_mutant.extend([scores_t1[5]["Group_ID"] for m in range(len(scores_t1[0]))])
+            group_rest.extend([scores_t1[5]["Group_ID"] for m in range(len(scores_t1[2]))])
+
+        value_rc.append(scores_rc) 
+        value_rest.append(scores_rest) 
+        value_mutants.append(scores_mutants) 
+        
+    t = np.arange(1, 15//window)
+    value_mutants= np.array(value_mutants)
+    value_rest= np.array(value_rest)
+    value_rc= np.array(value_rc)
+    separate_wt = True if len(idx) == 3 else False
+    assert len(idx) == 2 or len(idx) == 3, "Please provide 2 indices for WT vs mutants or 3 indices for RC vs WT vs mutant."
+
+    if ax is None:
+        add_legend = True
+        fig, ax = plt.subplots(1, 1)
+    else:
+        add_legend = False
+
+    if separate_wt:
+        ax.plot(t, value_mutants[:, idx[0]], lw = 3, c = "red", label = "Mutant", alpha = 0.8)
+        ax.plot(t, value_rest[:, idx[1]], lw = 3, c = "k", label = "Non-member WT", alpha = 0.8)
+        ax.plot(t, value_rc[:, idx[2]], lw = 3, c = "green", label = "sRC", alpha = 0.8)
+    else:
+        ax.plot(t, value_mutants[:, idx[0]], lw = 3, c = "red", label = "Mutant", alpha = 0.8)
+        print(f"Mutant from group {group_mutant[idx[0]]}")
+        print(np.nanstd(value_mutants[:, idx[0]]))
+        ax.plot(t, value_rest[:, idx[1]], lw = 3, c = "k", label = "Non-member WT", alpha = 0.8)
+        print(f"WT from group {group_rest[idx[1]]}")
+        print(np.nanstd(value_rest[:, idx[1]]))
+        if not derivative:
+            ax.axhline(np.nanmean(value_mutants[:, idx[0]]), ls = "--", color = "red", alpha = 0.8)
+            ax.axhline(np.nanmean(value_rest[:, idx[1]]), ls = "--", color = "k", alpha = 0.8)
+
+    
+    ylabel = "dS(t)/dt" if derivative else "μ[S(t)]"
+    plt.ylabel(ylabel)
+    ax.legend()
+    title = "Time derivative of "+ measure if derivative else measure
+    ax.set_title(title, fontsize = 15)
+    ax.set_xlabel("Day", fontsize = 13)
+    ax.set_ylabel("Value", fontsize = 13)
+    ax.tick_params(axis='both', which='major', labelsize=12)  # Adjust major tick labels
+    
 def boxplot_metric_mutant(var, derivative = False, aggregation = None, window = 1, mnn = 4, mutual = False,
                           rm_RC = True, overlay_RC = False, threshold = 0.0, rm_weak_histo = False, stat = "median",
                           in_group_norm = False, ax = None):
     """
      Plots a boxplot comparing the specified graph-theoretical metric between mutant and wild-type mice. By Default, RC members
-     are excluded from the comparison unless 'overlay_RC' is True. The function aggregates the metric per mouse using the specified method, 
+     are excluded from the comparison unless 'rm_RC' is False. The function aggregates the metric per mouse using the specified method, 
      then plots the distribution for mutants and wild-type mice, and performs a statistical test to indicate significance.
     
-     Parameters:
-         measure (str): The graph-theoretical metric to plot (e.g., "hub", "degree", "outstrength").
-         window (int): The time window size used for averaging the graph representation.
-         aggregation: Aggregation method for repeated measures per mouse. Can be None, "mean" or "std".
+    Parameters:
+            - var (str): Name of the graph-theoretical metric to plot (e.g., "hub", "degree", "outstrength").
+            - derivative (bool, optional): If True, uses the time derivative of the metric across sessions. Default is False.
+            - aggregation (str or None, optional): Aggregation method for values of time series.
+                One of: None, "mean", or "std". If None, uses raw session-wise values.
+            - window (int, optional): Size of the time window (in days) used to construct graph representations. Default is 1.
+            - mnn (int, optional): Minimum number of neighbors for graph cutting. Default is 4.
+            - mutual (bool, optional): Whether to use mutual nearest neighbors. Default is False.
+            - rm_RC (bool, optional): If True, removes RC mice from the wild-type group. Default is True.
+            - overlay_RC (bool, optional): If True, overlays RC mice as a separate group on the plot. Default is False.
+            - threshold (float, optional): Threshold for edge pruning in the graph (between 0 and 1). Default is 0.0.
+            - rm_weak_histo (bool, optional): If True, removes mutants with weak histology from the analysis. Default is False.
+            - stat (str, optional): Statistic used for group comparison test (e.g., "mean" or "median"). Default is "median".
+            - in_group_norm (bool, optional): If True, normalizes metric values within each group by their max. Default is False.
+            - ax (matplotlib.axes.Axes, optional): Existing axes object to draw the plot on. If None, a new figure is created.
+
      """
      
     df = get_metric_df(var, "approaches", derivative, window, mnn, mutual, rm_weak_histo, threshold, in_group_norm)
@@ -837,32 +889,22 @@ def boxplot_metric_mutant(var, derivative = False, aggregation = None, window = 
     if rm_RC:
         scores_mutants = df.loc[np.logical_and(df["mutant"], df["RC"] == False),var].values
         scores_others = df.loc[np.logical_and(df["mutant"] == False, df["RC"] == False), var].values
-        x_mutants = spread_points_around_center(scores_mutants, center=positions[0], bin_width = 0.05, interpoint=0.02)
-        ax.scatter(x_mutants, scores_mutants, alpha=alpha, s=size, color="red")
-        x_others = spread_points_around_center(scores_others, center=positions[1], bin_width = 0.02, interpoint=0.02)
-        ax.scatter(x_others, scores_others, alpha=alpha, s=size, color="gray", label="Non-member")
-        vp = plt.violinplot([scores_mutants, scores_others], positions, widths = [0.3, 0.4], showextrema = False, showmedians=True)
-        vp['bodies'][0].set_facecolor('lightcoral')
-        vp['bodies'][1].set_facecolor('gray')
-        if 'cmedians' in vp:  # Safety check
-            vp['cmedians'].set_linewidth(5)  # Directly set width on LineCollection
-            vp['cmedians'].set_color('k')  # Set color
-            vp['cmedians'].set_linestyle('-')  # Ensure solid line
-            
+     
     elif not rm_RC:
         scores_mutants = data[0][var].values
         scores_others = data[1][var].values
-        x_mutants = spread_points_around_center(scores_mutants, center=positions[0], bin_width = 0.05, interpoint=0.02)
-        ax.scatter(x_mutants, scores_mutants, alpha=alpha, s=size, color="red")
-        x_others = spread_points_around_center(scores_others, center=positions[1], bin_width = 0.02, interpoint=0.02)
-        ax.scatter(x_others, scores_others, alpha=alpha, s=size, color="gray", label="Non-member")
-        vp = plt.violinplot([scores_mutants, scores_others], positions, widths = [0.35, 0.45], showextrema = False, showmedians=True)
-        vp['bodies'][0].set_facecolor('lightcoral')
-        vp['bodies'][1].set_facecolor('gray')
-        if 'cmedians' in vp:  # Safety check
-            vp['cmedians'].set_linewidth(5)  # Directly set width on LineCollection
-            vp['cmedians'].set_color('k')  # Set color
-            vp['cmedians'].set_linestyle('-')  # Ensure solid line
+    
+    x_mutants, scores_mutants = spread_points_around_center(scores_mutants, center=positions[0], bin_width = 0.1, interpoint=0.05)
+    ax.scatter(x_mutants, scores_mutants, alpha=alpha, s=size, color="red",edgecolor='none')
+    x_others, scores_others = spread_points_around_center(scores_others, center=positions[1], bin_width = 0.1, interpoint=0.05)
+    ax.scatter(x_others, scores_others, alpha=alpha, s=size, color="gray", label="Non-member",edgecolor='none')
+    vp = plt.violinplot([scores_mutants, scores_others], positions, widths = [0.30, 0.40], showextrema = False, showmedians=True)
+    vp['bodies'][0].set_facecolor('lightcoral')
+    vp['bodies'][1].set_facecolor('gray')
+    if 'cmedians' in vp:  # Safety check
+        vp['cmedians'].set_linewidth(5)  # Directly set width on LineCollection
+        vp['cmedians'].set_color('k')  # Set color
+        vp['cmedians'].set_linestyle('-')  # Ensure solid line
             
     if overlay_RC: # Overlay the dots associated to RC on top of plot
         ax.scatter([1 + np.random.normal()*0.05 for i in range(len(df.loc[np.logical_and(df["mutant"], df["RC"]), var].values))], 
@@ -886,7 +928,8 @@ def boxplot_metric_mutant(var, derivative = False, aggregation = None, window = 
             ax.set_ylabel("CV[V(t)]")
         elif aggregation is None:
             ax.set_ylabel("V(t)")
-    ax.set_title(f"{var}, threshold: {threshold}%")
+    ax.set_title(f"{var}\n mnn = {mnn} thresh = {threshold}, \n group_norm = {in_group_norm}, \n permutation test on the {stat}.")
+
     plt.tight_layout()
     
 def boxplot_metric_RC(var, derivative = False, aggregation = None, window = 1, mnn = 4, mutual = False, threshold = 0.0, rm_weak_histo = False, ax = None):
@@ -951,10 +994,7 @@ def fluctuation_rank(var, window = 1, mnn = 4, mutual = False, rm_RC = True, ove
      are excluded from the comparison unless 'overlay_RC' is True. The function aggregates the metric per mouse using the specified method, 
      then plots the distribution for mutants and wild-type mice, and performs a statistical test to indicate significance.
     
-     Parameters:
-         measure (str): The graph-theoretical metric to plot (e.g., "hub", "degree", "outstrength").
-         window (int): The time window size used for averaging the graph representation.
-         aggregation: Aggregation method for repeated measures per mouse. Can be None, "mean" or "std".
+     see docstring of boxplot_metric_mutants for more details on input parameters
      """
      
     df = get_metric_df(var, "approaches", True, window, mnn, mutual, rm_weak, threshold)
@@ -1004,9 +1044,9 @@ def fluctuation_rank(var, window = 1, mnn = 4, mutual = False, rm_RC = True, ove
     if rm_RC:
         mutants = df.loc[np.logical_and(df["mutant"] == True, df["RC"] == False), 'rank'].values
         non_mem = df.loc[np.logical_and(df["mutant"] == False, df["RC"] == False), 'rank'].values
-        x_mutants = spread_points_around_center(mutants, center=1, interpoint=0.015)
+        x_mutants, mutants = spread_points_around_center(mutants, center=1, interpoint=0.015)
         ax.scatter(x_mutants, mutants, alpha=alpha, s=size, color="red")
-        x_others = spread_points_around_center(non_mem, center=2, interpoint=0.015)
+        x_others, non_mem = spread_points_around_center(non_mem, center=2, interpoint=0.015)
         ax.scatter(x_others, non_mem, alpha=alpha, s=size, color="gray", label="Non-member")
     elif not rm_RC:
         x_mutants = spread_points_around_center(numeric_data[0], center=1)
@@ -1022,5 +1062,17 @@ def fluctuation_rank(var, window = 1, mnn = 4, mutual = False, rm_RC = True, ove
     ax.set_title(f"Rank of {var} fluctuations\nthreshold: {threshold}%")
     
 if __name__ == "__main__":
-    boxplot_metric_mutant("mean injaccard", derivative = True, aggregation = 'std', window = 1,
-                          mnn = 7, mutual = True, rm_RC = True, overlay_RC = False, threshold = 0, stat = "median", rm_weak_histo = False, in_group_norm = True)
+## Supplement
+    plot_timeseries_example("outstrength", derivative = True, window = 1, variable = "approaches", idx = [1, 1],
+                              mnn = None, mutual = True, threshold = 0.0, ax = None)
+    
+    boxplot_metric_mutant("outstrength", derivative = False, aggregation = 'mean', window = 1,
+                       mnn = None, mutual = True, rm_RC = True, overlay_RC = False, threshold = 0, stat = "median", rm_weak_histo = False, in_group_norm = False)
+ 
+    boxplot_metric_mutant("outstrength", derivative = True, aggregation = 'std', window = 1,
+                          mnn = None, mutual = True, rm_RC = True, overlay_RC = False, threshold = 0, stat = "median", rm_weak_histo = False, in_group_norm = False)
+    
+## backup
+    # boxplot_metric_mutant("mean inpearson", derivative = True, aggregation = 'std', window = 1,
+    #                    mnn = None, mutual = True, rm_RC = True, overlay_RC = False, threshold = 0, stat = "median", rm_weak_histo = False, in_group_norm = False)
+    

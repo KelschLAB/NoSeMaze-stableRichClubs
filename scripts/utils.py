@@ -196,7 +196,7 @@ def spread_points_around_center(values, center=1, bin_width = 0.1, interpoint=0.
         spread += np.random.normal(0, interpoint/3, size=count)
         x_positions[mask] = center + spread
     
-    return x_positions
+    return x_positions, values
 
 
 labels = ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G10", "G11", "G12", "G13", "G14", "G15", "G16", "G17"]

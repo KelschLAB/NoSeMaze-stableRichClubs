@@ -65,7 +65,7 @@ def mutants_in_rc_mnn2_k2(iterations = 10000):
     plt.legend()
     
 def mutants_in_rc_mnn3_k3(iterations = 10000): #mnn = 3, rc = 3
-    metadata_path = "..\\data\\meta_data_exclusion_in_second\\meta_data.csv"
+    metadata_path = "..\\data\\meta_data.csv"
     metadata_df = pd.read_csv(metadata_path)
 
     # getting number of mutants, size of sRC for each group and actual observation
@@ -425,20 +425,25 @@ def reshuffled_rc_mnn4_k4(iterations = 10000, cumulative = False):
     plt.show()    
 
 
-# Mutants excluded from sRC
-mutants_in_rc_mnn2_k2()
-mutants_in_rc_mnn3_k3()
-mutants_in_rc_mnn4_k4()
-# mutants_in_rc_subcohort() # significance of mutants excluded from sRC, for groups with at most 2 mutants
+if __name__ == "__main__":
+## Main
+    # Mutants excluded from sRC
+    mutants_in_rc_mnn2_k2()
+    mutants_in_rc_mnn3_k3()
+    mutants_in_rc_mnn4_k4()
+    
+    # Absence of littermate effect
+    littermates_in_rc_mnn2_k2()    
+    littermates_in_rc_mnn3_k3()
+    littermates_in_rc_mnn4_k4()
+    
+    # Dynamic emergence of sRC (reshuffling)
+    reshuffled_rc_mnn2_k2()
+    reshuffled_rc_mnn3_k3()
+    reshuffled_rc_mnn4_k4()
+    
+## Supplement
+    # chasing_towards()
+    #backup 
+    # mutants_in_rc_subcohort() # significance of mutants excluded from sRC, for groups with at most 2 mutants
 
-# Absence of littermate effect
-# littermates_in_rc_mnn2_k2()    
-# littermates_in_rc_mnn3_k3()
-# littermates_in_rc_mnn4_k4()
-
-# Dynamic emergence of sRC
-# reshuffled_rc_mnn2_k2()
-# reshuffled_rc_mnn3_k3()
-# reshuffled_rc_mnn4_k4()
-
-# chasing_towards()
