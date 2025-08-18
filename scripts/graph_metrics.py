@@ -738,6 +738,58 @@ def add_significance(data, var, ax, bp, stat = "mean"):
         sig_symbol = f"p = {np.round(p, 3)}"
     text_height = bar_height + (y_range * 0.01)
     ax.text((x1 + x2) * 0.5, text_height, sig_symbol, ha='center', va='bottom', c='k')
+    if len(data) == 3:
+        rfids1 = data[1]["Mouse_RFID"].values
+        rfids2 = data[2]["Mouse_RFID"].values
+        data1, data2 = data[1], data[2]
+
+        # Group data by RFID
+        grouped_data1 = [data1.loc[data1["Mouse_RFID"] == rfid, var].values for rfid in np.unique(rfids1)]
+        grouped_data1 = [list(d) for d in grouped_data1]
+        grouped_data2 = [data2.loc[data2["Mouse_RFID"] == rfid, var].values for rfid in np.unique(rfids2)]
+        grouped_data2 = [list(d)for d in grouped_data2]
+        
+        combined_data = grouped_data1 + grouped_data2
+        labels = [0] * len(grouped_data1) + [1] * len(grouped_data2)
+
+        ## custom permutation test
+        observed_stat = statistic(grouped_data1, grouped_data2, stat)
+
+        # Generate permutations
+        permuted_stats = []
+        for _ in tqdm(range(10000)):
+            np.random.shuffle(labels)
+            permuted_group1 = [combined_data[i] for i in range(len(labels)) if labels[i] == 0]
+            permuted_group2 = [combined_data[i] for i in range(len(labels)) if labels[i] == 1]
+            permuted_stats.append(statistic(permuted_group1, permuted_group2))
+
+        # Compute p-value
+        permuted_stats = np.array(permuted_stats)
+        p = np.mean(np.abs(permuted_stats) >= np.abs(observed_stat))
+        print(p)
+
+        box_positions = [item.get_xdata()[0] for item in bp['boxes']]
+        x1, x2 = box_positions[1]+0.05, box_positions[2]+0.05 # Use actual positions instead of 1 and 2
+        
+        bottom, top = ax.get_ylim()
+        y_range = top - bottom
+        bar_height = (y_range * 0.05 * 1) + top #- 20
+        bar_tips = bar_height - (y_range * 0.02)
+        ax.plot(
+            [x1, x1, x2, x2],
+            [bar_tips, bar_height, bar_height, bar_tips], lw=1, c='k'
+        )
+
+        if p < 0.001:
+            sig_symbol = '***'
+        elif p < 0.01:
+            sig_symbol = '**'
+        elif p < 0.05:
+            sig_symbol = '*'
+        else:
+            sig_symbol = f"p = {np.round(p, 3)}"
+        text_height = bar_height + (y_range * 0.01)
+        ax.text((x1 + x2) * 0.5, text_height, sig_symbol, ha='center', va='bottom', c='k')
     
 def plot_timeseries_example(measure, derivative = True, window = 3, variable = "approaches", idx = [0, 0, 0],
                             mnn = None, mutual = True, threshold = 0.0, ax = None):

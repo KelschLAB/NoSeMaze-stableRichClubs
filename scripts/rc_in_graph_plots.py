@@ -43,8 +43,6 @@ def graph_in_time_3d(graph_idx, var = "interactions", mnn = 3, show_mut = True):
     
     # fig.suptitle(labels[graph_idx], fontsize=12)
     # ax.set_frame_on(False)
-    #plt.savefig("C:\\Users\\Corentin offline\\Documents\\GitHub\\clusterGUI\\plots\\params_exploration\\"+dirname+"_mnn"+str(mnn)+"_deg"+str(deg)+"_interactions.png")
-    # plt.savefig("..\\plots\\paper\\rc_presentation\\graphs\\"+labels[graph_idx]+"_mnn"+str(mnn)+f"_{var}.svg")
     plt.tight_layout()
     plt.show()
 
@@ -76,13 +74,7 @@ def graph_in_time_2d(graph_idx, var = "interactions", mnn = 3, deg = 3, mutual =
         total = np.nan
     plt.tight_layout()
     # axs[0].set_title(labels[graph_idx]+", total approaches: "+str(total), fontsize=16)
-    # if mutual:
-    #     plt.savefig("C:\\Users\\Corentin offline\\Documents\\GitHub\\clusterGUI\\plots\\params_exploration\\"+dirname+"_mnn"+str(mnn)+"_deg"+str(deg)+"_approach.png")
-    # else:
-    #     plt.savefig("C:\\Users\\Corentin offline\\Documents\\GitHub\\clusterGUI\\plots\\params_exploration\\"+dirname+"_nn"+str(mnn)+"_deg"+str(deg)+"_approach.png")
-    # plt.savefig("..\\plots\\paper\\rc_presentation\\graphs\\2D\\2D"+labels[graph_idx]+"_mnn"+str(mnn)+f"_{var}.svg")
     plt.show()
-
 
 def day_to_day_approachprop(dirname, mnn = 4, deg = 2):
     """
@@ -102,14 +94,7 @@ def day_to_day_approachprop(dirname, mnn = 4, deg = 2):
     plt.savefig("C:\\Users\\Corentin offline\\Documents\\GitHub\\clusterGUI\\plots\\params_exploration\\"+dirname+"_mnn"+str(mnn)+"_deg"+str(deg)+"_approachprop.png")
     plt.show()
 
-# for graph in ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G10"]:
-#     day_to_day_approach(graph, 4, 6, False)
-k = 3
-graph_in_time_2d(8, "interactions", mnn = k, deg = k, mutual = True, show_mut = True)
-    # graph_in_time_3d(i, "approaches", mnn = 3, show_mut = False)
-# graph_in_time_2d(3, "interactions", mnn = 3, deg = 3, mutual = True, show_mut = True)
+## Main 
+graph_to_plot = 12 # Index of the group to display
+graph_in_time_2d(graph_to_plot, "interactions", mnn = 3, deg = 3, mutual = True, show_mut = True)
 
-# graph_in_time_3d(2, "interactions", mnn = 3, show_mut = False)
-
-
-# day_to_day_interactions_3d(1, mnn = 3, deg = 3)

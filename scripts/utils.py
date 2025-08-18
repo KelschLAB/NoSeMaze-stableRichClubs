@@ -103,7 +103,7 @@ def statistic(x, y):
     y = np.concatenate(y)
     return np.mean(x) - np.mean(y)            
 
-def add_group_significance(data, rfids, ax, bp):
+def add_group_significance(data, rfids, ax = None, bp = None):
     """Computes and adds p-value significance to input ax and boxplot"""
     # Check from the outside pairs of boxes inwards
     ls = list(range(1, len(data) + 1))
@@ -136,6 +136,8 @@ def add_group_significance(data, rfids, ax, bp):
     permuted_stats = np.array(permuted_stats)
     p = np.mean(np.abs(permuted_stats) >= np.abs(observed_stat))
     print(p)
+    if bp is None or ax is None:
+        return
 
     x1 = 1
     x2 = 2

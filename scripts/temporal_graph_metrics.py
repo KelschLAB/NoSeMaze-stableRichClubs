@@ -286,6 +286,152 @@ def get_time_metric_df(measure, window = 1, variable = "approaches", mnn = None,
     df["Mouse_RFID"] = RFIDs
     return df
 
+def bp_metric(measure, window = 1, variable = "approaches",
+                      mnn = None, mutual = True, weighted = False, threshold = 0.0, rm_weak = False,
+                      summation = "mean", normalization = None, in_group_norm = False, logscale = False, stat = "mean", ax = None):
+    """
+    Plots and compares the specified graph metric between RC and non mutant mice across all groups.
+
+    Generates a boxplot (and optional swarm/violin plots) to visualize differences in a time-resolved 
+    graph-theoretical measure, with statistical testing between groups. For more details on input parameters, 
+    see the documentation of the time_measures function. 
+    """
+    scores_mutants, scores_RC, scores_wt, scores_others, scores_all = [], [], [], [], []
+    RFIDs, mutants, RCs = [], [], []
+    for graph_idx in range(len(labels)):
+        res = time_measures(measure, graph_idx, window, variable, mnn, mutual,
+                            weighted, threshold, rm_weak, summation, normalization, in_group_norm, logscale)
+        scores_mutants.extend(res[0])
+        scores_RC.extend(res[1])
+        scores_others.extend(res[2])
+        scores_wt.extend(res[3])
+        scores_all.extend(res[4])
+        RFIDs.extend(res[5]["Mouse_RFID"])
+        mutants.extend(res[5]["mutant"])
+        RCs.extend(res[5]["RC"])
+        
+    df = pd.DataFrame()
+    df[measure] = scores_all
+    df["mutant"] = mutants
+    df["RC"] = RCs
+    df["Mouse_RFID"] = RFIDs
+    
+    data = [df.loc[df["RC"] == True, ['Mouse_RFID', measure]], df.loc[np.logical_and(df["mutant"] == False, df["RC"] == False), ['Mouse_RFID', measure]],
+            df.loc[np.logical_and(df["mutant"] == True, df["RC"] == False), ['Mouse_RFID', measure]] ]
+    
+    data[0][data[0] == np.inf] = np.nan
+    data[1][data[1] == np.inf] = np.nan
+    data[2][data[2] == np.inf] = np.nan
+    data[0].dropna()
+    data[1].dropna()
+    data[2].dropna()
+
+    if ax is None:
+        fig, ax = plt.subplots(1, 1, figsize=(4, 6))
+    size, alpha = 60, 0.4
+    positions = [0.75, 1.25, 1.75]
+    bp = ax.boxplot([data[0][measure].dropna(), data[1][measure].dropna(), data[2][measure].dropna()], positions = positions, labels=["sRC", "Non-members WT", "mutants"],
+                    showfliers = False, meanline=False, showmeans = False, medianprops={'visible': False})
+    
+    x_RC, scores_RC = spread_points_around_center(scores_RC, center=positions[0], bin_width = 0.1, interpoint=0.04)
+    ax.scatter(x_RC, scores_RC, alpha=alpha, s=size, color="blue",edgecolor='none')
+    x_others, scores_others = spread_points_around_center(scores_others, center=positions[1], bin_width = 0.1, interpoint=0.03)
+    ax.scatter(x_others, scores_others, alpha=alpha, s=size, color="gray", label="Non-member",edgecolor='none')
+    x_mutants, scores_mutants = spread_points_around_center(scores_mutants, center=positions[2], bin_width = 0.1, interpoint=0.03)
+    ax.scatter(x_mutants, scores_mutants, alpha=alpha, s=size, color="red", label="Non-member",edgecolor='none')
+
+    vp = plt.violinplot([data[0][measure], data[1][measure], data[2][measure]], positions, widths = [0.25, 0.38, 0.25], showextrema = False, showmedians=True)
+    vp['bodies'][0].set_facecolor('blue')
+    vp['bodies'][1].set_facecolor('gray')
+    vp['bodies'][2].set_facecolor('red')
+
+    if 'cmedians' in vp:  # Safety check
+        vp['cmedians'].set_linewidth(5)  # Directly set width on LineCollection
+        vp['cmedians'].set_color('k')  # Set color
+        vp['cmedians'].set_linestyle('-')  # Ensure solid line
+
+
+    add_significance(data, measure, ax, bp, stat)
+    title = f"{measure}\n mnn = {mnn} thresh = {threshold}, summation = {summation}\n norm. = {normalization}, inGroupNorm = {in_group_norm}\n logscale = {logscale}, permutation test on the {stat}."
+    ax.set_title(title)
+    plt.tight_layout()
+    plt.show()
+    return bp
+    
+
+def bp_metric_RC(measure, window = 1, variable = "approaches",
+                      mnn = None, mutual = True, weighted = False, threshold = 0.0, rm_weak = False,
+                      summation = "mean", normalization = None, in_group_norm = False, logscale = False, stat = "mean", swarmplot = True, ax = None):
+    """
+    Plots and compares the specified graph metric between RC and non mutant mice across all groups.
+
+    Generates a boxplot (and optional swarm/violin plots) to visualize differences in a time-resolved 
+    graph-theoretical measure, with statistical testing between groups. For more details on input parameters, 
+    see the documentation of the time_measures function. 
+    """
+    scores_mutants, scores_RC, scores_wt, scores_others, scores_all = [], [], [], [], []
+    RFIDs, mutants, RCs = [], [], []
+    for graph_idx in range(len(labels)):
+        res = time_measures(measure, graph_idx, window, variable, mnn, mutual,
+                            weighted, threshold, rm_weak, summation, normalization, in_group_norm, logscale)
+        scores_mutants.extend(res[0])
+        scores_RC.extend(res[1])
+        scores_others.extend(res[2])
+        scores_wt.extend(res[3])
+        scores_all.extend(res[4])
+        RFIDs.extend(res[5]["Mouse_RFID"])
+        mutants.extend(res[5]["mutant"])
+        RCs.extend(res[5]["RC"])
+        
+    df = pd.DataFrame()
+    df[measure] = scores_all
+    df["mutant"] = mutants
+    df["RC"] = RCs
+    df["Mouse_RFID"] = RFIDs
+    
+    data = [ df.loc[np.logical_and(df["mutant"] == False, df["RC"] == False), ['Mouse_RFID', measure]], 
+            df.loc[df["RC"] == True, ['Mouse_RFID', measure]] ]
+    
+    data[0][data[0] == np.inf] = np.nan
+    data[1][data[1] == np.inf] = np.nan
+    data[0].dropna()
+    data[1].dropna()
+
+    if ax is None:
+        fig, ax = plt.subplots(1, 1, figsize=(4, 6))
+    size, alpha = 60, 0.4
+    positions = [0.75, 1.25]
+    bp = ax.boxplot([data[0][measure].dropna(), data[1][measure].dropna()], positions = positions, labels=["Non-members WT", "sRC"],
+                    showfliers = False, meanline=False, showmeans = False, medianprops={'visible': False})
+    if swarmplot:
+        x_others, scores_others = spread_points_around_center(scores_others, center=positions[0], bin_width = 0.1, interpoint=0.03)
+        ax.scatter(x_others, scores_others, alpha=alpha, s=size, color="gray", label="Non-member",edgecolor='none')
+        x_RC, scores_R = spread_points_around_center(scores_RC, center=positions[1], bin_width = 0.1, interpoint=0.04)
+        ax.scatter(x_RC, scores_RC, alpha=alpha, s=size, color="blue",edgecolor='none')
+
+    else:
+        ax.scatter([positions[0] + np.random.normal()*0.05 for i in range(len(scores_others))], 
+                    scores_others, alpha = alpha, s = size, color = "gray", label = "Non-member",edgecolor='none')
+        ax.scatter([positions[1] + np.random.normal()*0.05 for i in range(len(scores_mutants))], 
+                    scores_mutants, alpha = alpha, s = size, color = "blue",edgecolor='none', label = "sRC"); 
+        
+    vp = plt.violinplot([data[0][measure], data[1][measure]], positions, widths = [0.38, 0.25], showextrema = False, showmedians=True)
+    vp['bodies'][0].set_facecolor('gray')
+    vp['bodies'][1].set_facecolor('blue')
+    if 'cmedians' in vp:  # Safety check
+        vp['cmedians'].set_linewidth(5)  # Directly set width on LineCollection
+        vp['cmedians'].set_color('k')  # Set color
+        vp['cmedians'].set_linestyle('-')  # Ensure solid line
+
+
+    add_significance(data, measure, ax, bp, stat)
+    title = f"{measure}\n mnn = {mnn} thresh = {threshold}, summation = {summation}\n norm. = {normalization}, inGroupNorm = {in_group_norm}\n logscale = {logscale}, permutation test on the {stat}."
+    ax.set_title(title)
+    plt.tight_layout()
+    plt.show()
+    return bp
+    
+
 def bp_metric_mutants(measure, window = 1, variable = "approaches",
                       mnn = None, mutual = True, weighted = False, threshold = 0.0, rm_weak = False,
                       summation = "mean", normalization = None, in_group_norm = False, logscale = False, stat = "mean", swarmplot = True, ax = None):
@@ -328,22 +474,22 @@ def bp_metric_mutants(measure, window = 1, variable = "approaches",
         fig, ax = plt.subplots(1, 1, figsize=(4, 6))
     size, alpha = 60, 0.4
     positions = [0.75, 1.25]
-    bp = ax.boxplot([data[0][measure].dropna(), data[1][measure].dropna()], positions = positions, labels=["Mutants", "Non-members WT"],
+    bp = ax.boxplot([data[1][measure].dropna(), data[0][measure].dropna()], positions = positions, labels=["Non-members WT", "OXTRΔAON"],
                     showfliers = False, meanline=False, showmeans = False, medianprops={'visible': False})
     if swarmplot:
-        x_mutants, scores_mutants = spread_points_around_center(scores_mutants, center=positions[0], bin_width = 0.05, interpoint=0.02)
+        x_mutants, scores_mutants = spread_points_around_center(scores_mutants, center=positions[1], bin_width = 0.1, interpoint=0.04)
         ax.scatter(x_mutants, scores_mutants, alpha=alpha, s=size, color="red",edgecolor='none')
-        x_others, scores_others = spread_points_around_center(scores_others, center=positions[1], bin_width = 0.05, interpoint=0.02)
+        x_others, scores_others = spread_points_around_center(scores_others, center=positions[0], bin_width = 0.1, interpoint=0.03)
         ax.scatter(x_others, scores_others, alpha=alpha, s=size, color="gray", label="Non-member",edgecolor='none')
     else:
-        ax.scatter([positions[0] + np.random.normal()*0.05 for i in range(len(scores_mutants))], 
+        ax.scatter([positions[1] + np.random.normal()*0.05 for i in range(len(scores_mutants))], 
                     scores_mutants, alpha = alpha, s = size, color = "red",edgecolor='none'); 
-        ax.scatter([positions[1] + np.random.normal()*0.05 for i in range(len(scores_others))], 
+        ax.scatter([positions[0] + np.random.normal()*0.05 for i in range(len(scores_others))], 
                     scores_others, alpha = alpha, s = size, color = "gray", label = "Non-member",edgecolor='none')
         
-    vp = plt.violinplot([data[0][measure], data[1][measure]], positions, widths = [0.25, 0.35], showextrema = False, showmedians=True)
-    vp['bodies'][0].set_facecolor('lightcoral')
-    vp['bodies'][1].set_facecolor('gray')
+    vp = plt.violinplot([data[1][measure], data[0][measure]], positions, widths = [0.38, 0.25], showextrema = False, showmedians=True)
+    vp['bodies'][1].set_facecolor('lightcoral')
+    vp['bodies'][0].set_facecolor('gray')
     if 'cmedians' in vp:  # Safety check
         vp['cmedians'].set_linewidth(5)  # Directly set width on LineCollection
         vp['cmedians'].set_color('k')  # Set color
@@ -360,19 +506,23 @@ def bp_metric_mutants(measure, window = 1, variable = "approaches",
 
 if __name__ == "__main__":    
 ## Main
-    bp_metric_mutants("summed outNEF", mnn = None, mutual = True, weighted = True, threshold = 0, rm_weak = False, 
-                      summation = "mean", normalization="CV", logscale = False, stat = "median", swarmplot  = True)
+    # bp_metric_mutants("summed outNEF", mnn = None, mutual = True, weighted = True, threshold = 0, rm_weak = False, 
+    #                   summation = "mean", normalization="CV", logscale = False, stat = "median", swarmplot  = True)
 
-    bp_metric_mutants("summed inNEF", mnn = None, mutual = True, weighted = True, threshold = 0, rm_weak = False, 
-                      summation = "mean", normalization="CV", logscale = False, stat = "median")
+    # bp_metric_mutants("summed inNEF", mnn = None, mutual = True, weighted = True, threshold = 0, rm_weak = False, 
+    #                   summation = "mean", normalization="CV", logscale = False, stat = "median")
 ## Supplement
-    bp_metric_mutants("summed inburstiness", mnn = 7, mutual = True, weighted = False, threshold = 0, rm_weak = False, 
-                              summation = "mean", normalization=None, in_group_norm = False, logscale = False, stat = "median", swarmplot = True)
+    # bp_metric_mutants("summed inburstiness", mnn = 7, mutual = True, weighted = False, threshold = 0, rm_weak = False, 
+    #                           summation = "mean", normalization=None, in_group_norm = False, logscale = False, stat = "median", swarmplot = True)
     
-    bp_metric_mutants("summed outburstiness", mnn = 7, mutual = True, weighted = False, threshold = 0, rm_weak = False, 
-                              summation = "mean", normalization = None, in_group_norm = False, logscale = False, stat = "median", swarmplot = True)
-        
-
+    # bp_metric_mutants("summed outburstiness", mnn = 7, mutual = True, weighted = False, threshold = 0, rm_weak = False, 
+    #                           summation = "mean", normalization = None, in_group_norm = False, logscale = False, stat = "median", swarmplot = True)
+   
+    bp_metric("summed outNEF", mnn = None, mutual = True, weighted = True, threshold = 0, rm_weak = False, 
+                      summation = "mean", normalization="CV", logscale = False, stat = "median")
+    
+    # bp_metric("summed inNEF", mnn = None, mutual = True, weighted = True, threshold = 0, rm_weak = False, 
+    #                   summation = "mean", normalization="CV", logscale = False, stat = "median")
     
     
 
