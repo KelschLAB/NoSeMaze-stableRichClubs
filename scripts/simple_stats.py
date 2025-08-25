@@ -556,16 +556,16 @@ def rc_size():
 
 if __name__ == "__main__":
     ## Figure 3
-    # boxplot_approaches(True, False, all_wt = True)
-    # boxplot_approaches(False, False, all_wt = True)
-    # boxplot_interactions(False, all_wt = True)
-    # boxplot_interaction_durations(False, all_wt = True)
+    boxplot_approaches(True, False, all_wt = True)
+    boxplot_approaches(False, False, all_wt = True)
+    boxplot_interactions(False, all_wt = True)
+    boxplot_interaction_durations(False, all_wt = True)
     
     ## Figure 4
-    boxplot_approaches(True, True, all_wt = True)
-    boxplot_approaches(False, True, all_wt = True)
-    boxplot_interactions(True, all_wt = True)
-    boxplot_interaction_durations(True, all_wt = True)
+    # boxplot_approaches(True, True, all_wt = True)
+    # boxplot_approaches(False, True, all_wt = True)
+    # boxplot_interactions(True, all_wt = True)
+    # boxplot_interaction_durations(True, all_wt = True)
     
     ## Figure 5
     # tube_rank()

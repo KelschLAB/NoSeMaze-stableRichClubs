@@ -7,7 +7,7 @@ import sys
 abspath = os.path.abspath(__file__)
 dname = os.path.dirname(abspath)
 os.chdir(dname)
-os.chdir('..\\src\\')
+os.chdir('..\\scripts\\')
 sys.path.append(os.getcwd())
 from read_graph import read_graph
 import pandas as pd
@@ -732,6 +732,7 @@ def chasingFraction_RC(out = True, ax = None):
     chasing_dir = "..\\data\\chasing\\single\\"
 
     approach_order_out, approach_order_in = [], []
+    RFIDs = []
     # first cohort
     df1 = pd.read_excel(path_cohort1)
     groups1 = df1.loc[:, "group"].to_numpy()
@@ -756,6 +757,7 @@ def chasingFraction_RC(out = True, ax = None):
                     rc_idx = np.where(mouse_names[idx] == names_in_approach_matrix)[0][0]
                     approach_order_out.append(list(chasings_out)[rc_idx])
                     approach_order_in.append(list(chasings_in)[rc_idx])
+                    RFIDs.append(mouse_names[idx])
 
     df2 = pd.read_excel(path_cohort2)
     groups2 = df2.loc[:, "Group_ID"].to_numpy()
@@ -780,6 +782,7 @@ def chasingFraction_RC(out = True, ax = None):
                     rc_idx = np.where(mouse_names[idx] == names_in_approach_matrix)[0][0]
                     approach_order_out.append(list(chasings_out)[rc_idx])
                     approach_order_in.append(list(chasings_in)[rc_idx])
+                    RFIDs.append(mouse_names[idx])
                       
     if ax is None:
         fig, ax = plt.subplots(1, 1, figsize = (5,4))
@@ -792,8 +795,12 @@ def chasingFraction_RC(out = True, ax = None):
     if out:
         ax.set_xlabel(r"Chasing fraction (outgoing)", fontsize = 20)
     else:
-        ax.set_xlabel(r"Chasing fraction (ingoing)", fontsize = 20)
+        ax.set_xlabel(r"Chasing fraction (incoming)", fontsize = 20)
     ax.set_ylabel(r"Count", fontsize = 19)
+    if out:
+        return approach_order_out, RFIDs
+    else:
+        return approach_order_in, RFIDs
 
     
 def chasingFraction_exRC(out = True, ax = None):
@@ -805,6 +812,7 @@ def chasingFraction_exRC(out = True, ax = None):
     chasing_dir = "..\\data\\chasing\\single\\"
 
     approach_order_out, approach_order_in = [], []
+    RFIDs = []
     # first cohort
     df1 = pd.read_excel(path_cohort1)
     groups1 = df1.loc[:, "group"].to_numpy()    
@@ -831,6 +839,7 @@ def chasingFraction_exRC(out = True, ax = None):
                     rc_idx = np.where(mouse_names[idx] == names_in_approach_matrix)[0][0]
                     approach_order_out.append(list(chasings_out)[rc_idx])
                     approach_order_in.append(list(chasings_in)[rc_idx])
+                    RFIDs.append(mouse_names[idx])
 
     df2 = pd.read_excel(path_cohort2)
     groups2 = df2.loc[:, "Group_ID"].to_numpy()
@@ -856,6 +865,7 @@ def chasingFraction_exRC(out = True, ax = None):
                     rc_idx = np.where(mouse_names[idx] == names_in_approach_matrix)[0][0]
                     approach_order_out.append(list(chasings_out)[rc_idx])
                     approach_order_in.append(list(chasings_in)[rc_idx])
+                    RFIDs.append(mouse_names[idx])
                            
     if ax is None:
         fig, ax = plt.subplots(1, 1, figsize = (5,4))
@@ -868,10 +878,14 @@ def chasingFraction_exRC(out = True, ax = None):
     if out:
         ax.set_xlabel(r"Chasing fraction (outgoing)", fontsize = 15)
     else:
-        ax.set_xlabel(r"Chasing fraction (ingoing)", fontsize = 15)
+        ax.set_xlabel(r"Chasing fraction (incoming)", fontsize = 15)
     ax.set_ylabel(r"Count", fontsize = 15)
     ax.tick_params(axis='x', labelsize=15)
     ax.tick_params(axis='y', labelsize=15)
+    if out:
+        return approach_order_out, RFIDs
+    else:
+        return approach_order_in, RFIDs
     
 def tuberanks_sep():
     """ Histogram of tube ranks discriminating between RC, mutants and others.
@@ -921,7 +935,7 @@ def tuberanks_sep():
 
     plt.show()
     
-def chasingFraction_sep():
+def chasingFraction_sep(out = True):
     """Histogram of chasing fractions discriminating between RC, mutants and others.
     """
     path_cohort1 = "..\\data\\reduced_data.xlsx"
@@ -944,9 +958,13 @@ def chasingFraction_sep():
                                     delimiter = ",", dtype=str)[1:, 1:].astype(np.int16)
         names_in_approach_matrix =  np.loadtxt(chasing_dir+"G"+str(group_idx)+"_single_chasing.csv",
                                             delimiter=",", dtype=str)[0, :][1:]
-  
-        chasings_out = np.sum(approach_matrix, axis = 1)
-        chasings_out = chasings_out/np.sum(chasings_out)
+        
+        if out:
+            chasings_out = np.sum(approach_matrix, axis = 1)
+            chasings_out = chasings_out/np.sum(chasings_out)
+        else:
+            chasings_out = np.sum(approach_matrix, axis = 0)
+            chasings_out = chasings_out/np.sum(chasings_out)
         for idx, name in enumerate(names_in_approach_matrix):
             if name in RCs1_ids:
                 rc_idx = np.where(name == names_in_approach_matrix)[0][0]
@@ -974,9 +992,12 @@ def chasingFraction_sep():
                                     delimiter = ",", dtype=str)[1:, 1:].astype(np.int16)
         names_in_approach_matrix =  np.loadtxt(chasing_dir+"G"+str(group_idx)+"_single_chasing.csv",
                                             delimiter=",", dtype=str)[0, :][1:]
-       
-        chasings_out = np.sum(approach_matrix, axis = 1)
-        chasings_out = chasings_out/np.sum(chasings_out)
+        if out:
+            chasings_out = np.sum(approach_matrix, axis = 1)
+            chasings_out = chasings_out/np.sum(chasings_out)
+        else:
+            chasings_out = np.sum(approach_matrix, axis = 0)
+            chasings_out = chasings_out/np.sum(chasings_out)
         for idx, name in enumerate(names_in_approach_matrix):
             if name in RCs2_ids:
                 rc_idx = np.where(name == names_in_approach_matrix)[0][0]
@@ -997,9 +1018,16 @@ def chasingFraction_sep():
     ax.hist(chasing_frac_mutants, bins = np.linspace(0, 0.5, 11), density = True, rwidth= 0.8, align='mid', color = 'darkred', edgecolor='black', alpha = 0.8, label = "Mutants")
     ax.hist(chasing_frac_others, bins = np.linspace(0, 0.5, 11), density = True, rwidth= 0.8, align='mid', color = 'grey', edgecolor='black', alpha = 0.8, label = "Others")
     
-    ax.set_xlabel(r"Fraction of total chases in group", fontsize = 20)
+    if out:
+        ax.set_xlabel(r"Fraction of total chases in group", fontsize = 20)
+    else:
+        ax.set_xlabel(r"Fraction of total being chased", fontsize = 20)
+
     ax.set_ylabel(r"Density", fontsize = 19)
+    ax.tick_params(axis='x', labelsize=18)
+    ax.tick_params(axis='y', labelsize=18)
     plt.legend(fontsize = 15)
+    plt.tight_layout()
     
     print("p RC vs Others:")
     add_group_significance([chasing_frac_rc, chasing_frac_others], [RFIDs_rc, RFIDs_others])
@@ -1017,14 +1045,21 @@ if __name__ == "__main__":
     # rankrc = np.array(tuberank_vs_rc(ax))
     # t_stat, p_value = stats.ttest_ind(rankex, rankrc)
     # print(f"Paired t-test: p = {p_value}")
-    
+
     # fig, ax = plt.subplots(1, 1, figsize = (3, 4))
     # chasingFraction_exRC(True, ax)
     # chasingFraction_RC(True, ax)
-    
+    # add_group_significance([frac_ex, frac_rc], [rfids_ex, rfids_rc], stat = "mean")
+
  ## Supplement figure 9   
+    fig, ax = plt.subplots(1, 1, figsize = (3, 4))
+    frac_ex, rfids_ex = chasingFraction_exRC(False, ax)
+    frac_rc, rfids_rc = chasingFraction_RC(False, ax)
+    add_group_significance([frac_ex, frac_rc], [rfids_ex, rfids_rc], stat = "mean")
      # tuberanks_sep() # tube rank of sRC, mutants and non-sRC WT.
-    chasingFraction_sep()
+    # chasingFraction_sep(out = True)
+    # chasingFraction_sep(out = False)
+
     
     # fig, ax = plt.subplots(1, 1)
     # chasingrank_vs_exrc(ax)

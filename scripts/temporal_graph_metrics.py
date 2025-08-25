@@ -15,7 +15,7 @@ from sklearn.manifold import TSNE
 from sklearn import manifold
 sys.path.append('..\\src\\')
 from read_graph import read_graph, read_labels
-from utils import get_category_indices, spread_points_around_center
+from utils import get_category_indices, spread_points_around_center, add_group_significance
 import mpl_toolkits.mplot3d  # noqa: F401
 from scipy.stats import ttest_ind
 from scipy import stats
@@ -511,6 +511,7 @@ if __name__ == "__main__":
 
     # bp_metric_mutants("summed inNEF", mnn = None, mutual = True, weighted = True, threshold = 0, rm_weak = False, 
     #                   summation = "mean", normalization="CV", logscale = False, stat = "median")
+
 ## Supplement
     # bp_metric_mutants("summed inburstiness", mnn = 7, mutual = True, weighted = False, threshold = 0, rm_weak = False, 
     #                           summation = "mean", normalization=None, in_group_norm = False, logscale = False, stat = "median", swarmplot = True)

@@ -43,7 +43,7 @@ def format_plot(ax, bp, xticklabels = ["RC", "Mutants", "Others"]):
         patch.set_facecolor(color)
     plt.setp(bp['medians'], color='k')
     
-def add_significance(data, ax, bp, stat = mean):
+def add_significance(data, ax, bp, stat = median):
     """Computes and adds p-value significance to input ax and boxplot"""
     # Initialise a list of combinations of groups that are significantly different
     significant_combinations = []
@@ -98,12 +98,15 @@ def add_significance(data, ax, bp, stat = mean):
             text_height = bar_height + (y_range * 0.01)
             plt.text((x1 + x2) * 0.5, text_height, sig_symbol, ha='center', va='bottom', c='k')
             
-def statistic(x, y):
+def statistic(x, y, stat):
     x = np.concatenate(x)
     y = np.concatenate(y)
-    return np.mean(x) - np.mean(y)            
+    if stat == "median":
+        return np.median(x) - np.median(y)      
+    elif stat == "mean":
+        return np.mean(x) - np.mean(y)        
 
-def add_group_significance(data, rfids, ax = None, bp = None):
+def add_group_significance(data, rfids, ax = None, bp = None, stat = "mean"):
     """Computes and adds p-value significance to input ax and boxplot"""
     # Check from the outside pairs of boxes inwards
     ls = list(range(1, len(data) + 1))
@@ -121,7 +124,7 @@ def add_group_significance(data, rfids, ax = None, bp = None):
     labels = [0] * len(grouped_data1) + [1] * len(grouped_data2)
 
     ## custom permutation test
-    observed_stat = statistic(grouped_data1, grouped_data2)
+    observed_stat = statistic(grouped_data1, grouped_data2, stat)
 
     # Generate permutations
     permuted_stats = []
@@ -130,7 +133,7 @@ def add_group_significance(data, rfids, ax = None, bp = None):
         np.random.shuffle(labels)
         permuted_group1 = [combined_data[i] for i in range(len(labels)) if labels[i] == 0]
         permuted_group2 = [combined_data[i] for i in range(len(labels)) if labels[i] == 1]
-        permuted_stats.append(statistic(permuted_group1, permuted_group2))
+        permuted_stats.append(statistic(permuted_group1, permuted_group2, stat))
 
     # Compute p-value
     permuted_stats = np.array(permuted_stats)

@@ -507,10 +507,10 @@ def time_in_arena_correlation(sep = False):
         ax[1, 0].set_ylabel("Social time", fontsize = 20)
 
     else:
-        plt.scatter(time_in_arena[~mutants], social_time[~mutants], s = 70, c = 'blue', alpha = 0.5, label = "WT")
+        plt.scatter(time_in_arena[~mutants], social_time[~mutants], s = 70, c = 'k', alpha = 0.5, label = "WT")
         plt.scatter(time_in_arena[mutants], social_time[mutants], s = 70, c = 'red', alpha = 0.5, label = "mutants")
         plt.scatter(time_in_arena[~rc], social_time[~rc], c = 'gray', alpha = 1, label = "Non RC members")
-        plt.scatter(time_in_arena[rc], social_time[rc], c = 'green', alpha = 1, label = "RC members")
+        plt.scatter(time_in_arena[rc], social_time[rc], c = 'blue', alpha = 1, label = "RC members")
         plt.xlabel("Time in arena", fontsize = 18)
         plt.ylabel("Social time", fontsize = 18)
         plt.legend()
@@ -585,6 +585,9 @@ def chasingOrder_vs_approachOrder():
     plt.tight_layout()
     plt.show()
     
+# Supplement
+time_in_arena_correlation(False)
+    
 # chasingRank_david_vs_sortingRC()
 # chasingRank_david_vs_sortingALL()
 # chasingRank_david_vs_approachesALL()
@@ -596,4 +599,3 @@ def chasingOrder_vs_approachOrder():
 # ChasingRank_vs_approachRank()
 # TubeRank_vs_approachRank()
 # chasingOrder_vs_approachOrder()
-time_in_arena_correlation(False)
