@@ -32,7 +32,7 @@ def chasing_towards(rc_size = 3, total_chasings = 100):
 # mutants exclusion analysis
 def mutants_in_rc_mnn2_k2(iterations = 10000):
     # extracting meta data for mnn = 2 and k = 2
-    metadata_path = "..\\data\\meta_data_exclusion_in_second\\meta_data_k2.csv"
+    metadata_path = "..\\data\\meta_data_k2.csv"
     metadata_df = pd.read_csv(metadata_path)
     
     # getting number of mutants, size of sRC for each group and actual observation
@@ -98,7 +98,7 @@ def mutants_in_rc_mnn3_k3(iterations = 10000): #mnn = 3, rc = 3
     plt.legend()
     
 def mutants_in_rc_mnn4_k4(weak = True, iterations = 10000): # mnn4 and rc 4
-    metadata_path = "..\\data\\meta_data_exclusion_in_second\\meta_data_k4.csv"
+    metadata_path = "..\\data\\meta_data_k4.csv"
     metadata_df = pd.read_csv(metadata_path)
 
     # getting number of mutants, size of sRC for each group and actual observation

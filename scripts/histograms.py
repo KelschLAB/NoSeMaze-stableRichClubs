@@ -1249,11 +1249,11 @@ if __name__ == "__main__":
 ## Main figure 5
     rich_club_piechart_both()
 
-    # fig, ax = plt.subplots(1, 1)
-    # rankex = np.array(tuberank_vs_exrc(ax))
-    # rankrc = np.array(tuberank_vs_rc(ax))
-    # t_stat, p_value = stats.ttest_ind(rankex, rankrc)
-    # print(f"Paired t-test: p = {p_value}")
+    fig, ax = plt.subplots(1, 1)
+    rankex = np.array(tuberank_vs_exrc(ax))
+    rankrc = np.array(tuberank_vs_rc(ax))
+    t_stat, p_value = stats.ttest_ind(rankex, rankrc)
+    print(f"Paired t-test: p = {p_value}")
 
     # fig, ax = plt.subplots(1, 1, figsize = (3, 4))
     # chasingFraction_exRC(True, ax)
