@@ -206,14 +206,13 @@ def spread_points_around_center(values, center=1, bin_width = 0.1, interpoint=0.
 
 labels = ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G10", "G11", "G12", "G13", "G14", "G15", "G16", "G17"]
 
-def get_category_indices(graph_idx, variable, window, rm_weak_histo = True):
+def get_category_indices(graph_idx, variable, window):
     """
     Returns the indices of mutant, RC (rich club), other, and wild-type (WT) mice for a given group.
 
     Parameters:
         graph_idx (int): Index of the group (corresponds to an entry in the 'labels' list).
         variable (str): The variable name used to construct the data file path (e.g., "approaches", "interactions", "chasing"...).
-        rm_weak_histo (bool, optional): If True, excludes mutants with weak histology from the mutant group (default: True).
 
     Returns:
         mutants (np.ndarray): Indices of mutant mice in the group.
@@ -224,7 +223,6 @@ def get_category_indices(graph_idx, variable, window, rm_weak_histo = True):
 
     Notes:
         - The function reads metadata and group data to determine group membership.
-        - If rm_weak_histo is True, only mutants with strong or unknown histology are included as mutants.
         - Mice not found in the metadata are treated as wild-type.
     """
     metadata_path = "..\\data\\meta_data.csv"
@@ -241,25 +239,9 @@ def get_category_indices(graph_idx, variable, window, rm_weak_histo = True):
     RFIDs = arr[0, 1:].astype(str)
     curr_metadata_df = metadata_df.loc[metadata_df["Group_ID"] == int(labels[graph_idx][1:]), :]
     # figuring out index of true mutants in current group
-    if not rm_weak_histo:
-        mutant_map = curr_metadata_df.set_index('Mouse_RFID')['mutant'].to_dict()
-        is_mutant = [mutant_map.get(rfid, False) for rfid in RFIDs] # if RFID is missing, animal is assumed to be neurotypical
-    else:
-        is_mutant = []
-        for rfid in RFIDs:
-            if len(metadata_df.loc[metadata_df["Mouse_RFID"] == rfid, "mutant"].values) != 0 and metadata_df.loc[metadata_df["Mouse_RFID"] == rfid, "mutant"].values[0]:
-                histology = metadata_df.loc[metadata_df["Mouse_RFID"] == rfid, "histology"].values[0]
-                if histology != 'weak':
-                    # mouse is a mutant and histology is strong or unknown
-                    is_mutant.append(True)
-                else:
-                    is_mutant.append(False)
-            elif len(metadata_df.loc[metadata_df["Mouse_RFID"] == rfid, "mutant"].values) != 0 and not metadata_df.loc[metadata_df["Mouse_RFID"] == rfid, "mutant"].values[0]:
-                is_mutant.append(False)
-            elif len(metadata_df.loc[metadata_df["Mouse_RFID"] == rfid, "mutant"].values) == 0: 
-                print("Mouse not found, treat as WT")
-                is_mutant.append(False)
-            
+    mutant_map = curr_metadata_df.set_index('Mouse_RFID')['mutant'].to_dict()
+    is_mutant = [mutant_map.get(rfid, False) for rfid in RFIDs] # if RFID is missing, animal is assumed to be neurotypical
+
     graph_length = len(RFIDs)
     # is_RC = [True if curr_metadata_df.loc[curr_metadata_df["Mouse_RFID"] == rfid, "RC"].values else False for rfid in RFIDs] # list of boolean stating which mice are RC
     is_RC = [

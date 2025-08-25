@@ -9,7 +9,7 @@ import networkx as nx
 import os
 import sys
 import seaborn as sns
-from weighted_rc import weighted_rich_club
+from weighted_rc_coeff import weighted_rich_club
 from scipy import stats
 sys.path.append('..\\src\\')
 from read_graph import read_graph
@@ -634,7 +634,7 @@ def chasing_towards_piechart(normed = False, filter_big_chasers = False):
     fig, ax = plt.subplots()
     # ax.pie(sizes, labels=labels, autopct='%1.1f\%%')
     explode = (0.0, 0.0)  # Slight explode for asymmetric slice
-    plt.pie(sizes, labels=labels, autopct=lambda p: f'{p:.1f}\%', 
+    plt.pie(sizes, labels=labels, autopct=lambda p: f'{p:.1f}%', 
             explode=explode, startangle=90, 
             wedgeprops=dict(width=0.6, edgecolor='white', linewidth=5, alpha=0.7),
             textprops=dict(color="black", fontsize=16))    

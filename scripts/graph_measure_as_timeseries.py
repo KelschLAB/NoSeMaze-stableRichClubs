@@ -331,7 +331,6 @@ def plot_timeseries_example(measure, derivative = True, window = 3, variable = "
             ax.axhline(np.nanmean(value_mutants[:, idx[0]]), ls = "--", color = "red", alpha = 0.8)
             ax.axhline(np.nanmean(value_rest[:, idx[1]]), ls = "--", color = "k", alpha = 0.8)
 
-    
     ylabel = "dS(t)/dt" if derivative else "μ[S(t)]"
     plt.ylabel(ylabel)
     ax.legend()
@@ -400,15 +399,10 @@ def plot_persistance(out = True, window = 3, variable = "approaches", separate_w
  
             curr_metadata_df = metadata_df.loc[metadata_df["Group_ID"] == int(labels[j][1:]), :]
             # figuring out index of true mutants in current group
-            is_mutant = []#[True if curr_metadata_df.loc[metadata_df["Mouse_RFID"] == rfid, "mutant"].values else False for rfid in RFIDs]
+            is_mutant = []#True if curr_metadata_df.loc[metadata_df["Mouse_RFID"] == rfid, "mutant"].values else False for rfid in RFIDs]
             for rfid in RFIDs:
                 if len(metadata_df.loc[metadata_df["Mouse_RFID"] == rfid, "mutant"].values) != 0 and metadata_df.loc[metadata_df["Mouse_RFID"] == rfid, "mutant"].values[0]:
-                    histology = metadata_df.loc[metadata_df["Mouse_RFID"] == rfid, "histology"].values[0]
-                    if histology != 'weak':
-                        # mouse is a mutant and histology is strong or unknown
-                        is_mutant.append(True)
-                    else:
-                        is_mutant.append(False)
+                    is_mutant.append(True)
                 elif len(metadata_df.loc[metadata_df["Mouse_RFID"] == rfid, "mutant"].values) != 0 and not metadata_df.loc[metadata_df["Mouse_RFID"] == rfid, "mutant"].values[0]:
                     is_mutant.append(False)
                 elif len(metadata_df.loc[metadata_df["Mouse_RFID"] == rfid, "mutant"].values) == 0: 
@@ -465,148 +459,14 @@ def plot_persistance(out = True, window = 3, variable = "approaches", separate_w
     ax.legend()
     plt.show()
     
-    
-        
-def plot_raster(measure, derivative = True, window = 1, normalize = False, variable = "approaches", separate_wt = False,
-                mnn = None, mutual = True, threshold = 0.0, ax = None):
-    "plots the derivative of the timeseries of the specified measurment for all animals, without any aggregation"
-    value_mutants, value_rest, value_rc = [], [], []
-    for d in range(15//window):
-        scores_mutants, scores_rc, scores_rest, _ = [], [], [], []
-        id_mutants, id_rc, id_rest = [], [], []
-        for j in range(len(labels)):
-            scores_t1 = measures(j, d+1, window, measure, variable, mnn, mutual, True, threshold)
-            if derivative:
-                scores_t2 = measures(j, d+2, window, measure, variable, mnn, mutual, True, threshold)
-                v_mut = np.abs(np.array(scores_t2[0]) - np.array(scores_t1[0]))
-                v_rest = np.abs(np.array(scores_t2[2]) - np.array(scores_t1[2]))
-                v_rc = np.abs(np.array(scores_t2[1]) - np.array(scores_t1[1]))
-            else:
-                v_mut = np.array(np.array(scores_t1[0]))
-                v_rest = np.array(np.array(scores_t1[2]))
-                v_rc = np.array(np.array(scores_t1[1]))
-            scores_mutants.extend(v_mut)
-            scores_rest.extend(v_rest)
-            scores_rc.extend(v_rc)
-            id_mutants.extend([j]*len(v_mut))
-            id_rc.extend([j]*len(v_rc))
-            id_rest.extend([j]*len(v_rest))
 
-        value_rc.append(scores_rc) 
-        value_rest.append(scores_rest) 
-        value_mutants.append(scores_mutants) 
-        
-    # v_max = max([np.nanmax(scores_rc), np.nanmax(scores_rest), np.nanmax(scores_mutants)]) if normalize else 1       
-
-        
-    min_t = 1 if "strength" in measure else 0 
-    t = np.arange(min_t + 1, 1+15//window)
-    value_mutants= np.array(value_mutants)
-    value_rest= np.array(value_rest)
-    value_rc= np.array(value_rc)
-    id_mutants = np.array(id_mutants)
-    id_rc = np.array(id_rc)
-    id_rest = np.array(id_rest)
-
-    if normalize:
-        for idx in np.unique(id_mutants):
-            max_mut = max(np.nanstd(value_mutants[:, id_mutants == idx], axis = 0))
-            max_rc = max(np.nanstd(value_rc[:, id_rc == idx], axis = 0)) if value_rc[:, id_rc == idx].size != 0 else -np.inf
-            max_rest = max(np.nanstd(value_rest[:, id_rest == idx], axis = 0))
-            v_max = max([max_mut, max_rc, max_rest])
-            value_mutants[:, id_mutants == idx] = value_mutants[:, id_mutants == idx]/v_max
-            value_rc[:, id_rc == idx] = value_rc[:, id_rc == idx]/v_max
-            value_rest[:, id_rest == idx] = value_rest[:, id_rest == idx]/v_max
-    
-    total_len = value_mutants.shape[1]+value_rest.shape[1]+value_rc.shape[1] if separate_wt else value_mutants.shape[1]+value_rest.shape[1]
-    im = np.zeros((total_len, len(t)))
-    counter_y = 0
-    for idx in range(value_mutants.shape[1]):
-        im[counter_y, :] = np.abs(value_mutants[min_t:, idx])
-        counter_y += 1
-    for idx in range(value_rest.shape[1]):
-        im[counter_y, :] = np.abs(value_rest[min_t:, idx])
-        counter_y += 1
-    if separate_wt:
-        for idx in range(value_rc.shape[1]):
-            im[counter_y, :] = np.abs(value_rc[min_t:, idx])
-            counter_y += 1
-            
-    if ax is None:
-        fig, ax = plt.subplots(1, 1)
-    ax.imshow(im**2, cmap = "Reds", aspect='auto')
-    # ax.colorbar()
-    title = f"{measure} fluctuations (renormalized)" if normalize else f"{measure} fluctuations"
-    ax.set_title(title)
-    if not separate_wt:
-        ax.axhline(value_mutants.shape[1], ls = "--", lw = 3, label = "mutants")
-    elif separate_wt:
-        ax.axhline(value_mutants.shape[1], ls = "--", lw = 3, label = "mutants")
-        ax.axhline(value_mutants.shape[1]+value_rest.shape[1], ls = "--", lw = 3, label = "RC")
-
-    ax.legend()
-    # plt.show()
-            
 if __name__ == "__main__":
-
-    unweighted_features = ["indegree", "outdegree", "transitivity", "summed cocitation", "summed bibcoupling", 
-        "summed insubcomponent", "summed outsubcomponent", "summed injaccard", "summed outjaccard"]
+    plot_derivative_timeseries("instrength", 1, 'approaches', False, mnn = 3, mutual = True)
+    plot_timeseries_example("outdegree", derivative = True, window = 1, variable = "approaches", idx = [0, 0, 0],
+                                mnn = None, mutual = True, threshold = 0.0, ax = None)
     
-    weighted_features = ["authority", "hub", "eigenvector_centrality", "constraint", "pagerank", "incloseness", "outcloseness",
-        "instrength", "outstrength"]
-
-    mnn = 3
-    mutual = False
-    var = "interactions"
-    # fig, axs = plt.subplots(3, 3, figsize = (16, 13))
-    # for idx, ax in enumerate(axs.flatten()):
-    #     try:
-    #         plot_measure_timeseries(unweighted_features[idx], 1, 'approaches', False, mnn = mnn, mutual = mutual, ax = ax)
-    #         # plot_derivative_timeseries(unweighted_features[idx], 1, 'approaches', False, mnn = mnn, mutual = mutual, ax = ax)
-    #     except:
-    #         continue
-    # # plt.tight_layout()
-    # title = f"mnn = {mnn}" if mutual else f"nn = {mnn}"
-    # fig.suptitle(title)
-    # plot_derivative_timeseries("instrength", 1, 'approaches', False, mnn = mnn, mutual = mutual)
-    # for i in range(10):
-    # for i in range(53, 62):
-    # plot_derivative_example("outdegree", 1, "approaches", [10, 56], None, mutual)
-    
-    # plot_derivative_example("summed injaccard", 1, "approaches", [16, 66], 3, mutual)
-    # plot_derivative_example("outstrength", 1, "approaches", [16, 67], None, mutual)
-    # plot_timeseries_example(measure = "out persistence", derivative = False, window = 1, 
-    #                         variable = "approaches", idx = [10, 57], mnn = None, mutual = mutual)
-
-    # plot_timeseries_example(measure = "summed injaccard", derivative = True, window = 1, 
-    #                        variable = "approaches", idx = [10, 57], mnn = None, mutual = mutual)
-    
-    # plot_timeseries_example(measure = "instrength", derivative = True, window = 1, 
-    #                        variable = "approaches", idx = [30, 92], mnn = None, mutual = mutual)
-
-    # plot_derivative_example("outdegree", 1, "approaches", [16, 67], None, mutual)
 
 
-
-
-    # plot_measure_timeseries("degree", 1, var, False, mnn = mnn, mutual = mutual)
-    # plot_derivative_timeseries("outdegree", 1, var, False, mnn = None, mutual = mutual)
-    
-    # plot_derivative_all("summed injaccard", 1, 'approaches', False, mnn = mnn, mutual = mutual)
-    # plot_raster("summed injaccard")
-    # plot_raster("outstrength")
-    # fig, axs = plt.subplots(3, 3, figsize = (16, 13))
-    # for idx, var in enumerate(weighted_features):
-    #     plot_raster(var, normalize=True, ax = axs.flatten()[idx], mnn = None, mutual = False)
-    # plot_raster("outdegree", normalize=True, mnn = 5, mutual = False)
-    # plot_raster("summed injaccard", normalize=True, mnn = 5, mutual = False)
-    # plot_derivative_example("outdegree", 1, "approaches", [1, 9], None, False, 1)
-    # plot_raster("outdegree", normalize=False, mnn = None, mutual = False, separate_wt=False, threshold = 1)
-    # plot_raster("summed injaccard", normalize=False, mnn = 5, mutual = False, separate_wt=True)
-
-    # plot_raster("out persis", normalize=True)
-
-    # plot_raster("instrength")
 
 
 

@@ -5,7 +5,6 @@ import networkx as nx
 import os
 import sys
 import seaborn as sns
-
 from scipy import stats
 import pandas as pd
 from HierarchiaPy import Hierarchia
@@ -19,15 +18,12 @@ from read_graph import read_graph
 from collections import Counter
 # from weighted_rc import weighted_rich_club
 
-
-
 def plot_reshuffled_tuberank_corr():
     path_to_first_cohort = "..\\data\\reduced_data.xlsx"
     path_to_second_cohort = "..\\data\\validation_cohort_full.xlsx"
     
     tube_first_others, tube_second_others = [], []
     tube_first_rc, tube_second_rc = [], []
-
     
     # first cohort
     df = pd.read_excel(path_to_first_cohort)
@@ -223,7 +219,7 @@ def plot_reshuffled_inchasing_corr(fraction = False):
     plt.show()
     
 def plot_reshuffled_outapproach_corr(fraction = False):
-    datapath = "..\\data\\averaged\\"
+    datapath = "..\\data\\both_cohorts_7days\\"
     chasings_first, chasings_second = [], []
     labels = ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G10", "G11", "G12", "G13", "G14", "G15", "G16"]
     
@@ -322,8 +318,8 @@ def plot_reshuffled_chasingOrder_corr(both=False):
 
 
 def plot_reshuffled_approachRank_corr(both_cohorts = False):
-    path_cohort1 = "C:\\Users\\Agarwal Lab\\Corentin\\Python\\NoSeMaze\\data\\reduced_data.xlsx"
-    approach_dir = "C:\\Users\\Agarwal Lab\\Corentin\\Python\\NoSeMaze\data\\averaged\\"
+    path_cohort1 = ".\\data\\reduced_data.xlsx"
+    approach_dir = "..\data\\both_cohorts_7days\\"
 
     df1 = pd.read_excel(path_cohort1)
     groups1 = df1.loc[:, "group"].to_numpy()
@@ -373,8 +369,8 @@ def plot_reshuffled_approachRank_corr(both_cohorts = False):
     plt.show()
 
 def plot_reshuffled_approachOrder_corr(both_cohorts = False):
-    path_cohort1 = "C:\\Users\\Agarwal Lab\\Corentin\\Python\\NoSeMaze\\data\\reduced_data.xlsx"
-    approach_dir = "C:\\Users\\Agarwal Lab\\Corentin\\Python\\NoSeMaze\data\\averaged\\"
+    path_cohort1 = "..\\data\\reduced_data.xlsx"
+    approach_dir = "..\data\\both_cohorts_7days\\"
 
     df1 = pd.read_excel(path_cohort1)
     groups1 = df1.loc[:, "group"].to_numpy()
@@ -424,7 +420,7 @@ def plot_reshuffled_approachOrder_corr(both_cohorts = False):
     plt.show()
 
 def plot_reshuffled_chasingRank_corr():
-    path_cohort1 = "C:\\Users\\Agarwal Lab\\Corentin\\Python\\NoSeMaze\\data\\reduced_data.xlsx"
+    path_cohort1 = "..\\data\\reduced_data.xlsx"
     df1 = pd.read_excel(path_cohort1)
     # tube_ranks = df1.loc[:, "rank_by_tube"].to_numpy()
     chasing_ranks = df1.loc[:, "rank_by_chasing"].to_numpy()

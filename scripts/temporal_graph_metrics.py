@@ -26,18 +26,18 @@ datapath = "..\\data\\averaged\\"
 
 labels = ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G10", "G11", "G12", "G13", "G14", "G15", "G16", "G17"]
 
-def default_on_error(graph_idx, variable, window, rm_weak_histo = True):
+def default_on_error(graph_idx, variable, window):
     """
     If the data for a graph on a specific day is not available because of detection issue, nans should be returned. 
     To preserve the structure of the data array, the number of returned nans should reflect the number of mutants, rc members and wt in the cohort. 
     """
-    mutants, rc, others, wt, RFIDs = get_category_indices(graph_idx, "approaches", window, rm_weak_histo) # load data from exp day 1 as a template, because all group were properly detected.
+    mutants, rc, others, wt, RFIDs = get_category_indices(graph_idx, "approaches", window) # load data from exp day 1 as a template, because all group were properly detected.
     return [np.nan]*len(mutants), [np.nan]*len(rc), [np.nan]*len(others), \
         [np.nan]*len(wt), [np.nan]*len(RFIDs), \
         {"Mouse_RFID": [np.nan]*len(RFIDs), "mutant": [np.nan]*len(RFIDs), "RC": [np.nan]*len(RFIDs), "Group_ID": int(labels[graph_idx][1:])}
 
 def time_measures(measure, graph_idx, window = 1, variable = "approaches",
-                  mnn = None, mutual = True, weighted = False, threshold = 0.0, rm_weak_histo = True,
+                  mnn = None, mutual = True, weighted = False, threshold = 0.0,
                   summation = "mean", normalization = None, in_group_norm = False, logscale = False):
     """
     Computes specified time graph-theoretical metric for a given group, and time window.
@@ -61,7 +61,6 @@ def time_measures(measure, graph_idx, window = 1, variable = "approaches",
         - mutual (bool, optional): If True, uses mutual nearest neighbors when building graphs. Ignored if `mnn` is None.
         - weighted (bool, optional): If True, preserves edge weights in graph; otherwise binarizes the graph.
         - threshold (float, optional): Percentage threshold for edge pruning in the adjacency matrix. Default is 0.0.
-        - rm_weak_histo (bool, optional): If True, removes mutant mice with weak histology from the analysis.
         - summation (str, optional): Aggregation function across time:
              "mean": Computes the mean value per node.
              "median": Computes the median value per node.
@@ -99,7 +98,7 @@ def time_measures(measure, graph_idx, window = 1, variable = "approaches",
         RFIDs = arr[0, 1:].astype(str)
     except Exception as e:
         print(e)
-        return default_on_error(graph_idx, variable, window, rm_weak_histo)
+        return default_on_error(graph_idx, variable, window)
     if variable == "interactions":
         mode = 'undirected'
         data_ref = (data_ref + np.transpose(data_ref))/2 # ensure symmetry
@@ -112,25 +111,9 @@ def time_measures(measure, graph_idx, window = 1, variable = "approaches",
 
     curr_metadata_df = metadata_df.loc[metadata_df["Group_ID"] == int(labels[graph_idx][1:]), :]
     # figuring out index of true mutants in current group
-    if not rm_weak_histo:
-        # is_mutant = [True if curr_metadata_df.loc[metadata_df["Mouse_RFID"] == rfid, "mutant"].values else False for rfid in RFIDs]
-        mutant_map = curr_metadata_df.set_index('Mouse_RFID')['mutant'].to_dict()
-        is_mutant = [mutant_map.get(rfid, False) for rfid in RFIDs] # if RFID is missing, animal is assumed to be neurotypical
-    else:
-        is_mutant = []
-        for rfid in RFIDs:
-            if len(metadata_df.loc[metadata_df["Mouse_RFID"] == rfid, "mutant"].values) != 0 and metadata_df.loc[metadata_df["Mouse_RFID"] == rfid, "mutant"].values[0]:
-                histology = metadata_df.loc[metadata_df["Mouse_RFID"] == rfid, "histology"].values[0]
-                if histology != 'weak':
-                    # mouse is a mutant and histology is strong or unknown
-                    is_mutant.append(True)
-                else:
-                    is_mutant.append(False)
-            elif len(metadata_df.loc[metadata_df["Mouse_RFID"] == rfid, "mutant"].values) != 0 and not metadata_df.loc[metadata_df["Mouse_RFID"] == rfid, "mutant"].values[0]:
-                is_mutant.append(False)
-            elif len(metadata_df.loc[metadata_df["Mouse_RFID"] == rfid, "mutant"].values) == 0: 
-                # print("Mouse not found, treat as WT")
-                is_mutant.append(False)
+    mutant_map = curr_metadata_df.set_index('Mouse_RFID')['mutant'].to_dict()
+    is_mutant = [mutant_map.get(rfid, False) for rfid in RFIDs] # if RFID is missing, animal is assumed to be neurotypical
+    
 
     is_RC = [] # no list comprehension allowed because of deprenciation warning due to RFID mismatch
     for rfid in RFIDs:
@@ -287,7 +270,7 @@ def get_time_metric_df(measure, window = 1, variable = "approaches", mnn = None,
     return df
 
 def bp_metric(measure, window = 1, variable = "approaches",
-                      mnn = None, mutual = True, weighted = False, threshold = 0.0, rm_weak = False,
+                      mnn = None, mutual = True, weighted = False, threshold = 0.0,
                       summation = "mean", normalization = None, in_group_norm = False, logscale = False, stat = "mean", ax = None):
     """
     Plots and compares the specified graph metric between RC and non mutant mice across all groups.
@@ -300,7 +283,7 @@ def bp_metric(measure, window = 1, variable = "approaches",
     RFIDs, mutants, RCs = [], [], []
     for graph_idx in range(len(labels)):
         res = time_measures(measure, graph_idx, window, variable, mnn, mutual,
-                            weighted, threshold, rm_weak, summation, normalization, in_group_norm, logscale)
+                            weighted, threshold, summation, normalization, in_group_norm, logscale)
         scores_mutants.extend(res[0])
         scores_RC.extend(res[1])
         scores_others.extend(res[2])
@@ -360,7 +343,7 @@ def bp_metric(measure, window = 1, variable = "approaches",
     
 
 def bp_metric_RC(measure, window = 1, variable = "approaches",
-                      mnn = None, mutual = True, weighted = False, threshold = 0.0, rm_weak = False,
+                      mnn = None, mutual = True, weighted = False, threshold = 0.0,
                       summation = "mean", normalization = None, in_group_norm = False, logscale = False, stat = "mean", swarmplot = True, ax = None):
     """
     Plots and compares the specified graph metric between RC and non mutant mice across all groups.
@@ -373,7 +356,7 @@ def bp_metric_RC(measure, window = 1, variable = "approaches",
     RFIDs, mutants, RCs = [], [], []
     for graph_idx in range(len(labels)):
         res = time_measures(measure, graph_idx, window, variable, mnn, mutual,
-                            weighted, threshold, rm_weak, summation, normalization, in_group_norm, logscale)
+                            weighted, threshold, summation, normalization, in_group_norm, logscale)
         scores_mutants.extend(res[0])
         scores_RC.extend(res[1])
         scores_others.extend(res[2])
@@ -433,7 +416,7 @@ def bp_metric_RC(measure, window = 1, variable = "approaches",
     
 
 def bp_metric_mutants(measure, window = 1, variable = "approaches",
-                      mnn = None, mutual = True, weighted = False, threshold = 0.0, rm_weak = False,
+                      mnn = None, mutual = True, weighted = False, threshold = 0.0,
                       summation = "mean", normalization = None, in_group_norm = False, logscale = False, stat = "mean", swarmplot = True, ax = None):
     """
     Plots and compares the specified graph metric between mutant and non-mutant mice across all groups.
@@ -446,7 +429,7 @@ def bp_metric_mutants(measure, window = 1, variable = "approaches",
     RFIDs, mutants, RCs = [], [], []
     for graph_idx in range(len(labels)):
         res = time_measures(measure, graph_idx, window, variable, mnn, mutual,
-                            weighted, threshold, rm_weak, summation, normalization, in_group_norm, logscale)
+                            weighted, threshold, summation, normalization, in_group_norm, logscale)
         scores_mutants.extend(res[0])
         scores_rc.extend(res[1])
         scores_others.extend(res[2])
@@ -506,24 +489,24 @@ def bp_metric_mutants(measure, window = 1, variable = "approaches",
 
 if __name__ == "__main__":    
 ## Main
-    # bp_metric_mutants("summed outNEF", mnn = None, mutual = True, weighted = True, threshold = 0, rm_weak = False, 
-    #                   summation = "mean", normalization="CV", logscale = False, stat = "median", swarmplot  = True)
+    bp_metric_mutants("summed outNEF", mnn = None, mutual = True, weighted = True, threshold = 0, 
+                      summation = "mean", normalization="CV", logscale = False, stat = "median", swarmplot  = True)
 
-    # bp_metric_mutants("summed inNEF", mnn = None, mutual = True, weighted = True, threshold = 0, rm_weak = False, 
-    #                   summation = "mean", normalization="CV", logscale = False, stat = "median")
+    bp_metric_mutants("summed inNEF", mnn = None, mutual = True, weighted = True, threshold = 0, 
+                      summation = "mean", normalization="CV", logscale = False, stat = "median")
 
 ## Supplement
-    # bp_metric_mutants("summed inburstiness", mnn = 7, mutual = True, weighted = False, threshold = 0, rm_weak = False, 
-    #                           summation = "mean", normalization=None, in_group_norm = False, logscale = False, stat = "median", swarmplot = True)
+    bp_metric_mutants("summed inburstiness", mnn = 7, mutual = True, weighted = False, threshold = 0, 
+                              summation = "mean", normalization=None, in_group_norm = False, logscale = False, stat = "median", swarmplot = True)
     
-    # bp_metric_mutants("summed outburstiness", mnn = 7, mutual = True, weighted = False, threshold = 0, rm_weak = False, 
-    #                           summation = "mean", normalization = None, in_group_norm = False, logscale = False, stat = "median", swarmplot = True)
+    bp_metric_mutants("summed outburstiness", mnn = 7, mutual = True, weighted = False, threshold = 0, 
+                              summation = "mean", normalization = None, in_group_norm = False, logscale = False, stat = "median", swarmplot = True)
    
-    bp_metric("summed outNEF", mnn = None, mutual = True, weighted = True, threshold = 0, rm_weak = False, 
+    bp_metric("summed outNEF", mnn = None, mutual = True, weighted = True, threshold = 0, 
                       summation = "mean", normalization="CV", logscale = False, stat = "median")
     
-    # bp_metric("summed inNEF", mnn = None, mutual = True, weighted = True, threshold = 0, rm_weak = False, 
-    #                   summation = "mean", normalization="CV", logscale = False, stat = "median")
+    bp_metric("summed inNEF", mnn = None, mutual = True, weighted = True, threshold = 0, 
+                      summation = "mean", normalization="CV", logscale = False, stat = "median")
     
     
 

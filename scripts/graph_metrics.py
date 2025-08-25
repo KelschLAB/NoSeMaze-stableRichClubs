@@ -34,12 +34,12 @@ def rescale(arr):
 
 labels = ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G10", "G11", "G12", "G13", "G14", "G15", "G16", "G17"]
 
-def default_on_error(graph_idx, variable, window, rm_weak_histo):
+def default_on_error(graph_idx, variable, window):
     """
     If the data for a graph on a specific day is not available because of detection issue, nans should be returned. 
     To preserve the structure of the data array, the number of returned nans should reflect the number of mutants, rc members and wt in the cohort. 
     """
-    mutants, rc, others, wt, RFIDs = get_category_indices(graph_idx, "approaches", window, rm_weak_histo) # load data from exp day 1 as a template, because all group were properly detected.
+    mutants, rc, others, wt, RFIDs = get_category_indices(graph_idx, "approaches", window) # load data from exp day 1 as a template, because all group were properly detected.
     return [np.nan]*len(mutants), [np.nan]*len(rc), [np.nan]*len(others), \
         [np.nan]*len(wt), [np.nan]*len(RFIDs), \
         {"Mouse_RFID": [np.nan]*len(RFIDs), "mutant": [np.nan]*len(RFIDs), "RC": [np.nan]*len(RFIDs), "Group_ID": int(labels[graph_idx][1:])}
@@ -70,7 +70,7 @@ def outpearson(g):
             corr[i,j] = corr[j,i] = r
     return corr 
 
-def measures(graph_idx, day, window = 3, measure = "hub", variable = "approaches", mnn = None, mutual = True, rm_weak_histo = False, threshold = 0.0, in_group_norm = False):
+def measures(graph_idx, day, window = 3, measure = "hub", variable = "approaches", mnn = None, mutual = True, threshold = 0.0, in_group_norm = False):
     """
     Computes specified graph-theoretical metric for a given cohort, day, and time window.
 
@@ -83,7 +83,6 @@ def measures(graph_idx, day, window = 3, measure = "hub", variable = "approaches
         mnn (int or None, optional): Minimum number of neighbors for graph thresholding (used for unweighted measures).
         mutual (bool, optional): Whether to use mutual nearest neighbors for graph construction.
             if mnn is None (used for weighted metrics), mutual is ignored.
-        rm_weak_histo (bool, optional): If True, removes mutants with weak histology from analysis.
 
     Returns:
         tuple: (scores_mutants, scores_rc, scores_rest, scores_wt, scores_all, metadata)
@@ -106,7 +105,7 @@ def measures(graph_idx, day, window = 3, measure = "hub", variable = "approaches
         arr = np.loadtxt(datapath, delimiter=",", dtype=str)
         RFIDs = arr[0, 1:].astype(str)
     except Exception as e:
-        return default_on_error(graph_idx, variable, window, rm_weak_histo)
+        return default_on_error(graph_idx, variable, window)
     if variable == "interactions":
         mode = 'undirected'
         data = (data + np.transpose(data))/2 # ensure symmetry
@@ -121,26 +120,9 @@ def measures(graph_idx, day, window = 3, measure = "hub", variable = "approaches
 
     curr_metadata_df = metadata_df.loc[metadata_df["Group_ID"] == int(labels[graph_idx][1:]), :]
     # figuring out index of true mutants in current group
-    if not rm_weak_histo:
-        # is_mutant = [True if curr_metadata_df.loc[metadata_df["Mouse_RFID"] == rfid, "mutant"].values else False for rfid in RFIDs]
-        mutant_map = curr_metadata_df.set_index('Mouse_RFID')['mutant'].to_dict()
-        is_mutant = [mutant_map.get(rfid, False) for rfid in RFIDs] # if RFID is missing, animal is assumed to be neurotypical
-    else:
-        is_mutant = []
-        for rfid in RFIDs:
-            if len(metadata_df.loc[metadata_df["Mouse_RFID"] == rfid, "mutant"].values) != 0 and metadata_df.loc[metadata_df["Mouse_RFID"] == rfid, "mutant"].values[0]:
-                histology = metadata_df.loc[metadata_df["Mouse_RFID"] == rfid, "histology"].values[0]
-                if histology != 'weak':
-                    # mouse is a mutant and histology is strong or unknown
-                    is_mutant.append(True)
-                else:
-                    is_mutant.append(False)
-            elif len(metadata_df.loc[metadata_df["Mouse_RFID"] == rfid, "mutant"].values) != 0 and not metadata_df.loc[metadata_df["Mouse_RFID"] == rfid, "mutant"].values[0]:
-                is_mutant.append(False)
-            elif len(metadata_df.loc[metadata_df["Mouse_RFID"] == rfid, "mutant"].values) == 0: 
-                # print("Mouse not found, treat as WT")
-                is_mutant.append(False)
-
+    mutant_map = curr_metadata_df.set_index('Mouse_RFID')['mutant'].to_dict()
+    is_mutant = [mutant_map.get(rfid, False) for rfid in RFIDs] # if RFID is missing, animal is assumed to be neurotypical
+   
     is_RC = [] # no list comprehension allowed because of deprenciation warning due to RFID mismatch
     for rfid in RFIDs:
         if curr_metadata_df.loc[curr_metadata_df["Mouse_RFID"] == rfid, "RC"].values.size > 0:
@@ -389,7 +371,7 @@ def measures(graph_idx, day, window = 3, measure = "hub", variable = "approaches
     
     return scores_mutants, scores_rc, scores_rest, scores_wt, scores_all, {"Mouse_RFID": RFIDs, "mutant": is_mutant, "RC": is_RC, "Group_ID": int(labels[graph_idx][1:])}
     
-def mk_measures_dataframe(variable = "approaches", window = 3, mnn = 4, mutual = False, rm_weak_histo = True):
+def mk_measures_dataframe(variable = "approaches", window = 3, mnn = 4, mutual = False):
     """
     Formats the measures made on the graphs into a pandas dataframe and saves to a csv file
     """
@@ -408,7 +390,7 @@ def mk_measures_dataframe(variable = "approaches", window = 3, mnn = 4, mutual =
         all_scores, day, RFIDs, Group_ID, mutants, RCs = [], [], [], [], [], []
         for d in range(15//window):
             for j in range(len(labels)):
-                res = measures(j, d+1, window, feature, variable, None, True, rm_weak_histo) # weighted edge measures do not need graph cut : mnn = None
+                res = measures(j, d+1, window, feature, variable, None, True) # weighted edge measures do not need graph cut : mnn = None
                 if res is None:
                     continue
                 scores, metadata = res[4], res[5]
@@ -432,7 +414,7 @@ def mk_measures_dataframe(variable = "approaches", window = 3, mnn = 4, mutual =
         all_scores, day, RFIDs, mutants, RCs = [], [], [], [], []
         for d in range(15//window):
             for j in range(len(labels)):
-                res = measures(j, d+1, window, feature, variable, mnn, mutual, rm_weak_histo) # unweighted edge measure NEED graph cut : mnn = mnn
+                res = measures(j, d+1, window, feature, variable, mnn, mutual) # unweighted edge measure NEED graph cut : mnn = mnn
                 if res is None:
                     continue
                 scores, metadata = res[4], res[5]
@@ -450,11 +432,10 @@ def mk_measures_dataframe(variable = "approaches", window = 3, mnn = 4, mutual =
         features_df[feature] = all_scores
             
     save_name = f"graph_features_{variable}_d{window}_mnn{mnn}" if mutual else f"graph_features_{variable}_d{window}_nn{mnn}"
-    save_name = f"{save_name}_rm_weak.csv" if rm_weak_histo else f"{save_name}_all_muts.csv" 
     features_df.to_csv(f"..\\data\\processed_metrics\\{save_name}", index = False)
     return features_df
 
-def mk_derivatives_dataframe(variable = "approaches", window = 3, mnn = 4, mutual = False, rm_weak_histo = True):
+def mk_derivatives_dataframe(variable = "approaches", window = 3, mnn = 4, mutual = False):
     """
     Formats the derivative of the measures made on the graphs as a function of time into a pandas dataframe and saves to a csv file
     """
@@ -473,8 +454,8 @@ def mk_derivatives_dataframe(variable = "approaches", window = 3, mnn = 4, mutua
         all_scores, day, RFIDs, Group_ID, mutants, RCs = [], [], [], [], [], []
         for d in range(15//window):
             for j in range(len(labels)):
-                res_t1 = measures(j, d+1, window, feature, variable, None, True, rm_weak_histo) # weighted edge measures do not need graph cut : mnn = None
-                res_t2 = measures(j, d+2, window, feature, variable, None, True, rm_weak_histo) # weighted edge measures do not need graph cut : mnn = None
+                res_t1 = measures(j, d+1, window, feature, variable, None, True) # weighted edge measures do not need graph cut : mnn = None
+                res_t2 = measures(j, d+2, window, feature, variable, None, True) # weighted edge measures do not need graph cut : mnn = None
                 if res_t1 is None or res_t2 is None:
                     continue
                 scores_t1, metadata = np.array(res_t1[4]), res_t2[5]
@@ -502,8 +483,8 @@ def mk_derivatives_dataframe(variable = "approaches", window = 3, mnn = 4, mutua
         all_scores, day, RFIDs, mutants, RCs = [], [], [], [], []
         for d in range(15//window):
             for j in range(len(labels)):
-                res_t1 = measures(j, d+1, window, feature, variable, mnn, mutual, rm_weak_histo) # weighted edge measures do not need graph cut : mnn = None
-                res_t2 = measures(j, d+2, window, feature, variable, mnn, mutual, rm_weak_histo) # weighted edge measures do not need graph cut : mnn = None
+                res_t1 = measures(j, d+1, window, feature, variable, mnn, mutual) # weighted edge measures do not need graph cut : mnn = None
+                res_t2 = measures(j, d+2, window, feature, variable, mnn, mutual) # weighted edge measures do not need graph cut : mnn = None
                 if res_t1 is None or res_t2 is None:
                     continue
                 scores_t1, metadata = np.array(res_t1[4]), res_t2[5]
@@ -523,11 +504,10 @@ def mk_derivatives_dataframe(variable = "approaches", window = 3, mnn = 4, mutua
         features_df[feature] = all_scores
             
     save_name = f"metrics_derivative_{variable}_d{window}_mnn{mnn}" if mutual else f"metrics_derivative_{variable}_d{window}_nn{mnn}"
-    save_name = f"{save_name}_rm_weak.csv" if rm_weak_histo else f"{save_name}_all_muts.csv"
     features_df.to_csv(f"..\\data\\processed_metrics\\{save_name}", index = False)
     return features_df
 
-def get_metric_df(metric, variable = "approaches", derivative = False, window = 1, mnn = 4, mutual = False, rm_weak_histo = True, threshold = 0.0, in_group_norm = False):
+def get_metric_df(metric, variable = "approaches", derivative = False, window = 1, mnn = 4, mutual = False, threshold = 0.0, in_group_norm = False):
     """
     Extracts the values of the input metric as a function of time and returns it as a pandas dataframe 
     along with useful meta data used for plotting.
@@ -549,12 +529,12 @@ def get_metric_df(metric, variable = "approaches", derivative = False, window = 
     time_range = np.arange(7, 16, window) if metric not in ["instrength", "outstrength"] else np.arange(2, 16, window)
     for d in time_range:
         for j in range(len(labels)):
-            res_t1 = measures(j, d+1, window, metric, variable, mnn, mutual, rm_weak_histo, threshold, in_group_norm) 
+            res_t1 = measures(j, d+1, window, metric, variable, mnn, mutual, threshold, in_group_norm) 
             if res_t1 is None:
                 continue
             scores, metadata = np.array(res_t1[4]), res_t1[5]
             if derivative:
-                res_t2 = measures(j, d+2, window, metric, variable, mnn, mutual, rm_weak_histo, threshold) # weighted edge measures do not need graph cut : mnn = None
+                res_t2 = measures(j, d+2, window, metric, variable, mnn, mutual, threshold) # weighted edge measures do not need graph cut : mnn = None
                 scores_t1, metadata = np.array(res_t1[4]), res_t1[5]
                 scores_t2, _ = np.array(res_t2[4]), res_t1[5]
                 scores = scores_t2 - scores_t1
@@ -801,9 +781,9 @@ def plot_timeseries_example(measure, derivative = True, window = 3, variable = "
         scores_mutants, scores_rc, scores_rest, _ = [], [], [], []
         group_mutant, group_rest = [], []
         for j in range(len(labels)):
-            scores_t1 = measures(j, d, window, measure, variable, mnn, mutual, False, threshold, False) 
+            scores_t1 = measures(j, d, window, measure, variable, mnn, mutual, threshold, False) 
             if derivative:
-                scores_t2 = measures(j, d+1, window, measure, variable, mnn, mutual, False, threshold, False) 
+                scores_t2 = measures(j, d+1, window, measure, variable, mnn, mutual, threshold, False) 
                 scores_mutants.extend(np.array(scores_t2[0]) - np.array(scores_t1[0]))
                 scores_rest.extend(np.array(scores_t2[2]) - np.array(scores_t1[2]))
                 scores_rc.extend(np.array(scores_t2[1]) - np.array(scores_t1[1]))
@@ -857,7 +837,7 @@ def plot_timeseries_example(measure, derivative = True, window = 3, variable = "
     ax.tick_params(axis='both', which='major', labelsize=12)  # Adjust major tick labels
     
 def boxplot_metric_mutant(var, derivative = False, aggregation = None, window = 1, mnn = 4, mutual = False,
-                          rm_RC = True, overlay_RC = False, threshold = 0.0, rm_weak_histo = False, stat = "median",
+                          rm_RC = True, overlay_RC = False, threshold = 0.0, stat = "median",
                           in_group_norm = False, ax = None):
     """
      Plots a boxplot comparing the specified graph-theoretical metric between mutant and wild-type mice. By Default, RC members
@@ -875,14 +855,13 @@ def boxplot_metric_mutant(var, derivative = False, aggregation = None, window = 
             - rm_RC (bool, optional): If True, removes RC mice from the wild-type group. Default is True.
             - overlay_RC (bool, optional): If True, overlays RC mice as a separate group on the plot. Default is False.
             - threshold (float, optional): Threshold for edge pruning in the graph (between 0 and 1). Default is 0.0.
-            - rm_weak_histo (bool, optional): If True, removes mutants with weak histology from the analysis. Default is False.
             - stat (str, optional): Statistic used for group comparison test (e.g., "mean" or "median"). Default is "median".
             - in_group_norm (bool, optional): If True, normalizes metric values within each group by their max. Default is False.
             - ax (matplotlib.axes.Axes, optional): Existing axes object to draw the plot on. If None, a new figure is created.
 
      """
      
-    df = get_metric_df(var, "approaches", derivative, window, mnn, mutual, rm_weak_histo, threshold, in_group_norm)
+    df = get_metric_df(var, "approaches", derivative, window, mnn, mutual, threshold, in_group_norm)
     df = df.dropna()
     
     if var == "instrength" or var == "outstrength" or var == "normed outstrength" or var == "normed outstrength":
@@ -984,7 +963,7 @@ def boxplot_metric_mutant(var, derivative = False, aggregation = None, window = 
 
     plt.tight_layout()
     
-def boxplot_metric_RC(var, derivative = False, aggregation = None, window = 1, mnn = 4, mutual = False, threshold = 0.0, rm_weak_histo = False, ax = None):
+def boxplot_metric_RC(var, derivative = False, aggregation = None, window = 1, mnn = 4, mutual = False, threshold = 0.0, ax = None):
     """
     Plots a boxplot comparing the specified graph-theoretical metric between RC (rich club) members and non-members. 
     Non distinction of mutant or WT mice is made here. The function aggregates the metric per mouse using the specified method, 
@@ -996,7 +975,7 @@ def boxplot_metric_RC(var, derivative = False, aggregation = None, window = 1, m
         aggregation: Aggregation method for repeated measures per mouse. Can be None, "mean" or "std".
     """
     
-    df = get_metric_df(var, "approaches", derivative, window, mnn, mutual, rm_weak_histo, threshold)
+    df = get_metric_df(var, "approaches", derivative, window, mnn, mutual, threshold)
     df = df.dropna()
     
     if var == "instrength" or var == "outstrength" or var == "normed outstrength" or var == "normed outstrength":
@@ -1040,7 +1019,7 @@ def boxplot_metric_RC(var, derivative = False, aggregation = None, window = 1, m
             ax.set_ylabel("V(t)")
     ax.set_title(f"{var}")
       
-def fluctuation_rank(var, window = 1, mnn = 4, mutual = False, rm_RC = True, overlay_RC = False, threshold = 0.0, stat = "mean", rm_weak = False, ax = None):
+def fluctuation_rank(var, window = 1, mnn = 4, mutual = False, rm_RC = True, overlay_RC = False, threshold = 0.0, stat = "mean", ax = None):
     """
      Plots a boxplot comparing the specified graph-theoretical metric between mutant and wild-type mice. By Default, RC members
      are excluded from the comparison unless 'overlay_RC' is True. The function aggregates the metric per mouse using the specified method, 
@@ -1049,7 +1028,7 @@ def fluctuation_rank(var, window = 1, mnn = 4, mutual = False, rm_RC = True, ove
      see docstring of boxplot_metric_mutants for more details on input parameters
      """
      
-    df = get_metric_df(var, "approaches", True, window, mnn, mutual, rm_weak, threshold)
+    df = get_metric_df(var, "approaches", True, window, mnn, mutual, threshold)
     df = df.dropna()
     
     if var == "instrength" or var == "outstrength" or var == "normed outstrength" or var == "normed outstrength":
@@ -1119,12 +1098,12 @@ if __name__ == "__main__":
                               mnn = None, mutual = True, threshold = 0.0, ax = None)
     
     boxplot_metric_mutant("outstrength", derivative = False, aggregation = 'mean', window = 1,
-                       mnn = None, mutual = True, rm_RC = True, overlay_RC = False, threshold = 0, stat = "median", rm_weak_histo = False, in_group_norm = False)
+                       mnn = None, mutual = True, rm_RC = True, overlay_RC = False, threshold = 0, stat = "median", in_group_norm = False)
  
     boxplot_metric_mutant("outstrength", derivative = True, aggregation = 'std', window = 1,
-                          mnn = None, mutual = True, rm_RC = True, overlay_RC = False, threshold = 0, stat = "median", rm_weak_histo = False, in_group_norm = False)
+                          mnn = None, mutual = True, rm_RC = True, overlay_RC = False, threshold = 0, stat = "median", in_group_norm = False)
     
 ## backup
     # boxplot_metric_mutant("mean inpearson", derivative = True, aggregation = 'std', window = 1,
-    #                    mnn = None, mutual = True, rm_RC = True, overlay_RC = False, threshold = 0, stat = "median", rm_weak_histo = False, in_group_norm = False)
+    #                    mnn = None, mutual = True, rm_RC = True, overlay_RC = False, threshold = 0, stat = "median", in_group_norm = False)
     

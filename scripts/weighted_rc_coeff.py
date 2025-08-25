@@ -155,6 +155,6 @@ def rc_coefficient_selected(group, variable, k, window = 3):
     return avg_rc_coeffs, sem_rc_coeffs
 
 if __name__ == "__main__":
+## Supplement 
     a, s = rc_coefficients_all('interactions', 3, 3)
-    # a, s = rc_coefficient_selected(5, 'interactions', 3, 3)
     
