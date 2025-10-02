@@ -18,7 +18,7 @@ then the enty [i, j] indicates the number of times animal i initiated the intera
 In case you are unsure, have a look at the example data provided in this repository.
 
 ## Versions requirements & Installation
-This code was written and tested under Python v3.13 and requires the following standard packages to be run:
+This code was written and tested under Python v3.13 and requires the following packages to be run:
 - igraph v0.11.9 (run ```pip install igraph``` to install).
 - networkx v3.5 (run ```pip install networkx[default]``` to install)
 - scipy v1.15.3 (run ```pip install scipy``` to install)
