@@ -9,7 +9,7 @@ sys.path.append('..\\src\\')
 from read_graph import read_graph, k_core_weights, display_graph, display_graph_3d
 from utils import get_category_indices
 
-labels = ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G10", "G11", "G12", "G13", "G14", "G15", "G16", "G17"]
+labels = ["G1"]#, "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G10", "G11", "G12", "G13", "G14", "G15", "G16", "G17"]
 
 def graph_in_time_3d(graph_idx, var = "interactions", mnn = 3, show_mut = True):
     """
@@ -97,7 +97,7 @@ def day_to_day_approachprop(dirname, mnn = 4, deg = 2):
 if __name__ == "__main__":
     ## Main
     graph_to_plot = 0 # Index of the group to display
-    # graph_in_time_2d(graph_to_plot, "interactions", mnn = 3, deg = 3, mutual = True, show_mut = True)
+    graph_in_time_2d(graph_to_plot, "interactions", mnn = 3, deg = 3, mutual = True, show_mut = True)
     
     # Supplement for club stability under k
     # graph_in_time_2d(graph_to_plot, "interactions", mnn = 2, deg = 2, mutual = True, show_mut = True)

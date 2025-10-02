@@ -25,55 +25,16 @@ plt.rcParams["font.family"] = "Arial"
 
 path = "..\\data\\reduced_data.xlsx"
 df = pd.read_excel(path)
-# sns.catplot(data=df, x = "mutant", y = "rank_by_tube", color=".9", kind="box", width = 0.33)
-# sns.swarmplot(data=df, x = "mutant",y = "rank_by_tube", size=5, hue = "mutant")
-# plt.title("Tube rank")
-# plt.tight_layout()
-
-# sns.catplot(data=df, x = "mutant",y = "rank_by_chasing", color=".9", kind="box", width = 0.33)
-# sns.swarmplot(data=df, x = "mutant",y = "rank_by_chasing", size=5, hue = "mutant")
-# plt.title("Chasing rank")
-# plt.tight_layout()
-
-# sns.catplot(data=df, x = "mutant",y = "time_in_arena_average", color=".9", kind="box", width = 0.33)
-# sns.swarmplot(data=df, x = "mutant",y = "time_in_arena_average", size=5, hue = "mutant")
-# oxtype = df.loc[:, "mutant"].to_numpy()
-# times = df.loc[:, "time_in_arena_average"].to_numpy()
-# dist_wt = times[~oxtype]
-# dist_mu = times[oxtype]
-# t, p = ttest_ind(dist_wt[~np.isnan(dist_wt)], dist_mu[~np.isnan(dist_mu)])
-# plt.title(f"time_in_arena_average\n p-value = {p}")
-# plt.tight_layout()
-
-# sns.catplot(data=df, x = "mutant",y = "cs_plus_detection_speed", color=".9", kind="box", width = 0.33)
-# sns.swarmplot(data=df, x = "mutant",y = "cs_plus_detection_speed", size=5, hue = "mutant")
-# plt.title("cs_plus_detection_speed")
-# plt.tight_layout()
-
-# sns.catplot(data=df, x = "mutant",y = "cs_plus_detection_speed_crossreversal_shaping", color=".9", kind="box", width = 0.33)
-# sns.swarmplot(data=df, x = "mutant",y = "cs_plus_detection_speed_crossreversal_shaping", size=5, hue = "mutant")
-# plt.title("cs_plus_detection_speed_crossreversal_shaping")
-# plt.tight_layout()
 
 
-# sns.catplot(data=df, x = "mutant",y = "cs_plus_detection_speed_crossreversal_shaping", color=".9", kind="box", width = 0.33)
-# sns.swarmplot(data=df, x = "mutant",y = "cs_plus_detection_speed_crossreversal_shaping", size=5, hue = "mutant")
-# plt.title("cs_plus_detection_speed_crossreversal_shaping")
-# plt.tight_layout()
+labels = ["G1"]#, "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G10", "G11", "G12", "G13", "G14", "G15", "G16"] 
 
-# sns.catplot(data=df, x = "mutant",y = "cs_plus_detection_speed_intraphase_shaping", color=".9", kind="box", width = 0.33)
-# sns.swarmplot(data=df, x = "mutant",y = "cs_plus_detection_speed_intraphase_shaping", size=5, hue = "mutant")
-# plt.title("cs_plus_detection_speed_intraphase_shaping")
-# plt.tight_layout()
 
 def boxplot_chasing(out = True):
     """
     Compares the number of chasings made by RC members, mutants and others.
     """
-    # all_rc = [[0,6], [3, 8, 9], [3, 4, 8], [2, 4], [5,6], [0, 1], [3,4,6], [3, 5, 7], [6, 7, 8], [5, 8], [0, 2], [], [], [2, 8, 9], []]
-    # all_mutants = [[6], [2], [6], [5], [2, 4], [7], [0, 5], [3], [2], [0,2,3], [5,7], [2,3,9], [3,9], [0,2,3], [2,3,8,9]] #took out mutants with weak histology
-    labels = ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G10", "G11", "G12", "G13", "G14", "G15", "G16"]
-    
+      
     chasings_rc, chasings_mutants, chasings_others = [], [], [] 
     for idx, g in enumerate(labels):
         this_mutants, this_rc, _, _, _ = get_category_indices(idx, "chasing")
@@ -116,8 +77,6 @@ def boxplot_approaches(out = True, sep = False, all_wt = False, rm_weak = False)
     all_wt (boot): if true, rc will be included in normal wt, otherwise, only show non member WT
     rm_weak (bool): whether to exclude mutants based on histology
     """
-
-    labels = ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G10", "G11", "G12", "G13", "G14", "G15", "G16"]
     
     metadata_path = "..\\data\\meta_data.csv"
     metadata_df = pd.read_csv(metadata_path)
@@ -197,8 +156,6 @@ def boxplot_interactions(sep = False, all_wt = False, rm_weak = False):
     all_wt (boot): if true, rc will be included in normal wt, otherwise, only show non member WT
     histo: if true, plots the results as a histogram
     """
-
-    labels = ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G10", "G11", "G12", "G13", "G14", "G15", "G16"]
     
     approaches_rc, approaches_mutants, approaches_others = [], [], [] 
     for idx, g in enumerate(labels):
@@ -262,8 +219,6 @@ def boxplot_interaction_durations(sep = False, all_wt = False, rm_weak = False):
     all_wt (boot): if true, rc will be included in normal wt, otherwise, only show non member WT
     histo: if true, plots the results as a histogram
     """
-
-    labels = ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G10", "G11", "G12", "G13", "G14", "G15", "G16"]
     
     approaches_rc, approaches_mutants, approaches_others = [], [], [] 
     for idx, g in enumerate(labels):
@@ -333,7 +288,6 @@ def approaches_scatter_plot(show_rc = False, symmetry_parameter = 1.5):
     data_ingoing, data_outgoing = [], []
     data_ingoing_rc, data_outgoing_rc = [], []
     all_rc =  [[0,6], [3, 8, 9], [2, 3, 6], [2, 4], [1, 6], [0, 1], [3, 4, 6], [3, 5, 7, 8], [7, 8], [5, 8], [0, 2], [], [], [2, 8, 9], []]
-    labels = ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G10", "G11", "G12", "G13", "G14", "G15", "G16"]
     for idx, g in enumerate(labels):
         data = read_graph(["..\\data\\averaged\\"+g+"\\approaches_resD7_1.csv"], percentage_threshold = 0)[0] + read_graph(["..\\data\\averaged\\"+g+"\\approaches_resD7_2.csv"], percentage_threshold = 0)[0]
         for mouse in range(data.shape[0]):

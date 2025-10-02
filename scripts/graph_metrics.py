@@ -32,7 +32,7 @@ def rescale(arr):
         return 
     return normalized_arr
 
-labels = ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G10", "G11", "G12", "G13", "G14", "G15", "G16", "G17"]
+labels = ["G1"]#, "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G10", "G11", "G12", "G13", "G14", "G15", "G16", "G17"]
 
 def default_on_error(graph_idx, variable, window):
     """
