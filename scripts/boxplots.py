@@ -71,7 +71,7 @@ def boxplot_chasing(out = True):
     # bottom, top = ax.get_ylim()
     plt.show()
     
-def boxplot_approaches(out = True, sep = False, all_wt = False, rm_weak = False):
+def boxplot_approaches(out = True, sep = False, all_wt = False):
     """
     Compares the number of approaches made by RC members, mutants and others.
     out (bool): if true, plots outgoing approaches, else ingoing
@@ -85,7 +85,7 @@ def boxplot_approaches(out = True, sep = False, all_wt = False, rm_weak = False)
     mutants, RFIDs = [], []
     approaches_rc, approaches_mutants, approaches_others = [], [], [] 
     for idx, g in enumerate(labels):
-        this_mutants, this_rc, _, _, this_rfids = get_category_indices(idx, "approaches", 7, rm_weak_histo=rm_weak)
+        this_mutants, this_rc, _, _, this_rfids = get_category_indices(idx, "approaches", 7)
         mutants.extend(this_mutants)
         RFIDs.extend(this_rfids)
 
@@ -151,7 +151,7 @@ def boxplot_approaches(out = True, sep = False, all_wt = False, rm_weak = False)
     plt.show()
     
     
-def boxplot_interactions(sep = False, all_wt = False, rm_weak = False):
+def boxplot_interactions(sep = False, all_wt = False):
     """
     Compares the number of approaches made by RC members, mutants and others.
     sep (bool): whether to show the rich club in a separate box
@@ -161,7 +161,7 @@ def boxplot_interactions(sep = False, all_wt = False, rm_weak = False):
     
     approaches_rc, approaches_mutants, approaches_others = [], [], [] 
     for idx, g in enumerate(labels):
-        this_mutants, this_rc, _, _, _ = get_category_indices(idx, "approaches", 7, rm_weak_histo=rm_weak)
+        this_mutants, this_rc, _, _, _ = get_category_indices(idx, "approaches", 7)
 
         data = read_graph(["..\\data\\both_cohorts_7days\\"+g+"\\interactions_resD7_1.csv"], percentage_threshold = 0)[0] + read_graph(["..\\data\\both_cohorts_7days\\"+g+"\\interactions_resD7_2.csv"], percentage_threshold = 0)[0]
         for rc in this_rc:
@@ -214,7 +214,7 @@ def boxplot_interactions(sep = False, all_wt = False, rm_weak = False):
     plt.tight_layout()
     plt.show()
     
-def boxplot_interaction_durations(sep = False, all_wt = False, rm_weak = False):
+def boxplot_interaction_durations(sep = False, all_wt = False):
     """
     Compares the number of approaches made by RC members, mutants and others.
     sep (bool): whether to show the rich club in a separate box
@@ -224,7 +224,7 @@ def boxplot_interaction_durations(sep = False, all_wt = False, rm_weak = False):
     
     approaches_rc, approaches_mutants, approaches_others = [], [], [] 
     for idx, g in enumerate(labels):
-        this_mutants, this_rc, _, _, _ = get_category_indices(idx, "approaches", 7, rm_weak_histo=rm_weak)
+        this_mutants, this_rc, _, _, _ = get_category_indices(idx, "approaches", 7)
 
         data = read_graph(["..\\data\\both_cohorts_7days\\"+g+"\\t_mean_resD7_1.csv"], percentage_threshold = 0)[0] + read_graph(["..\\data\\both_cohorts_7days\\"+g+"\\t_mean_resD7_2.csv"], percentage_threshold = 0)[0]
         for rc in this_rc:
