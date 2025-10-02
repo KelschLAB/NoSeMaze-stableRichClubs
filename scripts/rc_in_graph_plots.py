@@ -94,16 +94,14 @@ def day_to_day_approachprop(dirname, mnn = 4, deg = 2):
     plt.savefig("C:\\Users\\Corentin offline\\Documents\\GitHub\\clusterGUI\\plots\\params_exploration\\"+dirname+"_mnn"+str(mnn)+"_deg"+str(deg)+"_approachprop.png")
     plt.show()
 
-## Main & supplement
-# Supplement for k stability under different variables
-# graph_in_time_2d(2, "interactions", mnn = 3, deg = 3, mutual = True, show_mut = True)
-# graph_in_time_2d(2, "approaches", mnn = 3, deg = 3, mutual = True, show_mut = True)
+if __name__ == "__main__":
+    ## Main
+    graph_to_plot = 0 # Index of the group to display
+    # graph_in_time_2d(graph_to_plot, "interactions", mnn = 3, deg = 3, mutual = True, show_mut = True)
+    
+    # Supplement for club stability under k
+    # graph_in_time_2d(graph_to_plot, "interactions", mnn = 2, deg = 2, mutual = True, show_mut = True)
+    # graph_in_time_2d(graph_to_plot, "interactions", mnn = 4, deg = 4, mutual = True, show_mut = True)
 
-# Supplement for club stability under k
-graph_to_plot = 8 # Index of the group to display
-# graph_in_time_2d(graph_to_plot, "interactions", mnn = 2, deg = 2, mutual = True, show_mut = True)
-# graph_in_time_2d(graph_to_plot, "interactions", mnn = 3, deg = 3, mutual = True, show_mut = True)
-# graph_in_time_2d(graph_to_plot, "interactions", mnn = 4, deg = 4, mutual = True, show_mut = True)
-graph_in_time_2d(graph_to_plot, "interactions", mnn = 5, deg = 4, mutual = True, show_mut = True)
 
 

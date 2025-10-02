@@ -8,11 +8,11 @@ import seaborn as sns
 from scipy import stats
 import pandas as pd
 from scipy.stats import sem
-from sklearn.decomposition import PCA
-from sklearn.preprocessing import StandardScaler, MinMaxScaler, MaxAbsScaler, normalize
+# from sklearn.decomposition import PCA
+# from sklearn.preprocessing import StandardScaler, MinMaxScaler, MaxAbsScaler, normalize
 from tqdm import tqdm 
-from sklearn.manifold import TSNE
-from sklearn import manifold
+# from sklearn.manifold import TSNE
+# from sklearn import manifold
 sys.path.append('..\\src\\')
 from read_graph import read_graph, read_labels
 from utils import get_category_indices, spread_points_around_center
