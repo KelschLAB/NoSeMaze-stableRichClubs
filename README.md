@@ -27,3 +27,4 @@ This code was written and tested under Python v3.13 on windows 10 and requires t
 - pandas v2.2.3 (run ```pip install pandas``` to install)
 - seaborn v0.13.2 (run ```pip install seaborn``` to install)
 - tqdm v4.67.1 (run ```pip install tqdm``` to install)
+The total installation time on a fresh environment is around 15 minutes.
