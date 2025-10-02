@@ -8,6 +8,8 @@ import pandas as pd
 sys.path.append('..\\src\\')
 from read_graph import read_graph, k_core_weights, display_graph, display_graph_3d
 from utils import get_category_indices
+script_dir = os.path.dirname(os.path.abspath(__file__))
+os.chdir(script_dir)
 
 labels = ["G1"]#, "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G10", "G11", "G12", "G13", "G14", "G15", "G16", "G17"]
 
@@ -46,7 +48,7 @@ def graph_in_time_3d(graph_idx, var = "interactions", mnn = 3, show_mut = True):
     plt.tight_layout()
     plt.show()
 
-def graph_in_time_2d(graph_idx, var = "interactions", mnn = 3, deg = 3, mutual = True, show_mut = True, rm_weak = False):
+def graph_in_time_2d(graph_idx, var = "interactions", mnn = 3, deg = 3, mutual = True, show_mut = True):
     """
     Plots and saves the graph of the rich club for the interaction graph given in 'datapath'
     after mnn cuting and k-core computation. Saves on svg format.
@@ -57,7 +59,7 @@ def graph_in_time_2d(graph_idx, var = "interactions", mnn = 3, deg = 3, mutual =
         try:
             file = f"{var}_resD3_"+str(i+1)+".csv"
             if show_mut:
-                mutants_idx, _, _, _, RFIDs = get_category_indices(graph_idx, "interactions", 3, rm_weak_histo=rm_weak)
+                mutants_idx, _, _, _, RFIDs = get_category_indices(graph_idx, "interactions", 3)
                 mutants = np.ones(len(RFIDs))
                 mutants[mutants_idx] = 0
                 display_graph([datapath+file], axs[i], mnn = mnn, node_metric = "rich-club", deg = deg, mutual = mutual, layout = "circle",

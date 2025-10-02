@@ -21,6 +21,10 @@ from scipy.stats import ttest_ind
 from scipy import stats
 from scipy.stats import pearsonr, spearmanr
 import warnings
+sys.path.append('..\\src\\')
+
+script_dir = os.path.dirname(os.path.abspath(__file__))
+os.chdir(script_dir)
 
 datapath = "..\\data\\chasing\\single\\"
 datapath = "..\\data\\averaged\\"

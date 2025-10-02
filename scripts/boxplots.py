@@ -16,6 +16,8 @@ import seaborn as sns
 sys.path.append('..\\src\\')
 from read_graph import read_graph
 from utils import get_category_indices, format_plot, add_significance, add_group_significance
+script_dir = os.path.dirname(os.path.abspath(__file__))
+os.chdir(script_dir)
 
 datapath = "..\\data\\chasing\\single\\"
 datapath = "..\\data\\averaged\\"
