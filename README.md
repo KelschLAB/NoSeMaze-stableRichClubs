@@ -12,7 +12,7 @@ The main findings of this article can be reproduced by running the functions pre
 - To compute the normalized edge fluctuations (NEF, **Fig. 6**) of the different members of a social network, run the ```temporal_graph_metrics.py``` script.
 - To generate the boxplots comparing the distributions of behavioral measurements for OXTRΔAON and control mice (**Fig. 3, 4 and 5**), run ```boxplots.py```.
 
-To run, these scripts rely on the content of the ```/src``` folder of this repository. 
+To run, these scripts rely on the content of the ```/src``` folder of this repository. If you download the content of this repository as is, everything should run properly as the paths are written to follow the internal structure of this repository.
 
 ## Data format
 The social network data read by the scripts provided in this repository should be saved as ```.csv```files, where the first row and column is used for indexing (animal RFID tags). 
