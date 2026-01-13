@@ -29,5 +29,23 @@ ax.pie([sizes[0]+sizes[1], sizes[2]+sizes[3]], radius=r, colors=['blue', 'lightb
 
 ax.pie(sizes, radius=r-s, colors=["dimgray", "darkred", "red", "lightgray"], 
        wedgeprops=dict(width=s, edgecolor='w'))
+plt.show()
+
+#V3
+species = ("WT", "OXTR")
+weight_counts = {"sRC": np.array([27, 2]), "non-sRC": np.array([69, 34])}
+width = 0.5
+
+fig, ax = plt.subplots()
+bottom = np.zeros(2)
+
+weight_count = weight_counts["sRC"]
+p = ax.bar(species, weight_count, width, label="sRC", bottom=bottom, color = "dimgray")
+bottom += weight_count
+weight_count = weight_counts["non-sRC"]
+p = ax.bar(species, weight_count, width, label="non-sRC", bottom=bottom, color = "lightgray")
+bottom += weight_count
+
+ax.legend(loc="upper right")
 
 plt.show()
