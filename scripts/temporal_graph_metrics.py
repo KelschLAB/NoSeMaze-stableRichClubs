@@ -508,5 +508,6 @@ if __name__ == "__main__":
     bp_metric("summed inNEF", mnn = None, mutual = True, weighted = True, threshold = 0, 
                       summation = "mean", normalization="CV", logscale = False, stat = "median")
     
-    
+    print("Warning: only G1 of the dataset is available on this repo. If you want to reproduce the paper, ask us for the full dataset, and uncomment labels on L27 of this script.")
+
 
