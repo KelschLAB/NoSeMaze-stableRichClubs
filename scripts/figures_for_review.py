@@ -5,9 +5,9 @@ import pandas as pd
 
 metadatapath = "..\\data\\meta_data.csv"
 metadata = pd.read_csv(metadatapath)
-valid_groups = [1,2,3,4,5,6,7,8,10,11,12,15,17]
+valid_groups = [1,2,3,4,5,6,7,8,10,11,12,15,17] # Groups for which a sRC was observed
 
-### Pie chart for showing RC sizes 
+### Pie/bar chart for showing RC sizes 
 sizes = [np.sum(metadata['mutant'] & (metadata['Group_ID'].isin(valid_groups))), np.sum(metadata['mutant'] &  metadata['RC'] & (metadata['Group_ID'].isin(valid_groups))), 
          np.sum(~metadata['mutant'] &  metadata['RC'] & (metadata['Group_ID'].isin(valid_groups))), np.sum(~metadata['mutant'] & ~metadata['RC'] & (metadata['Group_ID'].isin(valid_groups)))]
 # V1
@@ -44,8 +44,6 @@ p = ax.bar(species, weight_count, width, label="sRC", bottom=bottom, color = "di
 bottom += weight_count
 weight_count = weight_counts["non-sRC"]
 p = ax.bar(species, weight_count, width, label="non-sRC", bottom=bottom, color = "lightgray")
-bottom += weight_count
 
 ax.legend(loc="upper right")
-
 plt.show()
