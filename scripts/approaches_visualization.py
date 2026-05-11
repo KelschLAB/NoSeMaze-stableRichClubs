@@ -211,7 +211,7 @@ def plot_2d_distribution(group_idx = "all", approach_type = "start_point", cutof
 
     else:
         raise("unknwon input type")
-    
+    return x, y
     
     
 # define plotting functions
@@ -316,10 +316,30 @@ def plot_traj(path_to_data, index):
 
 # fig, ax = plt.subplots(1, 1, figsize = (3,  2.5))
 
-plot_2d_distribution("all", "interactions", 0, "jet")
+
 # fig, axs = plt.subplots(4, 4, figsize = (10, 10))
 # for i in range(16):
 #     plot_2d_distribution(i, "interactions", 0, "turbo", ax = axs.flatten()[i])
 #     axs.flatten()[i].set_title(groups[i])
 # hist_travelled_dist(path_to_data)
 # plot_traj("C:\\Users\\wolfgang.kelsch\\Documents\\GitHub\\RichClubs\\data\\approach_meta_data\\trajectories\\", 35)
+
+
+## Exctrating data for source file
+# groups_ids = []
+# xs, ys = [], []
+# for i in range(len(groups)):
+#     x, y = plot_2d_distribution(i, "interactions", 0, "jet")
+#     xs.extend(x)
+#     ys.extend(y)
+#     groups_ids.extend(len(x)*[groups[i]])
+xs, ys = plot_2d_distribution("all", "interactions", 0, "jet")
+
+# df = pd.DataFrame({"Group":groups_ids, "x":xs, "y":ys})
+df = pd.DataFrame({"x":xs, "y":ys})
+
+df.drop_duplicates()
+df.to_excel(
+    r"C:\Users\corentin.nelias\Documents\GitHub\sRC_backup\data\source data\4i_interaction_points.xlsx",
+    index=False
+)
