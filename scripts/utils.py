@@ -1,0 +1,348 @@
+import matplotlib.pyplot as plt
+import numpy as np
+import igraph as ig
+import networkx as nx
+import os
+import sys
+import seaborn as sns
+from scipy import stats
+import pandas as pd
+from scipy.stats import sem
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler, MinMaxScaler, MaxAbsScaler, normalize
+from tqdm import tqdm 
+from sklearn.manifold import TSNE
+from sklearn import manifold
+sys.path.append('..\\src\\')
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
+from read_graph import read_graph, read_labels
+import mpl_toolkits.mplot3d  # noqa: F401
+from scipy.stats import ttest_ind
+from scipy import stats
+from scipy.stats import rankdata
+import statsmodels.formula.api as smf
+
+datapath = "..\\data\\chasing\\single\\"
+datapath = "..\\data\\averaged\\"
+#plt.rc('text', usetex=True)
+plt.rc('font', family='serif')
+
+def format_plot(ax, bp, xticklabels = ["RC", "Mutants", "Others"]):
+    """ Sets the x-axis the RC/mutants/Others, changes the color of the bars in the boxplot."""
+    ax.set_xticklabels(xticklabels, fontsize = 20)
+    if len(xticklabels) == 2:
+        colors = ["darkgray", "firebrick"]
+    elif len(xticklabels) == 3:
+        colors = ["cornflowerblue", "darkgray", "firebrick"]
+    else:
+        raise("Tick labels should have length 2 or 3.")
+    # for patch, color in zip(bp['boxes'], colors): # set colors
+        # patch.set_facecolor(color)
+    plt.setp(bp['medians'], color='k')
+    
+## Helper functions for the significance assessment
+def mean(x, y, axis):
+    return np.mean(x, axis=axis) - np.mean(y, axis=axis)
+
+def median(x, y, axis):
+    return np.median(x, axis=axis) - np.median(y, axis=axis)
+
+def statistic(x, y, stat):
+    x = np.concatenate(x)
+    y = np.concatenate(y)
+    if stat == "mean":
+        return np.nanmean(x) - np.nanmean(y)
+    elif stat == "median":
+        return np.nanmedian(x) - np.nanmedian(y)
+    elif stat == "mannwhitneyu":
+        x = x[~np.isnan(x)]
+        y = y[~np.isnan(y)]
+        joint_vector = np.concatenate([x, y])
+        ranks = rankdata(joint_vector, method='min')
+        x_ranks, y_ranks = ranks[:len(x)], ranks[len(x):]
+        return np.mean(x_ranks) - np.mean(y_ranks)     
+
+## Functions for the significance assessment
+def add_significance(data, ax, bp, stat = median):
+    """Computes and adds p-value significance to input ax and boxplot.
+    This approach does not reflect the group structure of the data (i.e. that some mice were in multiple groups) and
+    therefore treats each datapoint as statistically independant"""
+    # Initialise a list of combinations of groups that are significantly different
+    significant_combinations = []
+    # Check from the outside pairs of boxes inwards
+    ls = list(range(1, len(data) + 1))
+    combinations = [(ls[x], ls[x + y]) for y in reversed(ls) for x in range((len(ls) - y))]
+    for combination in combinations:
+        data1 = data[combination[0] - 1]
+        data2 = data[combination[1] - 1]
+        # Significance
+        # U, p = stats.mannwhitneyu(data1, data2, alternative='two-sided')
+        # U, p = stats.ttest_ind(data1, data2,equal_var=False)
+        result = stats.permutation_test((data1, data2), stat)
+        U = result.statistic  # This gives the test statistic
+        p = result.pvalue      # This gives the p-value
+        print(p)
+        # if p < 0.05:
+        significant_combinations.append([combination, p])
+            
+    for i, significant_combination in enumerate(significant_combinations):
+        # Columns corresponding to the datasets of interest
+        x1 = significant_combination[0][0]
+        x2 = significant_combination[0][1]
+        # What level is this bar among the bars above the plot?
+        level = len(significant_combinations) - i
+        # Plot the bar
+        # Get the y-axis limits
+        bottom, top = ax.get_ylim()
+        y_range = top - bottom
+        bar_height = (y_range * 0.07 * level) + top
+        bar_tips = bar_height - (y_range * 0.02)
+        ax.plot(
+            [x1, x1, x2, x2],
+            [bar_tips, bar_height, bar_height, bar_tips], lw=1, c='k'
+        )
+        # Significance level
+        p = significant_combination[1]
+        if p < 0.001:
+            sig_symbol = '***'
+            text_height = bar_height - (y_range * 0.03)
+            ax.text((x1 + x2) * 0.5, text_height, sig_symbol, ha='center', va='bottom', c='k', fontsize = 20)
+        elif p < 0.01:
+            sig_symbol = '**'
+            text_height = bar_height - (y_range * 0.03)
+            ax.text((x1 + x2) * 0.5, text_height, sig_symbol, ha='center', va='bottom', c='k', fontsize = 20)
+        elif p < 0.05:
+            sig_symbol = '*'
+            text_height = bar_height - (y_range * 0.03)
+            ax.text((x1 + x2) * 0.5, text_height, sig_symbol, ha='center', va='bottom', c='k', fontsize = 20)
+        else:
+            sig_symbol = f"p = {np.round(p, 3)}"
+            text_height = bar_height + (y_range * 0.01)
+            ax.text((x1 + x2) * 0.5, text_height, sig_symbol, ha='center', va='bottom', c='k')
+    return p
+            
+def add_LME_significance(data, var, ax = None, bp = None):
+    """Computes p-value using LME (accounting for repeated measures) and adds to plot"""
+    
+    # 1. Prepare the data into a single long-format DataFrame
+    df1 = data[0].copy()
+    df2 = data[1].copy()
+    
+    df1['genotype'] = 0
+    df2['genotype'] = 1
+    
+    # Combine groups
+    df_total = pd.concat([df1, df2], ignore_index=True).dropna()
+    df_total[var] = df_total[var].rank(pct=True)
+    
+    formula = f'Q("{var}") ~ genotype'
+    model = smf.mixedlm(formula, df_total, groups=df_total["Mouse_RFID"])
+    result = model.fit()
+    
+    p = result.pvalues["genotype"]
+    print(f"LME p-value: {p}")
+    if ax == None or bp == None:
+        return p, result
+
+    box_positions = [item.get_xdata()[0] for item in bp['boxes']]
+    x1, x2 = box_positions[0] + 0.05, box_positions[1] + 0.05
+    
+    bottom, top = ax.get_ylim()
+    y_range = top - bottom
+    bar_height = (y_range * 0.05) + top 
+    bar_tips = bar_height - (y_range * 0.02)
+    
+    ax.plot(
+        [x1, x1, x2, x2],
+        [bar_tips, bar_height, bar_height, bar_tips], lw=1, c='k'
+    )
+
+    if p < 0.001:
+        sig_symbol = '***'
+    elif p < 0.01:
+        sig_symbol = '**'
+    elif p < 0.05:
+        sig_symbol = '*'
+    else:
+        sig_symbol = f"p = {np.round(p, 3)}"
+        
+    text_height = bar_height + (y_range * 0.01)
+    ax.text((x1 + x2) * 0.5, text_height, sig_symbol, ha='center', va='bottom', c='k')
+    
+    ax.set_ylim(bottom, text_height + (y_range * 0.1))
+    
+    return p, result
+
+def add_group_significance(data, rfids, ax = None, bp = None, stat = "median"):
+    """Computes and adds p-value significance to input ax and boxplot, in a fashion that respects group identity"""
+    # Check from the outside pairs of boxes inwards
+    ls = list(range(1, len(data) + 1))
+    rfids1 = rfids[0]
+    rfids2 = rfids[1]
+    data1, data2 = data[0], data[1]
+
+    # Group data by RFID
+    grouped_data1 = [[data1[i] for i, r in enumerate(rfids1) if r == rfid] for rfid in np.unique(rfids1)]
+    grouped_data1 = [list(d) for d in grouped_data1]
+    grouped_data2 = [[data2[i] for i, r in enumerate(rfids2) if r == rfid] for rfid in np.unique(rfids2)]
+    grouped_data2 = [list(d) for d in grouped_data2]
+
+    combined_data = grouped_data1 + grouped_data2
+    labels = [0] * len(grouped_data1) + [1] * len(grouped_data2)
+
+    ## custom permutation test
+    observed_stat = statistic(grouped_data1, grouped_data2, stat)
+
+    # Generate permutations
+    permuted_stats = []
+    t = 0
+    for _ in tqdm(range(10000)):
+        np.random.shuffle(labels)
+        permuted_group1 = [combined_data[i] for i in range(len(labels)) if labels[i] == 0]
+        permuted_group2 = [combined_data[i] for i in range(len(labels)) if labels[i] == 1]
+        permuted_stats.append(statistic(permuted_group1, permuted_group2, stat))
+
+    # Compute p-value
+    permuted_stats = np.array(permuted_stats)
+    hits = np.sum(np.abs(permuted_stats) >= np.abs(observed_stat))
+    N = len(permuted_stats)
+    p = (hits + 1)/(N + 1)
+    print(p)
+    if bp is None or ax is None:
+        return p
+
+    box_positions = [item.get_xdata()[0] for item in bp['boxes']]
+    x1, x2 = box_positions[0]+0.05, box_positions[1]+0.05 # Use actual positions instead of 1 and 2
+    
+    bottom, top = ax.get_ylim()
+    y_range = top - bottom
+    bar_height = (y_range * 0.05 * 1) + top #- 20
+    bar_tips = bar_height - (y_range * 0.02)
+    ax.plot(
+        [x1, x1, x2, x2],
+        [bar_tips, bar_height, bar_height, bar_tips], lw=1, c='k'
+    )
+
+    if p < 0.001:
+        sig_symbol = '***'
+    elif p < 0.01:
+        sig_symbol = '**'
+    elif p < 0.05:
+        sig_symbol = '*'
+    else:
+        sig_symbol = f"p = {np.round(p, 3)}"
+    text_height = bar_height + (y_range * 0.01)
+    ax.text((x1 + x2) * 0.5, text_height, sig_symbol, ha='center', va='bottom', c='k')
+    
+def plot_lme_diagnostics(result, groups = None):
+    fitted = result.fittedvalues
+    resid = result.resid
+    
+    fig, ax = plt.subplots(1, 1, figsize=(12, 5))
+    
+    if groups is not None:
+        colors = groups
+    sns.scatterplot(x=fitted, y=resid, c = colors, ax=ax[0], alpha=0.5)
+    ax[0].axhline(0, color='red', linestyle='--')
+    ax[0].set_xlabel('Fitted Values')
+    ax[0].set_ylabel('Residuals')
+    ax[0].set_title('Residuals vs. Fitted')
+    
+    plt.tight_layout()
+    plt.show()
+    print(result.summary())
+    
+def spread_points_around_center(values, center=1, bin_width = 0.1, interpoint=0.01):
+    if len(values) == 0:
+          return np.array([])
+      
+    # Convert to numpy array and handle NaNs
+    values = np.asarray(values)
+    values = values[~np.isnan(values)]
+    values = values[~np.isinf(values)]
+    
+    if len(values) == 0:
+        return np.array([])
+    
+    # Bin the y-values
+    y_min, y_max = np.min(values), np.max(values)
+    bins = np.arange(y_min, y_max + bin_width, bin_width)
+    binned_values = np.digitize(values, bins) - 1
+    
+    # Initialize x-positions
+    x_positions = np.zeros_like(values, dtype=float)
+    
+    for bin_idx in np.unique(binned_values):
+        mask = (binned_values == bin_idx)
+        count = np.sum(mask)
+        
+        if count == 1:
+            spread = np.array([0.0])
+        elif count == 2:
+            spread = np.array([-interpoint/2, interpoint/2])
+        else:
+            # Symmetrical distribution around center
+            spread = np.linspace(-interpoint*(count-1)/2, 
+                                interpoint*(count-1)/2, 
+                                count)
+        
+        # Add small random jitter
+        spread += np.random.normal(0, interpoint/3, size=count)
+        x_positions[mask] = center + spread
+    
+    return x_positions, values
+
+
+labels = ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G10", "G11", "G12", "G13", "G14", "G15", "G16", "G17"]
+
+def get_category_indices(graph_idx, variable, window):
+    """
+    Returns the indices of mutant, RC (rich club), other, and wild-type (WT) mice for a given group.
+
+    Parameters:
+        graph_idx (int): Index of the group (corresponds to an entry in the 'labels' list).
+        variable (str): The variable name used to construct the data file path (e.g., "approaches", "interactions", "chasing"...).
+
+    Returns:
+        mutants (np.ndarray): Indices of mutant mice in the group.
+        rc (np.ndarray): Indices of RC (rich club) mice in the group.
+        others (np.ndarray): Indices of mice that are neither mutant nor RC.
+        wt (np.ndarray): Indices of wild-type mice in the group.
+        RFIDs (np.ndarray): Array of Mouse RFID strings corresponding to the group.
+
+    Notes:
+        - The function reads metadata and group data to determine group membership.
+        - Mice not found in the metadata are treated as wild-type.
+    """
+    metadata_path = "..\\data\\meta_data.csv"
+    metadata_df = pd.read_csv(metadata_path)
+    if variable == "chasing":
+        datapath = "..\\data\\chasing\\single\\"+labels[graph_idx]+"_single_chasing.csv"
+    else:
+        datapath = f"..\\data\\both_cohorts_{window}days\\"+labels[graph_idx]+"\\"+variable+f"_resD{window}_1.csv"
+        if window not in [1, 3, 7]:
+            print("Incorrect time window")
+            return 
+    
+    arr = np.loadtxt(datapath, delimiter=",", dtype=str)
+    RFIDs = arr[0, 1:].astype(str)
+    curr_metadata_df = metadata_df.loc[metadata_df["Group_ID"] == int(labels[graph_idx][1:]), :]
+    # figuring out index of true mutants in current group
+    mutant_map = curr_metadata_df.set_index('Mouse_RFID')['mutant'].to_dict()
+    is_mutant = [mutant_map.get(rfid, False) for rfid in RFIDs] # if RFID is missing, animal is assumed to be neurotypical
+
+    graph_length = len(RFIDs)
+    # is_RC = [True if curr_metadata_df.loc[curr_metadata_df["Mouse_RFID"] == rfid, "RC"].values else False for rfid in RFIDs] # list of boolean stating which mice are RC
+    is_RC = [
+        True if (curr_metadata_df.loc[curr_metadata_df["Mouse_RFID"] == rfid, "RC"].values.size > 0 and
+             curr_metadata_df.loc[curr_metadata_df["Mouse_RFID"] == rfid, "RC"].values[0]) else False
+        for rfid in RFIDs
+    ]
+    mutants = np.where(is_mutant)[0] if len(np.where(is_mutant)) != 0 else [] # indices of mutants in this group
+    rc = np.where(is_RC)[0] if len(np.where(is_RC)) != 0 else [] # indices of RC in this group
+    others = np.arange(graph_length)[np.logical_and(~np.isin(np.arange(graph_length), rc), ~np.isin(np.arange(graph_length), mutants))]
+    wt = np.arange(graph_length)[~np.isin(np.arange(graph_length), mutants)]
+    return mutants, rc, others, wt, RFIDs
+
+
+
