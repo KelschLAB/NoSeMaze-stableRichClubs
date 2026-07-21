@@ -4,10 +4,19 @@ import igraph as ig
 import networkx as nx
 import os
 import sys
+
+sys.path.append('..\\src\\')
+from read_graph import read_graph
+from utils import get_category_indices, format_plot, add_significance, add_group_significance
+
 abspath = os.path.abspath(__file__)
 dname = os.path.dirname(abspath)
 os.chdir(dname)
 os.chdir('..\\scripts\\')
+src_path = os.path.abspath(
+    os.path.join(os.path.dirname(__file__),  "..", "src")
+)
+sys.path.insert(0, src_path)
 sys.path.append(os.getcwd())
 from read_graph import read_graph
 import pandas as pd
@@ -15,6 +24,8 @@ from HierarchiaPy import Hierarchia
 from collections import Counter
 from scipy import stats
 from utils import add_group_significance
+from scipy.stats import chisquare
+
 plt.rcParams["font.family"] = "Arial"
 
 def rich_club_piecharts():
@@ -197,6 +208,9 @@ def approach_order_sep(out = True):
                 else:
                     other_idx = np.where(mouse_names[idx] == names_in_approach_matrix)[0][0]
                     approach_order_others.append(list(current_orders).index(other_idx))
+                    
+    t_stat, p_value = stats.ttest_ind(approach_order_rc, approach_order_others)
+    print(f"Approach order differences between sRC and WT Two-Sample t-test: p = {p_value}")
         
     plt.figure(figsize = (5, 5))
     
@@ -362,6 +376,32 @@ def approachRank_mutants():
     plt.title(r"Approach rank of mutants", fontsize = 18)
     plt.show()
     
+def tuberank_vs_nonrc(ax = None, norm = False):
+    """Plots the tube rank of non rich club members for both cohorts"""
+    
+    ranks = []
+    path_cohort1 = "..\\data\\reduced_data.xlsx"
+    path_cohort2 = "..\\data\\validation_cohort.xlsx"
+
+    df1 = pd.read_excel(path_cohort1)
+    RCs1 = df1.loc[:, "RC"].to_numpy()
+    Ranks1 = df1.loc[:, "rank_by_tube"].to_numpy()
+
+    df2 = pd.read_excel(path_cohort2)
+    RCs2 = df2.loc[:, "RC"].to_numpy()
+    Ranks2 = df2.loc[:, "rank_by_tube"].to_numpy()
+    
+    arr = np.concatenate((Ranks1[~RCs1], Ranks2[~RCs2]))
+    
+    if ax is None:
+        fig, ax = plt.subplots(1, 1, figsize = (4, 4))
+    ax.hist(arr, bins = [i for i in range(1, 12)], align = 'mid', rwidth = 0.8, color = "gray", density = norm) 
+    ax.set_xlabel("Tube rank", fontsize = 15)
+    ax.set_ylabel("Count", fontsize = 15); 
+    ticklabels = [i for i in range(1, 11)]
+    ax.set_xticks([i + 0.5 for i in range(1, 11)], ticklabels, fontsize = 12)
+    return arr
+    
 def tuberank_vs_rc(ax = None, norm = False):
     """Plots the tube rank of rich clulb members for both cohorts"""
     
@@ -381,7 +421,7 @@ def tuberank_vs_rc(ax = None, norm = False):
     
     if ax is None:
         fig, ax = plt.subplots(1, 1, figsize = (4, 4))
-    ax.hist(arr, bins = [i for i in range(1, 12)], align = 'mid', rwidth = 0.6, color = "blue", density = norm) 
+    ax.hist(arr, bins = [i for i in range(1, 12)], align = 'mid', rwidth = 0.6, color = "blue", density = norm, alpha = 0.7) 
     ax.set_xlabel("Tube rank", fontsize = 15)
     ax.set_ylabel("Count", fontsize = 15); 
     ticklabels = [i for i in range(1, 11)]
@@ -445,7 +485,7 @@ def chasingrank_vs_rc(ax = None):
     ax.set_xticks([i + 0.5 for i in range(1, 11)], ticklabels, fontsize = 12)
     
 def chasingrank_vs_exrc(ax = None):
-    """Plots the tube ranks of mice that were once in the rich club, but got out after reshuffling."""
+    """Plots the chasing ranks of mice that were once in the rich club, but got out after reshuffling."""
     ranks = []
     path_cohort1 = "..\\data\\reduced_data.xlsx"
     path_cohort2 = "..\\data\\validation_cohort.xlsx"
@@ -826,6 +866,85 @@ def chasingOrder_RC(out = True, both = False):
         plt.ylabel(r"Count", fontsize = 19)
     # plt.title("Approach order of RC members", fontsize = 18)
     plt.show()
+    
+def chasingFraction_nonRC(out = True, ax = None):
+    """ 
+    Histogram of the fraction of total chasings in a group performed by nonRC members
+    """
+    path_cohort1 = "..\\data\\reduced_data.xlsx"
+    path_cohort2 = "..\\data\\validation_cohort.xlsx"
+    chasing_dir = "..\\data\\chasing\\single\\"
+
+    approach_order_out, approach_order_in = [], []
+    RFIDs = []
+    # first cohort
+    df1 = pd.read_excel(path_cohort1)
+    groups1 = df1.loc[:, "group"].to_numpy()
+    RCs1 = df1.loc[:, "RC"].to_numpy()
+    RFIDs1 = df1.loc[:, "Mouse_RFID"].to_numpy()
+
+    for group_idx in range(1, np.max(groups1)+1): #iterate over groups
+        mouse_indices = np.where(groups1 == group_idx) # find out indices of mice from current group
+        mouse_names = RFIDs1[mouse_indices]
+        approach_matrix = np.loadtxt(chasing_dir+"G"+str(group_idx)+"_single_chasing.csv",
+                                    delimiter = ",", dtype=str)[1:, 1:].astype(np.int16)
+        names_in_approach_matrix =  np.loadtxt(chasing_dir+"G"+str(group_idx)+"_single_chasing.csv",
+                                            delimiter=",", dtype=str)[0, :][1:]
+
+        chasings_out = np.sum(approach_matrix, axis = 1)
+        chasings_out = chasings_out/np.sum(chasings_out)
+        chasings_in = np.sum(approach_matrix, axis = 0)
+        chasings_in = chasings_in/np.sum(chasings_in)
+        for idx, rc in enumerate(~RCs1[mouse_indices]):
+            if np.any(mouse_names[idx] == names_in_approach_matrix):
+                if rc:
+                    rc_idx = np.where(mouse_names[idx] == names_in_approach_matrix)[0][0]
+                    approach_order_out.append(list(chasings_out)[rc_idx])
+                    approach_order_in.append(list(chasings_in)[rc_idx])
+                    RFIDs.append(mouse_names[idx])
+
+    df2 = pd.read_excel(path_cohort2)
+    groups2 = df2.loc[:, "Group_ID"].to_numpy()
+    RCs2 = df2.loc[:, "RC"].to_numpy()
+    RFIDs2 = df2.loc[:, "Mouse_RFID"].to_numpy()
+
+    for group_idx in range(11, 18): #iterate over groups
+        mouse_indices = np.where(groups2 == group_idx) # find out indices of mice from current group
+        mouse_names = RFIDs2[mouse_indices]
+        approach_matrix = np.loadtxt(chasing_dir+"G"+str(group_idx)+"_single_chasing.csv",
+                                    delimiter = ",", dtype=str)[1:, 1:].astype(np.int16)
+        names_in_approach_matrix =  np.loadtxt(chasing_dir+"G"+str(group_idx)+"_single_chasing.csv",
+                                            delimiter=",", dtype=str)[0, :][1:]
+       
+        chasings_out = np.sum(approach_matrix, axis = 1)
+        chasings_out = chasings_out/np.sum(chasings_out)
+        chasings_in = np.sum(approach_matrix, axis = 0)
+        chasings_in = chasings_in/np.sum(chasings_in)
+        for idx, rc in enumerate(~RCs2[mouse_indices]):
+            if np.any(mouse_names[idx] == names_in_approach_matrix):
+                if rc:
+                    rc_idx = np.where(mouse_names[idx] == names_in_approach_matrix)[0][0]
+                    approach_order_out.append(list(chasings_out)[rc_idx])
+                    approach_order_in.append(list(chasings_in)[rc_idx])
+                    RFIDs.append(mouse_names[idx])
+                      
+    if ax is None:
+        fig, ax = plt.subplots(1, 1, figsize = (5,4))
+
+    if out:
+        ax.hist(approach_order_out, bins = np.linspace(0, 0.5, 11), rwidth= 0.6, align='mid', color = 'gray')
+    else:
+        ax.hist(approach_order_in, bins = np.linspace(0, 0.5, 11), rwidth= 0.6, align='mid', color = 'gray')
+
+    if out:
+        ax.set_xlabel(r"Chasing fraction (outgoing)", fontsize = 20)
+    else:
+        ax.set_xlabel(r"Chasing fraction (incoming)", fontsize = 20)
+    ax.set_ylabel(r"Count", fontsize = 19)
+    if out:
+        return approach_order_out, RFIDs
+    else:
+        return approach_order_in, RFIDs
    
 def chasingFraction_RC(out = True, ax = None):
     """ 
@@ -892,9 +1011,9 @@ def chasingFraction_RC(out = True, ax = None):
         fig, ax = plt.subplots(1, 1, figsize = (5,4))
 
     if out:
-        ax.hist(approach_order_out, bins = np.linspace(0, 0.5, 11), rwidth= 0.6, align='mid', color = 'blue')
+        ax.hist(approach_order_out, bins = np.linspace(0, 0.5, 11), rwidth= 0.6, align='mid', color = 'blue', alpha = 0.7)
     else:
-        ax.hist(approach_order_in, bins = np.linspace(0, 0.5, 11), rwidth= 0.6, align='mid', color = 'blue')
+        ax.hist(approach_order_in, bins = np.linspace(0, 0.5, 11), rwidth= 0.6, align='mid', color = 'blue', alpha = 0.7)
 
     if out:
         ax.set_xlabel(r"Chasing fraction (outgoing)", fontsize = 20)
@@ -991,53 +1110,6 @@ def chasingFraction_exRC(out = True, ax = None):
     else:
         return approach_order_in, RFIDs
     
-def tuberanks_sep():
-    """ Histogram of tube ranks discriminating between RC, mutants and others.
-    """
-    # first cohort
-    ranks = []
-    path_cohort1 = "..\\data\\reduced_data.xlsx"
-    path_cohort2 = "..\\data\\validation_cohort.xlsx"
-    
-    # first cohort
-    df1 = pd.read_excel(path_cohort1)
-    RCs1 = df1.loc[:, "RC"].to_numpy()
-    mut1 = df1.loc[:, "mutant"].values
-    Ranks1 = df1.loc[:, "rank_by_tube"].to_numpy()
-    RFIDs1 = df1["Mouse_RFID"]
-
-    df2 = pd.read_excel(path_cohort2)
-    RCs2 = df2.loc[:, "RC"].to_numpy()
-    mut2 = df2["genotype"].values == "Oxt"
-    Ranks2 = df2.loc[:, "rank_by_tube"].to_numpy()
-    RFIDs2 = df2["Mouse_RFID"]
-    
-    tube_ranks_mut = np.concatenate((Ranks1[mut1], Ranks2[mut2]))
-    tube_ranks_others = np.concatenate((Ranks1[np.logical_and(~RCs1, ~mut1)], Ranks2[np.logical_and(~RCs2, mut2)]))
-    tube_ranks_rc = np.concatenate((Ranks1[RCs1], Ranks2[RCs2]))
-    RFIDs_rc = np.concatenate((RFIDs1[RCs1], RFIDs2[RCs2]))
-    RFIDs_rest = np.concatenate((RFIDs1[np.logical_and(~RCs1, ~mut1)], RFIDs2[np.logical_and(~RCs2, mut2)]))
-    RFIDs_mut = np.concatenate((RFIDs1[mut1], RFIDs2[mut2]))
-
-    
-    plt.figure(figsize = (5, 5))
-    
-    plt.hist(tube_ranks_rc, bins = np.arange(0.5, 11.5), density = True, rwidth= 0.8, align='mid', color = 'blue', edgecolor='black', alpha = 0.8, label = "RC")
-    plt.hist(tube_ranks_mut, bins = np.arange(0.5, 11.5), density = True, rwidth= 0.8, align='mid', color = 'darkred', edgecolor='black', alpha = 0.8, label = "Mutants")
-    plt.hist(tube_ranks_others, bins = np.arange(0.5, 11.5), density = True, rwidth= 0.8, align='mid', color = 'grey', edgecolor='black', alpha = 0.8, label = "Others")
-
-    plt.xticks(np.arange(1, 11), labels=["1","2","3","4","5","6","7","8","9","10"], fontsize = 15) 
-    plt.yticks(np.linspace(0, 0.4, 5), fontsize = 15)  # Ensure ticks are centered on 0 through 9
-    
-    plt.xlabel(r"Tube ranks", fontsize = 20)
-    plt.ylabel(r"Density", fontsize = 19)
-    plt.legend(fontsize = 15)
-    print("p RC vs Others:")
-    add_group_significance([tube_ranks_rc, tube_ranks_others], [RFIDs_rc, RFIDs_rest])
-    print("p mutants vs Others:")
-    add_group_significance([tube_ranks_mut, tube_ranks_others], [RFIDs_mut, RFIDs_rest])
-
-    plt.show()
     
 def chasingFraction_sep(out = True):
     """Histogram of chasing fractions discriminating between RC, mutants and others.
@@ -1141,7 +1213,112 @@ def chasingFraction_sep(out = True):
     plt.show()
     
     
-def chasingFraction_MutVsWT(out = True, ax = None):
+def tuberanks_sep():
+    """ 
+    Histogram of tube ranks discriminating between RC, mutants and others.
+    """
+    # first cohort
+    ranks = []
+    path_cohort1 = "..\\data\\reduced_data.xlsx"
+    path_cohort2 = "..\\data\\validation_cohort.xlsx"
+    
+    # first cohort
+    df1 = pd.read_excel(path_cohort1)
+    RCs1 = df1.loc[:, "RC"].to_numpy()
+    mut1 = df1.loc[:, "mutant"].values
+    Ranks1 = df1.loc[:, "rank_by_tube"].to_numpy()
+    RFIDs1 = df1["Mouse_RFID"]
+
+    df2 = pd.read_excel(path_cohort2)
+    RCs2 = df2.loc[:, "RC"].to_numpy()
+    mut2 = df2["genotype"].values == "Oxt"
+    Ranks2 = df2.loc[:, "rank_by_tube"].to_numpy()
+    RFIDs2 = df2["Mouse_RFID"]
+    
+    tube_ranks_mut = np.concatenate((Ranks1[mut1], Ranks2[mut2]))
+    tube_ranks_others = np.concatenate((Ranks1[np.logical_and(~RCs1, ~mut1)], Ranks2[np.logical_and(~RCs2, mut2)]))
+    tube_ranks_rc = np.concatenate((Ranks1[RCs1], Ranks2[RCs2]))
+    RFIDs_rc = np.concatenate((RFIDs1[RCs1], RFIDs2[RCs2]))
+    RFIDs_rest = np.concatenate((RFIDs1[np.logical_and(~RCs1, ~mut1)], RFIDs2[np.logical_and(~RCs2, mut2)]))
+    RFIDs_mut = np.concatenate((RFIDs1[mut1], RFIDs2[mut2]))
+
+    
+    plt.figure(figsize = (5, 5))
+    
+    plt.hist(tube_ranks_rc, bins = np.arange(0.5, 11.5), density = True, rwidth= 0.8, align='mid', color = 'blue', edgecolor='black', alpha = 0.8, label = "RC")
+    plt.hist(tube_ranks_mut, bins = np.arange(0.5, 11.5), density = True, rwidth= 0.8, align='mid', color = 'darkred', edgecolor='black', alpha = 0.8, label = "Mutants")
+    plt.hist(tube_ranks_others, bins = np.arange(0.5, 11.5), density = True, rwidth= 0.8, align='mid', color = 'grey', edgecolor='black', alpha = 0.8, label = "Others")
+
+    plt.xticks(np.arange(1, 11), labels=["1","2","3","4","5","6","7","8","9","10"], fontsize = 15) 
+    plt.yticks(np.linspace(0, 0.4, 5), fontsize = 15)  # Ensure ticks are centered on 0 through 9
+    
+    plt.xlabel(r"Tube ranks", fontsize = 20)
+    plt.ylabel(r"Density", fontsize = 19)
+    plt.legend(fontsize = 15)
+    print("p RC vs Others:")
+    add_group_significance([tube_ranks_rc, tube_ranks_others], [RFIDs_rc, RFIDs_rest])
+    print(f"median of WT tube rank: {np.nanmedian(tube_ranks_others)}")
+    print(f"median of WT tube rank: {np.nanmedian(tube_ranks_mut)}")
+    print("p mutants vs Others:")
+    add_group_significance([tube_ranks_mut, tube_ranks_others], [RFIDs_mut, RFIDs_rest])
+
+    plt.show()
+    
+    
+def tuberanks_uniformity():
+    """ 
+    Compares the tube ranks for non src members to a uniform distribution and gives a statistical estimation of significance.
+    """
+    ranks = []
+    path_cohort1 = "..\\data\\reduced_data.xlsx"
+    path_cohort2 = "..\\data\\validation_cohort.xlsx"
+    
+    df1 = pd.read_excel(path_cohort1)
+    RCs1 = df1.loc[:, "RC"].to_numpy()
+    mut1 = df1.loc[:, "mutant"].values
+    Ranks1 = df1.loc[:, "rank_by_tube"].to_numpy()
+    RFIDs1 = df1["Mouse_RFID"]
+    df2 = pd.read_excel(path_cohort2)
+    RCs2 = df2.loc[:, "RC"].to_numpy()
+    mut2 = df2["genotype"].values == "Oxt"
+    Ranks2 = df2.loc[:, "rank_by_tube"].to_numpy()
+    RFIDs2 = df2["Mouse_RFID"]
+    
+    tube_ranks_mut = np.concatenate((Ranks1[mut1], Ranks2[mut2]))
+    tube_ranks_others = np.concatenate((Ranks1[np.logical_and(~RCs1, ~mut1)], Ranks2[np.logical_and(~RCs2, mut2)]))
+    tube_ranks_rc = np.concatenate((Ranks1[RCs1], Ranks2[RCs2]))
+    RFIDs_rc = np.concatenate((RFIDs1[RCs1], RFIDs2[RCs2]))
+    RFIDs_rest = np.concatenate((RFIDs1[np.logical_and(~RCs1, ~mut1)], RFIDs2[np.logical_and(~RCs2, mut2)]))
+    RFIDs_mut = np.concatenate((RFIDs1[mut1], RFIDs2[mut2]))
+    
+    ranks_nonsrc = np.concatenate((tube_ranks_others, tube_ranks_mut)) 
+    RFIDs_nonsrc = np.concatenate((RFIDs_mut, RFIDs_mut))
+    
+    # n = len(ranks_nonsrc)
+
+    # # Create evenly spaced integers 1–10 repeated as evenly as possible
+    # values = np.arange(1, 11)
+    # repeats = n // 10
+    # remainder = n % 10
+    # uniform_balanced = np.repeat(values, repeats)
+    # # Distribute the leftover elements
+    # if remainder > 0:
+    #     uniform_balanced = np.concatenate([uniform_balanced, values[:remainder]])
+    # np.random.shuffle(uniform_balanced)
+    
+    observed_counts = np.bincount(ranks_nonsrc.astype(int), minlength=11)[1:11]
+    
+    # Expected frequencies (uniform)
+    n = len(ranks_nonsrc)
+    expected_counts = np.full(10, n / 10)
+    
+    chi2_stat, p_value = chisquare(observed_counts, expected_counts)
+    
+    print("Chi-square:", chi2_stat)
+    print("p-value:", p_value)
+    
+    
+def chasingFraction_MutVsWT(out = True, exclude_RC = True, ax = None):
     """ 
     Histogram of the chasing fraction for mutants vs WT mice
     """
@@ -1151,10 +1328,12 @@ def chasingFraction_MutVsWT(out = True, ax = None):
 
     approach_order_out_Mut, approach_order_in_Mut = [], []
     approach_order_out_WT, approach_order_in_WT = [], []
+    rfids_wt, rfids_mut = [], []
 
     # first cohort
     df1 = pd.read_excel(path_cohort1)
     groups1 = df1.loc[:, "group"].to_numpy()
+    RCs1 = df1.loc[:, "RC"].to_numpy()
     Mut1 = df1.loc[:, "mutant"].to_numpy()
     RFIDs1 = df1.loc[:, "Mouse_RFID"].to_numpy()
 
@@ -1176,13 +1355,19 @@ def chasingFraction_MutVsWT(out = True, ax = None):
                     mut_idx = np.where(mouse_names[idx] == names_in_approach_matrix)[0][0]
                     approach_order_out_Mut.append(list(chasings_out)[mut_idx])
                     approach_order_in_Mut.append(list(chasings_in)[mut_idx])
+                    rfids_mut.append(mouse_names[idx])
                 else:
-                    wt_idx = np.where(mouse_names[idx] == names_in_approach_matrix)[0][0]
-                    approach_order_out_WT.append(list(chasings_out)[wt_idx])
-                    approach_order_in_WT.append(list(chasings_in)[wt_idx])
-
+                    if (not RCs1[mouse_indices][idx]) or (not exclude_RC):
+                        wt_idx = np.where(mouse_names[idx] == names_in_approach_matrix)[0][0]
+                        approach_order_out_WT.append(list(chasings_out)[wt_idx])
+                        approach_order_in_WT.append(list(chasings_in)[wt_idx])
+                        rfids_wt.append(mouse_names[idx])
+                    else: 
+                        continue
+                        
     df2 = pd.read_excel(path_cohort2)
     groups2 = df2.loc[~df2["Group_ID"].isin([16, 20, 21]), "Group_ID"].to_numpy()
+    RCs2 = df2.loc[~df2["Group_ID"].isin([16, 20, 21]), "RC"].to_numpy()
     Mut2 = np.array(df2.loc[~df2["Group_ID"].isin([16, 20, 21]), "genotype"] == "Oxt")
     RFIDs2 = df2.loc[~df2["Group_ID"].isin([16, 20, 21]), "Mouse_RFID"].to_numpy()
 
@@ -1204,21 +1389,28 @@ def chasingFraction_MutVsWT(out = True, ax = None):
                     mut_idx = np.where(mouse_names[idx] == names_in_approach_matrix)[0][0]
                     approach_order_out_Mut.append(list(chasings_out)[mut_idx])
                     approach_order_in_Mut.append(list(chasings_in)[mut_idx])
+                    rfids_mut.append(mouse_names[idx])
                 else:
-                    wt_idx = np.where(mouse_names[idx] == names_in_approach_matrix)[0][0]
-                    approach_order_out_WT.append(list(chasings_out)[wt_idx])
-                    approach_order_in_WT.append(list(chasings_in)[wt_idx])
-                    
-
-                      
+                    if (not RCs2[mouse_indices][idx]) or (not exclude_RC):
+                        wt_idx = np.where(mouse_names[idx] == names_in_approach_matrix)[0][0]
+                        approach_order_out_WT.append(list(chasings_out)[wt_idx])
+                        approach_order_in_WT.append(list(chasings_in)[wt_idx])
+                        rfids_wt.append(mouse_names[idx])
+                    else: 
+                        continue
+                        
     if ax is None:
         fig, ax = plt.subplots(1, 1, figsize = (5,4))
 
     if out:
+        print(f"Chasing fraction OXTR: {np.nanmedian(approach_order_out_Mut)}")
+        print(f"Chasing fraction WT: {np.nanmedian(approach_order_out_WT)}")
         ax.hist(approach_order_out_WT, bins = np.linspace(0, 0.5, 11), rwidth= 0.9, align='mid', color = 'gray')
         ax.hist(approach_order_out_Mut, bins = np.linspace(0, 0.5, 11), rwidth= 0.75, align='mid', color = 'darkred')
 
     else:
+        print(f"Chasing fraction OXTR: {np.nanmedian(approach_order_in_Mut)}")
+        print(f"Chasing fraction WT: {np.nanmedian(approach_order_in_WT)}")
         ax.hist(approach_order_in_WT, bins = np.linspace(0, 0.5, 11), rwidth= 0.9, align='mid', color = 'gray')
         ax.hist(approach_order_in_Mut, bins = np.linspace(0, 0.5, 11), rwidth= 0.75, align='mid', color = 'darkred')
 
@@ -1235,7 +1427,8 @@ def chasingFraction_MutVsWT(out = True, ax = None):
     fig2, ax2 = plt.subplots(1, 1)
     mutants = np.concatenate((Mut1, Mut2))
     RFIDs = np.concatenate((RFIDs1, RFIDs2))
-    rfids_wt, rfids_mut = RFIDs[~mutants], RFIDs[mutants]
+
+    # rfids_wt, rfids_mut = RFIDs[~mutants], RFIDs[mutants]
     data = [approach_order_out_WT, approach_order_out_Mut]
     bp = ax2.boxplot(data, widths=0.6, patch_artist=True, showfliers = False, zorder=1)
     ax2.scatter([1 + np.random.normal()*0.05 for i in range(len(data[0]))], 
@@ -1246,28 +1439,52 @@ def chasingFraction_MutVsWT(out = True, ax = None):
 
 
 if __name__ == "__main__":
-## Main figure 5
-    rich_club_piechart_both()
-
-    fig, ax = plt.subplots(1, 1)
-    rankex = np.array(tuberank_vs_exrc(ax))
-    rankrc = np.array(tuberank_vs_rc(ax))
-    t_stat, p_value = stats.ttest_ind(rankex, rankrc)
-    print(f"Paired t-test: p = {p_value}")
-
+## Main figure 6
+    # rich_club_piechart_both()
+    
+    ## show that tube ranks of sRC members are different than non-sRC members
+    # fig, ax = plt.subplots(1, 1)
+    # ranknonrc = np.array(tuberank_vs_nonrc(ax, norm = True))
+    # rankrc = np.array(tuberank_vs_rc(ax, norm = True))
+    # t_stat, p_value = stats.ttest_ind(ranknonrc, rankrc)
+    # plt.suptitle("sRC ranks vs non-sRC ranks")
+    # print(f"Tube rank differences between sRC and non-sRC, Two-Sample t-test: p = {p_value}")
+    
+    ## Differences between ex-sRC members and current sRC members
+    # fig, ax = plt.subplots(1, 1)
+    # rankex = np.array(tuberank_vs_exrc(ax))
+    # rankrc = np.array(tuberank_vs_rc(ax))
+    # t_stat, p_value = stats.ttest_ind(rankex, rankrc)
+    # print(f"Two-Sample t-test: p = {p_value}")
+    
     # fig, ax = plt.subplots(1, 1, figsize = (3, 4))
-    # chasingFraction_exRC(True, ax)
-    # chasingFraction_RC(True, ax)
+    # frac_ex, _ = chasingFraction_exRC(True, ax)
+    # frac_rc, _ = chasingFraction_RC(True, ax)
     # add_group_significance([frac_ex, frac_rc], [rfids_ex, rfids_rc], stat = "mean")
-
+    
+    ## show that chasing ranks of sRC members are different than non-sRC members
+    # fig, ax = plt.subplots(1, 1)
+    # frac_nonrc, rfids_nonrc = chasingFraction_nonRC(True, ax)
+    # frac_rc, rfids_rc = chasingFraction_RC(True, ax)
+    # t_stat, p_value = stats.ttest_ind(frac_nonrc, frac_rc)
+    # print(f"Chasing rank differences between sRC and non-sRC, Two-Sample t-test: p = {p_value}")
+    
  ## Supplement
-    # fig, ax = plt.subplots(1, 1, figsize = (3, 4))
-    # frac_ex, rfids_ex = chasingFraction_exRC(False, ax)
-    # frac_rc, rfids_rc = chasingFraction_RC(False, ax)
-    # add_group_significance([frac_ex, frac_rc], [rfids_ex, rfids_rc], stat = "mean")
+    fig, ax = plt.subplots(1, 1, figsize = (3, 4))
+    frac_ex, rfids_ex = chasingFraction_exRC(False, ax)
+    frac_rc, rfids_rc = chasingFraction_RC(False, ax)
+    add_group_significance([frac_ex, frac_rc], [rfids_ex, rfids_rc], stat = "mean")
+    
+    ## show that tube ranks of sRC members are not coming from random uniform distribution
+    # rankex = np.array(tuberank_vs_exrc(ax))
+    # rankrc = np.array(tuberank_vs_rc(ax))
+    # uniform_distrib = np.array([i for i in range(1, 11)]*((len(rankex)+len(rankrc))//10))
+    # t_stat, p_value = stats.ttest_ind(np.concat((rankex, rankrc)), uniform_distrib)
+    # print(f"Difference to uniform distribution, Two-Sample t-test: p = {p_value}")
+    
     # tuberanks_sep() # tube rank of sRC, mutants and non-sRC WT.
     # approach_order_sep(True) # outgoing approach order of sRC, mutants and non-sRC WT.
-    # approach_order_sep(False) # ingoing approach order of sRC, mutants and non-sRC WT.
+    approach_order_sep(False) # ingoing approach order of sRC, mutants and non-sRC WT.
     # chasingFraction_sep(out = True)
     # chasingFraction_sep(out = False)
     
@@ -1275,6 +1492,8 @@ if __name__ == "__main__":
     # chasingrank_vs_exrc(ax)
     # chasingrank_vs_rc(ax)
 
+    # chasingFraction_MutVsWT()
 
+    # tuberanks_uniformity() # uniformity of nonsrc ranks distribution
 
     

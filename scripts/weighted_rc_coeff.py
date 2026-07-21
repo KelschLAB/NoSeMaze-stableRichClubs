@@ -88,12 +88,12 @@ def rc_coefficients_all(variable, k, window = 3):
         plt.boxplot(coefficients[~np.isnan(coefficients)], positions = [day], showfliers= False)
         t_statistic, p_value = ttest_1samp(coefficients[~np.isnan(coefficients)], popmean=1, alternative='greater') 
         print(p_value)
-        if p_value < 0.001:
-            plt.text(day, 2.2, "***", fontsize="20",horizontalalignment='center')
-        elif p_value < 0.01:
-            plt.text(day, 2.2, "**", fontsize="20",horizontalalignment='center')
-        elif p_value < 0.05:
-            plt.text(day, 2.2, "*", fontsize="20",horizontalalignment='center')
+        # if p_value < 0.001:
+        plt.text(day, 2.2, f"p = {np.round(p_value, 3)}", fontsize="10",horizontalalignment='center')
+        # elif p_value < 0.01:
+        #     plt.text(day, 2.2, "**", fontsize="20",horizontalalignment='center')
+        # elif p_value < 0.05:
+        #     plt.text(day, 2.2, "*", fontsize="20",horizontalalignment='center')
 
     ax.spines[['right', 'top']].set_visible(False)   
     t = np.arange(1, 15//window+1)
@@ -111,7 +111,7 @@ def rc_coefficients_all(variable, k, window = 3):
     plt.legend()
     plt.tight_layout()
     
-    return avg_rc_coeffs, std_rc_coeffs
+    return avg_rc_coeffs, std_rc_coeffs, 
 
 def rc_coefficient_selected(group, variable, k, window = 3):
     """

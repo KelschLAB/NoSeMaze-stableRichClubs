@@ -496,11 +496,11 @@ def approach_symmetry(threshold = 2, qtl = 0.0, rc = False):
             Defaults to 0, to keep all data.
         - rc (bool): if true, only the appaoches of RC members towards other RC are considered.
     """
-    approach_dir = "..\\data\\averaged\\"
+    approach_dir = "..\\data\\both_cohorts_7days\\"
     ingoings, outgoings = [], []
 
     all_rc = [[0,6], [3, 8, 9], [2, 3, 6], [2, 4], [1, 6], [0, 1], [3, 4, 6], [3, 5, 7, 8], [7, 8], [5, 8], [0, 2], [], [], [2, 8, 9], []]
-    labels = ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G10", "G11", "G12", "G13", "G14", "G15", "G16"]
+    labels = ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G10", "G11", "G12", "G13", "G14", "G15", "G16", "G17"]
     cohorts_list = [1,2,3,4,5,6,7,8,10,11,12,13,14,15,16] if rc else range(1, 17)
     for rc_list_idx, group_idx in enumerate(cohorts_list): #iterate over groups
         approach_matrix = np.loadtxt(approach_dir+"G"+str(group_idx)+"\\approaches_resD7_1.csv",
@@ -797,7 +797,13 @@ def cumulative_approaches():
     plt.show()
     
     
-chasing_towards_piechart(True)
+if __name__ == "__main__":
+## main Fig 5
+    approach_symmetry(1.5, 0.0, rc = True)
+    approach_symmetry(1.5, 0.0, rc = False)
+
+    
+# chasing_towards_piechart(True)
 # cumulative_approaches()
 # chasing_manhanttan_plot(False)
 # cumulative_chasings()
@@ -815,7 +821,6 @@ chasing_towards_piechart(True)
 # chasing_asymmetry(1.5, 0.0, True)
 # chasing_asymmetry(1.5, 0.0, False)
 
-# approach_symmetry(1.5, 0.0, rc = True)
 
 # approach_symmetry_mutants()
 

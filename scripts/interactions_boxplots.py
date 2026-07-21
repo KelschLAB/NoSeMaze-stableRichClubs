@@ -330,7 +330,7 @@ def boxplot_interaction_durations(show_RC = False, all_wt = True):
     
         plt.tight_layout()
         plt.show()
- 
+    
 
 def time_in_arena(sep = False, all_wt = False, plot_both_cohorts = False):
     path_to_first_cohort = "..\\data\\reduced_data.xlsx"
@@ -525,22 +525,16 @@ def tube_rank(sep = False, all_wt = False):
     plt.tight_layout()
     plt.show()
   
-def rc_size():
-    rcs = [2, 3, 3, 2, 2, 2, 3, 2, 2, 2, 2, 3, 2, 2]
-    plt.hist(rcs, bins = [1.5, 2.5, 3.5], rwidth = 0.8)
-    plt.xticks([1, 2, 3,4 ,5, 6], labels = [1, 2, 3, 4, 5, 6])
-    plt.xlabel("Rich club size")
-    plt.ylabel("Count")
-    plt.show()
+
     
 if __name__ == "__main__":
     # Figure 4
     # boxplot_interactions(False)
-    boxplot_interaction_durations(False, all_wt = True)
+    # boxplot_interaction_durations(False, all_wt = True)
 
     ## Figure 5
-    # boxplot_interactions(True)
-    boxplot_interaction_durations(True, all_wt = True)
+    boxplot_interactions(True)
+    # boxplot_interaction_durations(True, all_wt = True)
 
     
     ## Figure 6

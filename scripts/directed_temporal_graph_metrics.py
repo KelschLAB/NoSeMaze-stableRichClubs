@@ -362,6 +362,17 @@ def bp_metric_RC_vs_OXTR(measure, dthresh = "3.1", mnn = None, mutual = True, we
     ax.set_title(title)
     plt.tight_layout()
     plt.show()
+    
+    # df = pd.DataFrame({
+    #     "sRC members": pd.Series(data[0][measure].values),
+    #     "OXTR": pd.Series(data[1][measure].values)
+    # })
+    
+    # df.to_excel(
+    #     r"C:\Users\corentin.nelias\Documents\GitHub\sRC_backup\data\source data\S18d_inNEF_vs_sRCs.xlsx",
+    #     index=False
+    # )
+    
     return bp
     
     
@@ -454,6 +465,7 @@ def bp_metric_approaches(measure, dthresh = "3.1", mnn = None, mutual = True, we
     ax.set_title(title)
     plt.tight_layout()
     plt.show()
+
     return bp
     
     
@@ -529,11 +541,11 @@ def tuning_curve(measure, dthresh, mnn = None, mutual = True, weighted = False, 
 if __name__ == "__main__":
 ## Main
     # NEF comparisons
-    bp_metric_approaches(f"summed outNEF", "3.0", mnn = None, mutual = False, weighted = True, threshold = 0, 
-                        summation ="mean", normalization="mdm CV", logscale = True, stat = "mannwhitneyu")
+    # bp_metric_approaches(f"summed outNEF", "3.0", mnn = None, mutual = False, weighted = True, threshold = 0, 
+    #                     summation ="mean", normalization="mdm CV", logscale = True, stat = "mannwhitneyu")
     
-    bp_metric_approaches(f"summed inNEF", "3.0", mnn = None, mutual = False, weighted = True, threshold = 0, 
-                        summation ="mean", normalization="mdm CV", logscale = True, stat = "mannwhitneyu")
+    # bp_metric_approaches(f"summed inNEF", "3.0", mnn = None, mutual = False, weighted = True, threshold = 0, 
+    #                     summation ="mean", normalization="mdm CV", logscale = True, stat = "mannwhitneyu")
     
     # NEF tuning curves
     # dths = np.round(np.arange(2.5, 4.5, 0.2), 1).astype(str) # approach distance threshold
@@ -548,9 +560,9 @@ if __name__ == "__main__":
 # Supplement
     # NEF comparison of OXTR to all control mice
     # bp_metric_approaches(f"summed outNEF", "3.0", mnn = None, mutual = False, weighted = True, threshold = 0, 
-    #                     summation ="mean", normalization="mdm CV", logscale = True, stat = "mannwhitneyu", include_RC = True)
+    #                     summation ="mean", normalization="mdm CV", logscale = False, stat = "mannwhitneyu", include_RC = False)
     # bp_metric_approaches(f"summed inNEF", "3.0", mnn = None, mutual = False, weighted = True, threshold = 0, 
-                        # summation ="mean", normalization="mdm CV", logscale = True, stat = "mannwhitneyu", include_RC = True)
+    #                     summation ="mean", normalization="mdm CV", logscale = True, stat = "mannwhitneyu", include_RC = True)
                         
     # NEF comparison of OXTR to sRC control mice
     # bp_metric_RC_vs_OXTR(f"summed outNEF", "3.0", mnn = None, mutual = False, weighted = True, threshold = 0, 

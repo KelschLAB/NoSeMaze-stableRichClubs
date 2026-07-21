@@ -33,21 +33,26 @@ def plot_reshuffled_tuberank_corr():
     reshuffled_others = df["Mouse_RFID"].isin(reshuffled_mice) & ~df["RC"]
     RFID_reshuffled_rc = df["Mouse_RFID"][reshuffled_rc]
     RFID_reshuffled_others = df["Mouse_RFID"][reshuffled_others]
+    RFID_reshuffled_others = list(set(RFID_reshuffled_others) - set(RFID_reshuffled_rc)) # Ensure non RC mice are never member for fair comparison
     ranks = np.array(df.rank_by_tube.values)
     
     for tag in np.unique(RFID_reshuffled_rc):
-        tube_first_rc.append(ranks[np.where(df["Mouse_RFID"] == tag)[0][0]])
-        tube_second_rc.append(ranks[np.where(df["Mouse_RFID"] == tag)[0][1]])
-        if len(np.where(df["Mouse_RFID"] == tag)[0]) >= 3:
-            tube_first_rc.append(ranks[np.where(df["Mouse_RFID"] == tag)[0][1]])
-            tube_second_rc.append(ranks[np.where(df["Mouse_RFID"] == tag)[0][2]])
+        where_reshuffled_rc = np.where(df["Mouse_RFID"] == tag)[0]
+        if len(where_reshuffled_rc) > 1:
+            tube_first_rc.append(ranks[where_reshuffled_rc[0]])
+            tube_second_rc.append(ranks[where_reshuffled_rc[1]])
+            if len(where_reshuffled_rc) >= 3:
+                tube_first_rc.append(ranks[where_reshuffled_rc[1]])
+                tube_second_rc.append(ranks[where_reshuffled_rc[2]])
 
     for tag in np.unique(RFID_reshuffled_others):
-        tube_first_others.append(ranks[np.where(df["Mouse_RFID"] == tag)[0][0]])
-        tube_second_others.append(ranks[np.where(df["Mouse_RFID"] == tag)[0][1]])
-        if len(np.where(df["Mouse_RFID"] == tag)[0]) >= 3:
-            tube_first_others.append(ranks[np.where(df["Mouse_RFID"] == tag)[0][1]])
-            tube_second_others.append(ranks[np.where(df["Mouse_RFID"] == tag)[0][2]])
+        where_reshuffled_other = np.where(df["Mouse_RFID"] == tag)[0]
+        if len(where_reshuffled_other) > 1:
+            tube_first_others.append(ranks[where_reshuffled_other[0]])
+            tube_second_others.append(ranks[where_reshuffled_other[1]])
+            if len(where_reshuffled_other) >= 3:
+                tube_first_others.append(ranks[where_reshuffled_other[1]])
+                tube_second_others.append(ranks[where_reshuffled_other[2]])
 
     #second cohort
     df = pd.read_excel(path_to_first_cohort)
@@ -60,18 +65,22 @@ def plot_reshuffled_tuberank_corr():
     ranks = np.array(df.rank_by_tube.values)
     
     for tag in np.unique(RFID_reshuffled_rc):
-        tube_first_rc.append(ranks[np.where(df["Mouse_RFID"] == tag)[0][0]])
-        tube_second_rc.append(ranks[np.where(df["Mouse_RFID"] == tag)[0][1]])
-        if len(np.where(df["Mouse_RFID"] == tag)[0]) >= 3:
-            tube_first_rc.append(ranks[np.where(df["Mouse_RFID"] == tag)[0][1]])
-            tube_second_rc.append(ranks[np.where(df["Mouse_RFID"] == tag)[0][2]])
+        where_reshuffled_rc = np.where(df["Mouse_RFID"] == tag)[0]
+        if len(where_reshuffled_rc) > 1:
+            tube_first_rc.append(ranks[where_reshuffled_rc[0]])
+            tube_second_rc.append(ranks[where_reshuffled_rc[1]])
+            if len(where_reshuffled_rc) >= 3:
+                tube_first_rc.append(ranks[where_reshuffled_rc[1]])
+                tube_second_rc.append(ranks[where_reshuffled_rc[2]])
 
     for tag in np.unique(RFID_reshuffled_others):
-        tube_first_others.append(ranks[np.where(df["Mouse_RFID"] == tag)[0][0]])
-        tube_second_others.append(ranks[np.where(df["Mouse_RFID"] == tag)[0][1]])
-        if len(np.where(df["Mouse_RFID"] == tag)[0]) >= 3:
-            tube_first_others.append(ranks[np.where(df["Mouse_RFID"] == tag)[0][1]])
-            tube_second_others.append(ranks[np.where(df["Mouse_RFID"] == tag)[0][2]])
+        where_reshuffled_other = np.where(df["Mouse_RFID"] == tag)[0]
+        if len(where_reshuffled_other) > 1:
+            tube_first_others.append(ranks[where_reshuffled_other[0]])
+            tube_second_others.append(ranks[where_reshuffled_other[1]])
+            if len(where_reshuffled_other) >= 3:
+                tube_first_others.append(ranks[where_reshuffled_other[1]])
+                tube_second_others.append(ranks[where_reshuffled_other[2]])
 
     plt.figure(figsize = (4.5, 4.5))
     # plt.grid(alpha = 0.1)
@@ -107,9 +116,13 @@ def plot_reshuffled_outchasing_corr(fraction = False):
     # first cohort
     df1 = pd.read_excel(path_to_first_cohort)
     rc1 = df1["Mouse_RFID"][df1["RC"]].tolist()
+    nonrc1 = df1["Mouse_RFID"][~df1["RC"]].tolist()
     df2 = pd.read_excel(path_to_second_cohort)
     rc2 = df2["Mouse_RFID"][df2["RC"]].tolist()
+    nonrc2 = df2["Mouse_RFID"][~df2["RC"]].tolist()
     RFID_rc = rc1 + rc2
+    RFID_nonrc = nonrc1 + nonrc2
+    RFID_nonrc = list(set(RFID_nonrc) - set(RFID_rc)) # Ensure non RC mice are never member for fair comparison
 
     datapath = "..\\data\\chasing\\single\\"
     chasings_first, chasings_second = [], []
@@ -127,13 +140,13 @@ def plot_reshuffled_outchasing_corr(fraction = False):
             chasings = chasings/np.sum(np.sum(data))
         for c in range(len(chasings)):
             if names[c] not in already_seen_first:
-                if names[c] in RFID_rc:
+                if names[c] not in RFID_nonrc:
                     chasings_first_rc.append(chasings[c])
                 else:
                     chasings_first.append(chasings[c])
                 already_seen_first.append(names[c])
             elif names[c] not in already_seen_second:
-                if names[c] in RFID_rc:
+                if names[c] not in RFID_nonrc:
                     chasings_second_rc.append(chasings[c])
                 else:
                     chasings_second.append(chasings[c])
@@ -142,12 +155,12 @@ def plot_reshuffled_outchasing_corr(fraction = False):
     filter_names, filter_names_rc = [], []
     for name in already_seen_first:
         if name not in already_seen_second: # if mouse wasn't reshuffled, exclude it from plot
-            if name in RFID_rc:
+            if name not in RFID_nonrc:
                 filter_names_rc.append(False)
             else:
                 filter_names.append(False)
         else:
-            if name in RFID_rc:
+            if name not in RFID_nonrc:
                 filter_names_rc.append(True)
             else:
                 filter_names.append(True)
@@ -445,8 +458,7 @@ def plot_reshuffled_chasingRank_corr():
     plt.tight_layout()
     plt.show()
 
-
-# Supplement figure 11
+# Supplement figure 14
 plot_reshuffled_tuberank_corr()
 plot_reshuffled_outchasing_corr(True)
 

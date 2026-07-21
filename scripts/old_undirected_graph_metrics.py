@@ -25,6 +25,12 @@ from scipy import stats
 from scipy.stats import iqr
 from statsmodels.robust.scale import qn_scale
 
+
+datapath = "..\\data\\chasing\\single\\"
+datapath = "..\\data\\averaged\\"
+
+labels = ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G10", "G11", "G12", "G13", "G14", "G15", "G16", "G17"]
+
 def mean_abs_deviation_median(data, axis = 0):
     data = np.array(data)
     med_delta = np.median(data, axis = axis)
@@ -36,12 +42,12 @@ def default_on_error(graph_idx, variable, window):
     If the data for a graph on a specific day is not available because of detection issue, nans should be returned. 
     To preserve the structure of the data array, the number of returned nans should reflect the number of mutants, rc members and wt in the cohort. 
     """
-    mutants, rc, others, wt, RFIDs = get_category_indices(graph_idx, "interactions", window) # load data from exp day 1 as a template, because all group were properly detected.
+    mutants, rc, others, wt, RFIDs = get_category_indices(graph_idx, "approaches", window) # load data from exp day 1 as a template, because all group were properly detected.
     return [np.nan]*len(mutants), [np.nan]*len(rc), [np.nan]*len(others), \
         [np.nan]*len(wt), [np.nan]*len(RFIDs), \
         {"Mouse_RFID": [np.nan]*len(RFIDs), "mutant": [np.nan]*len(RFIDs), "RC": [np.nan]*len(RFIDs), "Group_ID": int(labels[graph_idx][1:])}
 
-def time_measures(measure, graph_idx, window = 1, variable = "interactions",
+def time_measures(measure, graph_idx, window = 1, variable = "approaches",
                   mnn = None, mutual = True, weighted = False, threshold = 0.0,
                   summation = "mean", normalization = None, in_group_norm = False, logscale = False):
     """
@@ -119,6 +125,7 @@ def time_measures(measure, graph_idx, window = 1, variable = "interactions",
     mutant_map = curr_metadata_df.set_index('Mouse_RFID')['mutant'].to_dict()
     is_mutant = [mutant_map.get(rfid, False) for rfid in RFIDs] # if RFID is missing, animal is assumed to be neurotypical
     
+
     is_RC = [] # no list comprehension allowed because of deprenciation warning due to RFID mismatch
     for rfid in RFIDs:
         if curr_metadata_df.loc[curr_metadata_df["Mouse_RFID"] == rfid, "RC"].values.size > 0:
@@ -162,7 +169,7 @@ def time_measures(measure, graph_idx, window = 1, variable = "interactions",
        # g = ig.Graph.Weighted_Adjacency(data, mode=mode)
         graphs.append(data)
         
-    if measure == "summed ICI":
+    if measure == "summed outICI" or measure == "summed inICI": # summed average inter conter interval
         all_data = np.array(graphs)
         num_mice = all_data.shape[1]
         time_std, time_mean = np.zeros((num_mice, num_mice)), np.zeros((num_mice, num_mice))
@@ -178,7 +185,8 @@ def time_measures(measure, graph_idx, window = 1, variable = "interactions",
                     time_mean[i, j] = np.nan    
         all_scores = time_mean
 
-    elif measure == "summed burstiness":
+    elif measure == "summed outburstiness" or measure == "summed inburstiness" or \
+        measure == "summed outburstiness rank" or measure == "summed inburstiness rank":
         all_data = np.array(graphs)
         num_mice = all_data.shape[1]
         time_std, time_mean = np.zeros((num_mice, num_mice)), np.zeros((num_mice, num_mice))
@@ -196,7 +204,8 @@ def time_measures(measure, graph_idx, window = 1, variable = "interactions",
         all_scores = (time_std - time_mean)/(time_std + time_mean)
 
 
-    elif measure == "summed NEF":
+    elif measure == "summed outNEF" or measure == "summed inNEF" or \
+        measure == "summed outNEF rank" or measure == "summed inNEF rank":
         all_data = np.array(graphs)
         time_std, time_mean, time_median = np.nanstd(all_data, axis = 0), np.nanmean(all_data, axis = 0), np.nanmedian(all_data, axis = 0)
         if normalization == "Poisson" or normalization == "poisson": # variant of the CV aimed at studying poissonicity
@@ -223,28 +232,45 @@ def time_measures(measure, graph_idx, window = 1, variable = "interactions",
         raise Exception("Unknown or misspelled input measurement.") 
         return
     
-    if summation == "mean":
-        all_scores = np.nanmean(all_scores, axis = 1)
-    if summation == "median":
-        all_scores = np.nanmedian(all_scores, axis = 1)
+    if "out" in measure:
+        if summation == "mean":
+            all_scores = np.nanmean(all_scores, axis = 1)
+        if summation == "median":
+            all_scores = np.nanmedian(all_scores, axis = 1)
 
-    if logscale:
-        assert measure != "summed burstiness", "Burstiness can take on negative values, so logscale is not a valid input argument."
-        all_scores = np.log(all_scores)
-    if "rank" in measure:
-        all_scores = all_scores.argsort().argsort()
-    if in_group_norm:
-        all_scores = all_scores/np.max(all_scores)
-        
-    metric_mutants = [all_scores[i] for i in mutants]
-    metric_rc = [all_scores[i] for i in rc]
-    metric_wt = [all_scores[i] for i in wt]
-    metric_others = [all_scores[i] for i in others]
-    metric_all = [all_scores[i] for i in range(len(RFIDs))]
+        if logscale:
+            all_scores = np.log(all_scores)
+        if "rank" in measure:
+            all_scores = all_scores.argsort().argsort()
+        if in_group_norm:
+            all_scores = all_scores/np.max(all_scores)
+        metric_mutants = [all_scores[i] for i in mutants]
+        metric_rc = [all_scores[i] for i in rc]
+        metric_wt = [all_scores[i] for i in wt]
+        metric_others = [all_scores[i] for i in others]
+        metric_all = [all_scores[i] for i in range(len(RFIDs))]
+
+    elif "in" in measure:
+        if summation == "mean":
+            all_scores = np.nanmean(all_scores, axis = 0)
+        if summation == "median":
+            all_scores = np.nanmedian(all_scores, axis = 0)
+        if logscale:
+            all_scores = np.log(all_scores)
+            
+        if "rank" in measure:
+            all_scores = all_scores.argsort().argsort()
+        if in_group_norm:
+            all_scores = all_scores/np.max(all_scores)
+        metric_mutants = [all_scores[i] if all_scores[i] != np.inf else np.nan for i in mutants]
+        metric_rc = [all_scores[i] if all_scores[i] != np.inf else np.nan for i in rc]
+        metric_wt = [all_scores[i] if all_scores[i] != np.inf else np.nan for i in wt]
+        metric_others = [all_scores[i] if all_scores[i] != np.inf else np.nan for i in others]
+        metric_all = [all_scores[i] if all_scores[i] != np.inf else np.nan for i in range(len(RFIDs))]
 
     return metric_mutants, metric_rc, metric_others, metric_wt, metric_all, {"Mouse_RFID": RFIDs, "mutant": is_mutant, "RC": is_RC, "Group_ID": int(labels[graph_idx][1:])}
 
-def get_time_metric_df(measure, window = 1, variable = "interactions", mnn = None, mutual = True, weighted = False):
+def get_time_metric_df(measure, window = 1, variable = "approaches", mnn = None, mutual = True, weighted = False):
     scores_mutants, scores_rc, scores_wt, scores_others, scores_all = [], [], [], [], []
     RFIDs, mutants, RCs = [], [], []
     for graph_idx in range(len(labels)):
@@ -265,7 +291,7 @@ def get_time_metric_df(measure, window = 1, variable = "interactions", mnn = Non
     df["Mouse_RFID"] = RFIDs
     return df
 
-def bp_metric(measure, window = 1, variable = "interactions",
+def bp_metric(measure, window = 1, variable = "approaches",
                       mnn = None, mutual = True, weighted = False, threshold = 0.0,
                       summation = "mean", normalization = None, in_group_norm = False, logscale = False, stat = "mean", ax = None):
     """
@@ -275,8 +301,6 @@ def bp_metric(measure, window = 1, variable = "interactions",
     graph-theoretical measure, with statistical testing between groups. For more details on input parameters, 
     see the documentation of the time_measures function. 
     """
-    assert variable != "approaches", "This script is intended to study undirected graphs. To study approaches, use the approaches_graph_metrics.py script"
-
     scores_mutants, scores_RC, scores_wt, scores_others, scores_all = [], [], [], [], []
     RFIDs, mutants, RCs = [], [], []
     for graph_idx in range(len(labels)):
@@ -340,7 +364,7 @@ def bp_metric(measure, window = 1, variable = "interactions",
     return bp
     
 
-def bp_metric_RC(measure, window = 1, variable = "interactions",
+def bp_metric_RC(measure, window = 1, variable = "approaches",
                       mnn = None, mutual = True, weighted = False, threshold = 0.0,
                       summation = "mean", normalization = None, in_group_norm = False, logscale = False, stat = "mean", swarmplot = True, ax = None):
     """
@@ -350,8 +374,6 @@ def bp_metric_RC(measure, window = 1, variable = "interactions",
     graph-theoretical measure, with statistical testing between groups. For more details on input parameters, 
     see the documentation of the time_measures function. 
     """
-    assert variable != "approaches", "This script is intended to study undirected graphs. To study approaches, use the approaches_graph_metrics.py script"
-    
     scores_mutants, scores_RC, scores_wt, scores_others, scores_all = [], [], [], [], []
     RFIDs, mutants, RCs = [], [], []
     for graph_idx in range(len(labels)):
@@ -417,7 +439,7 @@ def bp_metric_RC(measure, window = 1, variable = "interactions",
     return bp
     
 
-def bp_metric_OXTR(measure, window = 1, variable = "interactions",
+def bp_metric_mutants(measure, window = 1, variable = "approaches",
                       mnn = None, mutual = True, weighted = False, threshold = 0.0,
                       summation = "mean", normalization = None, in_group_norm = False, logscale = False, stat = "mean", swarmplot = True, ax = None):
     """
@@ -427,8 +449,6 @@ def bp_metric_OXTR(measure, window = 1, variable = "interactions",
     graph-theoretical measure, with statistical testing between groups. For more details on input parameters, 
     see the documentation of the time_measures function. 
     """
-    assert variable != "approaches", "This script is intended to study undirected graphs. To study approaches, use the approaches_graph_metrics.py script"
-
     scores_mutants, scores_rc, scores_wt, scores_others, scores_all = [], [], [], [], []
     RFIDs, mutants, RCs = [], [], []
     for graph_idx in range(len(labels)):
@@ -497,17 +517,32 @@ def bp_metric_OXTR(measure, window = 1, variable = "interactions",
     return bp
     
 
-datapath = "..\\data\\averaged\\" # path to raw data
-labels = ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G10", "G11", "G12", "G13", "G14", "G15", "G16", "G17"] # name of the groups to loop over
+if __name__ == "__main__":    
+## Main
+    # bp_metric_mutants("summed outNEF", variable = "approaches", mnn = None, mutual = False, weighted = True, threshold = 0, 
+    #                   summation = "mean", normalization="CV", logscale = False, stat = "median", swarmplot  = True)
 
-if __name__ == "__main__":  
-## Main    
-    bp_metric_OXTR("summed NEF", variable = "interactions", mnn = None, mutual = False, weighted = True, threshold = 0, 
-                      summation = "mean", normalization="mdm CV", logscale = True, stat = "mannwhitneyu") 
+    # bp_metric_mutants("summed inNEF", variable = "approaches", mnn = None, mutual = False, weighted = True, threshold = 0, 
+    #                   summation = "mean", normalization="CV", logscale = False, stat = "median")
+    
+    bp_metric_mutants("summed outNEF", variable = "interactions", mnn = None, mutual = False, weighted = True, threshold = 0, 
+                      summation = "mean", normalization="median CV", logscale = True, stat = "median")
 
-    # bp_metric_OXTR("summed NEF", variable = "t_summed", mnn = None, mutual = False, weighted = True, threshold = 0, 
-    #                   summation = "mean", normalization="mdm CV", logscale = False, stat = "mannwhitneyu") 
+    # bp_metric_mutants("summed inNEF", variable = "t_summed", mnn = None, mutual = False, weighted = True, threshold = 0, 
+    #                   summation = "mean", normalization="mdm CV", logscale = True, stat = "median")
+    
+## Supplement
+    # bp_metric_mutants("summed outburstiness", variable = "t_mean", mnn = 7, mutual = True, weighted = False, threshold = 0, 
+                              # summation = "mean", normalization=None, in_group_norm = False, logscale = False, stat = "median", swarmplot = True)
+    
+    # bp_metric_mutants("summed outburstiness", mnn = 7, mutual = True, weighted = False, threshold = 0, 
+    #                           summation = "mean", normalization = None, in_group_norm = False, logscale = False, stat = "median", swarmplot = True)
+   
+    # bp_metric("summed outNEF", mnn = None, mutual = True, weighted = True, threshold = 0, 
+    #                   summation = "mean", normalization="CV", logscale = False, stat = "median")
+    
+    # bp_metric("summed inNEF", mnn = None, mutual = True, weighted = True, threshold = 0, 
+    #                   summation = "mean", normalization="CV", logscale = False, stat = "median")
+    
+    
 
-        
-    # bp_metric("summed NEF", variable = "interactions", mnn = None, mutual = False, weighted = True, threshold = 0, 
-    #                   summation = "mean", normalization="mdm CV", logscale = True, stat = "median") 

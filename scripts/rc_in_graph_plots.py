@@ -8,10 +8,10 @@ import pandas as pd
 sys.path.append('..\\src\\')
 from read_graph import read_graph, k_core_weights, display_graph, display_graph_3d
 from utils import get_category_indices
-script_dir = os.path.dirname(os.path.abspath(__file__))
-os.chdir(script_dir)
 
-labels = ["G1"]#, "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G10", "G11", "G12", "G13", "G14", "G15", "G16", "G17"]
+labels = ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G10",
+          "G11", "G12", "G13", "G14", "G15", "G16", "G17",
+          "GJ1", "GJ2", "GD2", "GD3", "GD4", "GD6"]
 
 def graph_in_time_3d(graph_idx, var = "interactions", mnn = 3, show_mut = True):
     """
@@ -53,6 +53,7 @@ def graph_in_time_2d(graph_idx, var = "interactions", mnn = 3, deg = 3, mutual =
     Plots and saves the graph of the rich club for the interaction graph given in 'datapath'
     after mnn cuting and k-core computation. Saves on svg format.
     """
+    print(labels[graph_idx])
     datapath = "..\\data\\both_cohorts_3days\\"+labels[graph_idx]+"\\"
     fig, axs = plt.subplots(5, 1, figsize=(2, 7)) #putting all results directly on same figure
     for i in range(5):
@@ -97,13 +98,16 @@ def day_to_day_approachprop(dirname, mnn = 4, deg = 2):
     plt.show()
 
 if __name__ == "__main__":
-    ## Main
-    graph_to_plot = 0 # Index of the group to display
-    graph_in_time_2d(graph_to_plot, "interactions", mnn = 3, deg = 3, mutual = True, show_mut = True)
+    ## Main figure 5
+    graph_in_time_2d(18, "interactions", mnn = 3, deg = 3, mutual = True, show_mut = False)
+    graph_in_time_2d(20, "interactions", mnn = 3, deg = 3, mutual = True, show_mut = False)
+    # graph_in_time_2d(1, "approaches", mnn = 3, deg = 3, mutual = True, show_mut = True)
     
     # Supplement for club stability under k
+    # graph_to_plot = 8 # Index of the group to display
     # graph_in_time_2d(graph_to_plot, "interactions", mnn = 2, deg = 2, mutual = True, show_mut = True)
+    # graph_in_time_2d(graph_to_plot, "interactions", mnn = 3, deg = 3, mutual = True, show_mut = True)
     # graph_in_time_2d(graph_to_plot, "interactions", mnn = 4, deg = 4, mutual = True, show_mut = True)
-
-
+    # graph_in_time_2d(graph_to_plot, "interactions", mnn = 5, deg = 4, mutual = True, show_mut = True)
+    
 

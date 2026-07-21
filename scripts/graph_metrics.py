@@ -8,23 +8,19 @@ import seaborn as sns
 from scipy import stats
 import pandas as pd
 from scipy.stats import sem
-# from sklearn.decomposition import PCA
-# from sklearn.preprocessing import StandardScaler, MinMaxScaler, MaxAbsScaler, normalize
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler, MinMaxScaler, MaxAbsScaler, normalize
 from tqdm import tqdm 
-# from sklearn.manifold import TSNE
-# from sklearn import manifold
+from sklearn.manifold import TSNE
+from sklearn import manifold
 sys.path.append('..\\src\\')
 from read_graph import read_graph, read_labels
 from utils import get_category_indices, spread_points_around_center
-import mpl_toolkits.mplot3d  # noqa: F401
+import mpl_toolkits.mplot3d  
 from scipy.stats import ttest_ind
 from scipy import stats
 from scipy.stats import pearsonr, spearmanr
 import warnings
-sys.path.append('..\\src\\')
-
-script_dir = os.path.dirname(os.path.abspath(__file__))
-os.chdir(script_dir)
 
 datapath = "..\\data\\chasing\\single\\"
 datapath = "..\\data\\averaged\\"
@@ -36,7 +32,7 @@ def rescale(arr):
         return 
     return normalized_arr
 
-labels = ["G1"]#, "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G10", "G11", "G12", "G13", "G14", "G15", "G16", "G17"]
+labels = ["G1", "G2", "G3", "G4", "G5", "G6", "G7", "G8", "G10", "G11", "G12", "G13", "G14", "G15", "G16", "G17"]
 
 def default_on_error(graph_idx, variable, window):
     """
@@ -659,7 +655,7 @@ def manual_plot(metrics, variable = "approaches", mnn = None, mutual = False, di
     plt.tight_layout()
     plt.show()
 
-def statistic(x, y, stat = "mean"):
+def statistic(x, y, stat = "median"):
     x = np.concatenate(x)
     y = np.concatenate(y)
     if stat == "mean":
@@ -667,7 +663,7 @@ def statistic(x, y, stat = "mean"):
     else:
         return np.nanmedian(x) - np.nanmedian(y)
 
-def add_significance(data, var, ax, bp, stat = "mean"):
+def add_significance(data, var, ax, bp, stat = "median"):
     """Computes and adds p-value significance to input ax and boxplot"""
     # Check from the outside pairs of boxes inwards
     ls = list(range(1, len(data) + 1))
@@ -693,7 +689,7 @@ def add_significance(data, var, ax, bp, stat = "mean"):
         np.random.shuffle(labels)
         permuted_group1 = [combined_data[i] for i in range(len(labels)) if labels[i] == 0]
         permuted_group2 = [combined_data[i] for i in range(len(labels)) if labels[i] == 1]
-        permuted_stats.append(statistic(permuted_group1, permuted_group2))
+        permuted_stats.append(statistic(permuted_group1, permuted_group2, stat))
 
     # Compute p-value
     permuted_stats = np.array(permuted_stats)
@@ -745,7 +741,7 @@ def add_significance(data, var, ax, bp, stat = "mean"):
             np.random.shuffle(labels)
             permuted_group1 = [combined_data[i] for i in range(len(labels)) if labels[i] == 0]
             permuted_group2 = [combined_data[i] for i in range(len(labels)) if labels[i] == 1]
-            permuted_stats.append(statistic(permuted_group1, permuted_group2))
+            permuted_stats.append(statistic(permuted_group1, permuted_group2, stat))
 
         # Compute p-value
         permuted_stats = np.array(permuted_stats)
@@ -774,6 +770,7 @@ def add_significance(data, var, ax, bp, stat = "mean"):
             sig_symbol = f"p = {np.round(p, 3)}"
         text_height = bar_height + (y_range * 0.01)
         ax.text((x1 + x2) * 0.5, text_height, sig_symbol, ha='center', va='bottom', c='k')
+    return p
     
 def plot_timeseries_example(measure, derivative = True, window = 3, variable = "approaches", idx = [0, 0, 0],
                             mnn = None, mutual = True, threshold = 0.0, ax = None):
@@ -921,6 +918,7 @@ def boxplot_metric_mutant(var, derivative = False, aggregation = None, window = 
         bp = ax.boxplot(numeric_data, labels=["Mutants", "WT"], showfliers = False, showmeans = True, positions = positions)
 
     add_significance(data, var, ax, bp, stat)
+
     if rm_RC:
         scores_mutants = df.loc[np.logical_and(df["mutant"], df["RC"] == False),var].values
         scores_others = df.loc[np.logical_and(df["mutant"] == False, df["RC"] == False), var].values
@@ -1101,11 +1099,12 @@ if __name__ == "__main__":
     plot_timeseries_example("outstrength", derivative = True, window = 1, variable = "approaches", idx = [1, 1],
                               mnn = None, mutual = True, threshold = 0.0, ax = None)
     
-    boxplot_metric_mutant("outstrength", derivative = False, aggregation = 'mean', window = 1,
-                       mnn = None, mutual = True, rm_RC = True, overlay_RC = False, threshold = 0, stat = "median", in_group_norm = False)
+    # boxplot_metric_mutant("outstrength", derivative = False, aggregation = 'mean', window = 1,
+    #                    mnn = None, mutual = True, rm_RC = True, overlay_RC = False, threshold = 0, stat = "median", in_group_norm = False)
  
-    boxplot_metric_mutant("outstrength", derivative = True, aggregation = 'std', window = 1,
-                          mnn = None, mutual = True, rm_RC = True, overlay_RC = False, threshold = 0, stat = "median", in_group_norm = False)
+    # boxplot_metric_mutant("outstrength", derivative = True, aggregation = 'std', window = 1,
+    #                       mnn = None, mutual = True, rm_RC = True, overlay_RC = False, threshold = 0, stat = "median", in_group_norm = False)
+
     
 ## backup
     # boxplot_metric_mutant("mean inpearson", derivative = True, aggregation = 'std', window = 1,
